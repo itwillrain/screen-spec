@@ -1,0 +1,25 @@
+{
+  "name": "screen-spec",
+  "version": "0.1.0",
+  "private": true,
+  "description": "画面詳細設計書を記述する OpenAPI ライクな言語仕様と、その Viewer",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "validate": "tsx packages/cli/src/index.ts validate",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

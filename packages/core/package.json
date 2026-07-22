@@ -1,0 +1,15 @@
+{
+  "name": "@screen-spec/core",
+  "version": "0.1.0",
+  "description": "screen-spec のパース・$ref 解決・検証コアロジック",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

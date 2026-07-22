@@ -1,0 +1,27 @@
+specVersion: "0.1"
+screen:
+  id: user-edit
+  name: ユーザー編集画面
+  description: ユーザー情報を編集する画面
+  route: /users/{userId}/edit
+  fields:
+    # マップのキー（name / email / role）がフィールド識別子。記述順＝表示順（決定 #5, #6）。
+    name:
+      label: 氏名
+      type: text
+      required: true
+      validations:
+        - $ref: "./common.yaml#/components/validations/Required"
+        - rule: maxLength
+          value: 50
+          message: 50文字以内で入力してください
+    # 外部コンポーネントを純粋参照（決定 #2, #3）。
+    email:
+      $ref: "./common.yaml#/components/fields/EmailField"
+    role:
+      label: ロール
+      type: select
+      options:
+        $ref: "./common.yaml#/components/options/RoleOptions"
+      permission:
+        editRoles: [admin]

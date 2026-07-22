@@ -1,0 +1,12 @@
+# 意図的に不正な例（テスト・デモ用）。以下の複数の違反を含む:
+#  - screen.id が kebab-case でない
+#  - フィールドキーが camelCase でない
+#  - $ref に兄弟キーがある（純粋参照違反）
+specVersion: "0.1"
+screen:
+  id: Bad_ID
+  name: だめな画面
+  fields:
+    Email:
+      $ref: "./common.yaml#/components/fields/EmailField"
+      label: これは上書きのつもり

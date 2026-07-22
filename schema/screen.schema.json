@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://screen-spec.dev/schema/screen.schema.json",
+  "title": "screen-spec document (v0.1)",
+  "description": "画面詳細設計書 or 共通コンポーネント定義。単一の $ref は純粋参照（兄弟キー禁止）。",
+  "type": "object",
+  "required": ["specVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "specVersion": { "const": "0.1" },
+    "screen": { "$ref": "#/$defs/Screen" },
+    "components": { "$ref": "#/$defs/Components" }
+  },
+  "anyOf": [
+    { "required": ["screen"] },
+    { "required": ["components"] }
+  ],
+  "$defs": {
+    "refObject": {
+      "title": "純粋な $ref 参照",
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Screen": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "description": "kebab-case"
+        },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "route": { "type": "string" },
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Permission" }
+        },
+        "fields": { "$ref": "#/$defs/FieldMap" }
+      }
+    },
+
+    "FieldMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/FieldOrRef" }
+    },
+
+    "FieldOrRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/refObject" },
+        { "$ref": "#/$defs/Field" }
+      ]
+    },
+
+    "Field": {
+      "type": "object",
+      "required": ["label", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "textarea",
+            "email",
+            "number",
+            "date",
+            "select",
+            "checkbox",
+            "radio"
+          ]
+        },
+        "required": { "type": "boolean" },
+        "validations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ValidationOrRef" }
+        },
+        "options": { "$ref": "#/$defs/OptionsOrRef" },
+        "permission": { "$ref": "#/$defs/Permission" }
+      }
+    },
+
+    "ValidationOrRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/refObject" },
+        { "$ref": "#/$defs/Validation" }
+      ]
+    },
+
+    "Validation": {
+      "type": "object",
+      "required": ["rule"],
+      "additionalProperties": false,
+      "properties": {
+        "rule": { "type": "string" },
+        "value": true,
+        "message": { "type": "string" }
+      }
+    },
+
+    "OptionsOrRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/refObject" },
+        { "$ref": "#/$defs/OptionArray" }
+      ]
+    },
+
+    "OptionArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Option" }
+    },
+
+    "Option": {
+      "type": "object",
+      "required": ["value", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "value": true,
+        "label": { "type": "string" }
+      }
+    },
+
+    "Permission": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": { "type": "string" },
+        "access": {
+          "type": "string",
+          "enum": ["full", "readwrite", "readonly"]
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "editRoles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "Components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "validations": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9]*$",
+            "description": "PascalCase"
+          },
+          "additionalProperties": { "$ref": "#/$defs/ValidationOrRef" }
+        },
+        "fields": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9]*$",
+            "description": "PascalCase"
+          },
+          "additionalProperties": { "$ref": "#/$defs/FieldOrRef" }
+        },
+        "options": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9]*$",
+            "description": "PascalCase"
+          },
+          "additionalProperties": { "$ref": "#/$defs/OptionsOrRef" }
+        }
+      }
+    }
+  }
+}

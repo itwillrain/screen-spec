@@ -1,0 +1,12 @@
+{
+  "name": "@screen-spec/cli",
+  "version": "0.1.0",
+  "description": "screen-spec CLI",
+  "type": "module",
+  "bin": {
+    "screen-spec": "./src/index.ts"
+  },
+  "dependencies": {
+    "@screen-spec/core": "0.1.0"
+  }
+}
