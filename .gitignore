@@ -1,0 +1,20 @@
+# Obsidian 外部知識領域（commit禁止）
+.knowledge/
+
+# Claude Code ローカル個人設定
+.claude/settings.local.json
+
+# 環境変数
+.env
+.env.*
+!.env.example
+
+# 依存・ビルド・カバレッジ成果物
+node_modules/
+dist/
+coverage/
+.vite/
+
+# ログ・OS 生成物
+*.log
+.DS_Store
