@@ -334,3 +334,21 @@ describe("式エンジン（parseTemplate）", () => {
     expect(diags.some((d) => d.code === "unknown-expression-ref")).toBe(true);
   });
 });
+
+describe("layout 検査", () => {
+  it("未定義フィールドの配置は warning", () => {
+    const screen = { fields: { a: {} }, layout: { sections: [{ id: "s", fields: ["a", "ghost"] }] } };
+    expect(analyzeScreen(screen).some((d) => d.code === "unknown-field-in-layout")).toBe(true);
+  });
+
+  it("layout があり未配置のフィールドは warning", () => {
+    const screen = { fields: { a: {}, b: {} }, layout: { sections: [{ fields: ["a"] }] } };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "field-not-in-layout" && d.where === "b")).toBe(true);
+  });
+
+  it("全フィールドを配置すれば診断なし", () => {
+    const screen = { fields: { a: {}, b: {} }, layout: { sections: [{ fields: ["a", "b"] }] } };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+});

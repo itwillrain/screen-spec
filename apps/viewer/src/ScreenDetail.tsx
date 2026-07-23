@@ -129,6 +129,37 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
         </table>
       </section>
 
+      {screen.layout ? (
+        <section>
+          <h2>レイアウト</h2>
+          <p className="muted">言語レベルの構造（セクション・列・幅ヒント）。</p>
+          {screen.layout.sections.map((sec, i) => {
+            const fieldByKey = new Map(screen.fields.map((f) => [f.key, f]))
+            return (
+              <div key={sec.id ?? i} className="layout-section">
+                {sec.title ? <h3>{sec.title}</h3> : null}
+                <div
+                  className="layout-grid"
+                  style={{ gridTemplateColumns: `repeat(${sec.columns}, 1fr)` }}
+                >
+                  {sec.fieldKeys.map((key) => {
+                    const f = fieldByKey.get(key)
+                    const span = f?.width === 'full' ? sec.columns : 1
+                    return (
+                      <div key={key} className="layout-cell" style={{ gridColumn: `span ${span}` }}>
+                        <span className="cell-label">{f?.label ?? key}</span>
+                        <code className="cell-key">{key}</code>
+                        {f?.width ? <span className="cell-width">{f.width}</span> : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </section>
+      ) : null}
+
       {screen.stateMachine ? (
         <section>
           <h2>状態遷移</h2>

@@ -12,9 +12,21 @@ export interface FieldView {
   label: string;
   type: string;
   required: boolean;
+  width?: string;
   validations: FieldValidationView[];
   /** フィールド自体が $ref 由来なら、その参照文字列 */
   origin?: string;
+}
+
+export interface LayoutSectionView {
+  id?: string;
+  title?: string;
+  columns: number;
+  fieldKeys: string[];
+}
+
+export interface LayoutView {
+  sections: LayoutSectionView[];
 }
 
 export interface StateNode {
@@ -60,6 +72,7 @@ export interface ScreenView {
   description?: string;
   route?: string;
   fields: FieldView[];
+  layout?: LayoutView;
   design?: DesignView;
   stateMachine?: StateMachineView;
   apiBindings: ApiBindingView[];
@@ -77,7 +90,12 @@ interface RawField {
   label?: string;
   type?: string;
   required?: boolean;
+  width?: string;
   validations?: Array<{ rule?: string; message?: string }>;
+}
+
+interface RawLayout {
+  sections?: Array<{ id?: string; title?: string; columns?: number; fields?: string[] }>;
 }
 
 interface RawState {
@@ -117,6 +135,7 @@ interface SpecDoc {
     description?: string;
     route?: string;
     design?: RawDesign;
+    layout?: RawLayout;
     fields?: Record<string, RawField>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
@@ -150,6 +169,19 @@ function buildApiBindings(screen: SpecDoc["screen"]): ApiBindingView[] {
       responseMappings,
     };
   });
+}
+
+function buildLayout(layout: RawLayout | undefined): LayoutView | undefined {
+  const sections = layout?.sections;
+  if (!Array.isArray(sections) || sections.length === 0) return undefined;
+  return {
+    sections: sections.map((sec) => ({
+      id: sec.id,
+      title: sec.title,
+      columns: typeof sec.columns === "number" && sec.columns >= 1 ? sec.columns : 1,
+      fieldKeys: Array.isArray(sec.fields) ? sec.fields.map(String) : [],
+    })),
+  };
 }
 
 function buildDesign(design: RawDesign | undefined): DesignView | undefined {
@@ -217,6 +249,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
       label: String(rf.label ?? ""),
       type: String(rf.type ?? ""),
       required: Boolean(rf.required),
+      width: typeof rf.width === "string" ? rf.width : undefined,
       validations,
       origin,
     };
@@ -228,6 +261,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     description: resolved.screen?.description,
     route: resolved.screen?.route,
     fields,
+    layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),
     stateMachine: buildStateMachine(resolved.screen),
     apiBindings: buildApiBindings(resolved.screen),

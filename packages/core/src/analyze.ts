@@ -32,9 +32,14 @@ interface ApiBindingLike {
   response?: { mapping?: Record<string, unknown> };
 }
 
+interface LayoutLike {
+  sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown }>;
+}
+
 interface ScreenLike {
   route?: unknown;
   fields?: Record<string, unknown>;
+  layout?: LayoutLike;
   states?: Record<string, { initial?: unknown }>;
   events?: Record<string, EventLike>;
   apiBindings?: Record<string, ApiBindingLike>;
@@ -133,6 +138,44 @@ function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
           where: key,
         });
       }
+    }
+  }
+}
+
+/** layout.sections のフィールド参照を検査する。 */
+function analyzeLayout(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const sections = s.layout?.sections;
+  if (!Array.isArray(sections)) return;
+  const fieldKeys = new Set(Object.keys(s.fields ?? {}));
+  const placed = new Set<string>();
+
+  sections.forEach((section, i) => {
+    const where = asString(section.id) ?? `section[${i}]`;
+    const fields = Array.isArray(section.fields) ? section.fields : [];
+    for (const fk of fields) {
+      const key = asString(fk);
+      if (key === undefined) continue;
+      placed.add(key);
+      if (!fieldKeys.has(key)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-field-in-layout",
+          message: `layout の section "${where}" が未定義のフィールド "${key}" を配置しています。`,
+          where,
+        });
+      }
+    }
+  });
+
+  // layout がある場合、どのセクションにも配置されていないフィールドを warning
+  for (const key of fieldKeys) {
+    if (!placed.has(key)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "field-not-in-layout",
+        message: `フィールド "${key}" は layout のどのセクションにも配置されていません。`,
+        where: key,
+      });
     }
   }
 }
@@ -248,6 +291,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   if (screen === null || typeof screen !== "object") return [];
   const s = screen as ScreenLike;
   const diagnostics: Diagnostic[] = [];
+  analyzeLayout(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
   analyzeStateMachine(s, diagnostics);
   return diagnostics;

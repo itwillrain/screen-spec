@@ -17,12 +17,24 @@ screen:
       - label: デザインガイドライン
         url: https://example.com/design-guide
 
+  # 言語レベルのレイアウト（UI 非依存の構造）。フィールドはキー参照でセクションに配置する。
+  layout:
+    sections:
+      - id: basic
+        title: 基本情報
+        columns: 2
+        fields: [name, email, altEmail]
+      - id: authz
+        title: 権限
+        fields: [role]
+
   fields:
     # マップのキー（name / email / role）がフィールド識別子。記述順＝表示順（決定 #5, #6）。
     name:
       label: 氏名
       type: text
       required: true
+      width: half
       validations:
         - $ref: "./common.yaml#/components/validations/Required"
         - rule: maxLength
@@ -44,6 +56,7 @@ screen:
         - $ref: "./common.yaml#/components/fields/EmailField"
       label: 予備メールアドレス
       required: false
+      width: half
 
   # 状態遷移（決定 #10・案C）。キーが状態/イベント識別子、記述順が並び順。
   states:

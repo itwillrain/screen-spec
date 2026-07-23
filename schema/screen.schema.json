@@ -58,6 +58,7 @@
           "items": { "$ref": "#/$defs/Permission" }
         },
         "design": { "$ref": "#/$defs/Design" },
+        "layout": { "$ref": "#/$defs/Layout" },
         "fields": { "$ref": "#/$defs/FieldMap" },
         "states": { "$ref": "#/$defs/StateMap" },
         "events": { "$ref": "#/$defs/EventMap" },
@@ -234,6 +235,11 @@
           ]
         },
         "required": { "type": "boolean" },
+        "width": {
+          "type": "string",
+          "enum": ["full", "half", "third"],
+          "description": "表示幅ヒント（UI 非依存）"
+        },
         "validations": {
           "type": "array",
           "items": { "$ref": "#/$defs/ValidationOrRef" }
@@ -281,6 +287,34 @@
       "properties": {
         "value": true,
         "label": { "type": "string" }
+      }
+    },
+
+    "Layout": {
+      "title": "画面レイアウト（言語レベルの構造）",
+      "description": "UI フレームワークに依存しない構造。項目はセクションにグループ化し、列数で並べる。",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LayoutSection" }
+        }
+      }
+    },
+
+    "LayoutSection": {
+      "type": "object",
+      "required": ["fields"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
+        "title": { "type": "string" },
+        "columns": { "type": "integer", "minimum": 1, "maximum": 4, "description": "列数（既定 1）" },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string", "description": "配置するフィールドのキー" }
+        }
       }
     },
 
