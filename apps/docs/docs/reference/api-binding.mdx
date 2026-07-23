@@ -1,0 +1,50 @@
+---
+title: ApiBinding
+description: 画面が呼ぶ API と項目マッピングの定義。
+---
+
+# ApiBinding
+
+`screen.apiBindings` マップの値（キーが連携識別子・camelCase）。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `openapi` | object | ✔ | `{ operationId, specRef }` |
+| `request` | object | | `{ path, query, body }`（各 ExpressionMap） |
+| `response` | object | | `{ mapping }`（ExpressionMap） |
+| `description` | string | | 補足説明 |
+
+### openapi
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `operationId` | string | ✔ | OpenAPI の operationId |
+| `specRef` | string | ✔ | OpenAPI 定義への参照（ローカル相対パス。v0.1 では未解決） |
+
+### ExpressionMap
+
+キーと式文字列の対応。`request.path/query/body` は「API フィールド → 式」、
+`response.mapping` は「画面項目 → API レスポンスのパス」。
+
+- `{screen.route.userId}` / `{fields.name}` / `data.name`
+- v0.1 では式を**パースしません**（文字列保持）
+
+## 例
+
+```yaml
+apiBindings:
+  getUser:
+    openapi:
+      operationId: getUserById
+      specRef: ./openapi/users.yaml
+    request:
+      path: { userId: "{screen.route.userId}" }
+    response:
+      mapping:
+        name: data.name
+        email: data.email
+```
+
+詳しくは [API 連携](/concepts/api-bindings) を参照。

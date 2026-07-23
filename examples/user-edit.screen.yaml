@@ -70,3 +70,27 @@ screen:
     toUserList:
       to: user-list
       trigger: submit.onSuccess
+
+  # API 連携（決定 #11・案B）。型/制約は OpenAPI 側に委譲し、対応関係のみ記述する。
+  apiBindings:
+    getUser:
+      openapi:
+        operationId: getUserById
+        specRef: ./openapi/users.yaml
+      request:
+        path:
+          userId: "{screen.route.userId}"
+      response:
+        mapping:
+          name: data.name
+          email: data.email
+          role: data.role
+    updateUser:
+      openapi:
+        operationId: updateUserById
+        specRef: ./openapi/users.yaml
+      request:
+        body:
+          name: "{fields.name}"
+          email: "{fields.email}"
+          role: "{fields.role}"

@@ -147,6 +147,58 @@ export function App() {
           <StateDiagram sm={screen.stateMachine} />
         </section>
       ) : null}
+
+      {screen.apiBindings.length > 0 ? (
+        <section>
+          <h2>API 連携</h2>
+          <table className="fields">
+            <thead>
+              <tr>
+                <th>キー</th>
+                <th>operationId</th>
+                <th>specRef</th>
+                <th>request</th>
+                <th>response</th>
+              </tr>
+            </thead>
+            <tbody>
+              {screen.apiBindings.map((b) => (
+                <tr key={b.key}>
+                  <td><code>{b.key}</code></td>
+                  <td><code>{b.operationId}</code></td>
+                  <td><code>{b.specRef}</code></td>
+                  <td>
+                    {b.requestMappings.length === 0 ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <ul className="rules">
+                        {b.requestMappings.map((m, i) => (
+                          <li key={i}>
+                            <code>{m.scope}.{m.key}</code> ← <code>{m.expr}</code>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </td>
+                  <td>
+                    {b.responseMappings.length === 0 ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <ul className="rules">
+                        {b.responseMappings.map((m, i) => (
+                          <li key={i}>
+                            <code>{m.field}</code> ← <code>{m.expr}</code>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
     </main>
   )
 }

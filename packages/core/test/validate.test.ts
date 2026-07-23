@@ -121,4 +121,23 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
     expect(result.valid).toBe(true);
     expect(result.warnings).toEqual([]);
   });
+
+  it("action.apiCall が未定義の apiBinding を参照すると warning", () => {
+    const screen = {
+      states: { a: { initial: true }, b: {} },
+      events: { go: { from: "a", to: "b", action: { apiCall: "missingBinding" } } },
+      apiBindings: {},
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "undefined-api-binding" && d.where === "go")).toBe(true);
+  });
+
+  it("action.apiCall が定義済み apiBinding を参照すれば診断なし", () => {
+    const screen = {
+      states: { a: { initial: true }, b: {} },
+      events: { go: { from: "a", to: "b", action: { apiCall: "updateUser" } } },
+      apiBindings: { updateUser: {} },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
 });

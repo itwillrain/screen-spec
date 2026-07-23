@@ -34,6 +34,14 @@ export interface StateMachineView {
   edges: StateEdge[];
 }
 
+export interface ApiBindingView {
+  key: string;
+  operationId: string;
+  specRef: string;
+  requestMappings: Array<{ scope: string; key: string; expr: string }>;
+  responseMappings: Array<{ field: string; expr: string }>;
+}
+
 export interface ScreenView {
   id: string;
   name: string;
@@ -41,6 +49,7 @@ export interface ScreenView {
   route?: string;
   fields: FieldView[];
   stateMachine?: StateMachineView;
+  apiBindings: ApiBindingView[];
   warnings: string[];
   valid: boolean;
   issueCount: number;
@@ -68,6 +77,12 @@ interface RawEvent {
   onError?: { to?: string };
 }
 
+interface RawApiBinding {
+  openapi?: { operationId?: string; specRef?: string };
+  request?: Record<string, Record<string, string>>;
+  response?: { mapping?: Record<string, string> };
+}
+
 interface SpecDoc {
   screen?: {
     id?: string;
@@ -77,7 +92,35 @@ interface SpecDoc {
     fields?: Record<string, RawField>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
+    apiBindings?: Record<string, RawApiBinding>;
   };
+}
+
+function buildApiBindings(screen: SpecDoc["screen"]): ApiBindingView[] {
+  const bindings = screen?.apiBindings;
+  if (!bindings) return [];
+  return Object.entries(bindings).map(([key, b]) => {
+    const requestMappings: ApiBindingView["requestMappings"] = [];
+    for (const scope of ["path", "query", "body"] as const) {
+      const entries = b.request?.[scope];
+      if (entries) {
+        for (const [k, expr] of Object.entries(entries)) {
+          requestMappings.push({ scope, key: k, expr: String(expr) });
+        }
+      }
+    }
+    const responseMappings = Object.entries(b.response?.mapping ?? {}).map(([field, expr]) => ({
+      field,
+      expr: String(expr),
+    }));
+    return {
+      key,
+      operationId: String(b.openapi?.operationId ?? ""),
+      specRef: String(b.openapi?.specRef ?? ""),
+      requestMappings,
+      responseMappings,
+    };
+  });
 }
 
 function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefined {
@@ -139,6 +182,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     route: resolved.screen?.route,
     fields,
     stateMachine: buildStateMachine(resolved.screen),
+    apiBindings: buildApiBindings(resolved.screen),
     warnings: result.warnings.map((w) => w.message),
     valid: result.valid,
     issueCount: result.issues.length,

@@ -16,6 +16,7 @@ export interface Diagnostic {
 interface EventLike {
   from?: unknown;
   to?: unknown;
+  action?: { apiCall?: unknown };
   onSuccess?: { to?: unknown };
   onError?: { to?: unknown };
 }
@@ -23,6 +24,7 @@ interface EventLike {
 interface ScreenLike {
   states?: Record<string, { initial?: unknown }>;
   events?: Record<string, EventLike>;
+  apiBindings?: Record<string, unknown>;
 }
 
 function asString(v: unknown): string | undefined {
@@ -55,6 +57,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
 
   const diagnostics: Diagnostic[] = [];
   const stateKeys = new Set(Object.keys(states));
+  const bindingKeys = new Set(Object.keys(s.apiBindings ?? {}));
 
   // initial の個数
   const initials = Object.entries(states)
@@ -100,6 +103,17 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
     // action の結果分岐は to（即時遷移先）を起点とみなす
     if (to && onSuccess) edges.push([to, onSuccess]);
     if (to && onError) edges.push([to, onError]);
+
+    // action.apiCall が未定義の apiBinding を参照していれば warning（決定 #11）
+    const apiCall = asString(ev.action?.apiCall);
+    if (apiCall !== undefined && !bindingKeys.has(apiCall)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "undefined-api-binding",
+        message: `event "${key}" の action.apiCall が未定義の apiBinding "${apiCall}" を参照しています。`,
+        where: key,
+      });
+    }
   }
 
   // 到達可能性（初期状態が1つ以上あるときのみ）。到達不能な状態は warning。

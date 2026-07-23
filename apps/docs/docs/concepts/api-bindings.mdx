@@ -1,0 +1,66 @@
+---
+title: API 連携
+description: OpenAPI の operationId 参照＋項目マッピング（案B）。
+---
+
+# API 連携（apiBindings）
+
+画面がどの API を呼び、画面項目がどの API フィールドに対応するかを記述します。v0.1 は **案B**：
+`operationId` / `specRef` で OpenAPI を参照し、**対応関係のみ**を書きます。
+
+- 型・制約は OpenAPI 側を**真実の源**として参照に委ねる（screen-spec 側で再定義しない）
+- `apiBindings` はマップ（キーが連携識別子・camelCase）
+
+## 例
+
+```yaml
+apiBindings:
+  getUser:
+    openapi:
+      operationId: getUserById
+      specRef: ./openapi/users.yaml
+    request:
+      path:
+        userId: "{screen.route.userId}"
+    response:
+      mapping:
+        name: data.name
+        email: data.email
+  updateUser:
+    openapi:
+      operationId: updateUserById
+      specRef: ./openapi/users.yaml
+    request:
+      body:
+        name: "{fields.name}"
+        email: "{fields.email}"
+```
+
+イベントからは `action.apiCall` で連携を参照します。
+
+```yaml
+events:
+  submit:
+    from: editing
+    to: submitting
+    action: { apiCall: updateUser }
+    onSuccess: { to: viewing }
+    onError: { to: error }
+```
+
+## 式（expression）
+
+`request` / `response` の値は式文字列です。
+
+- `{screen.route.userId}` … ルートパラメータ
+- `{fields.name}` … 画面項目の値
+- `data.name` … API レスポンス内のパス
+
+:::note
+v0.1 では式は**パース・検証しません**（文字列として保持のみ）。式エンジンは後続で扱います。
+また `specRef` の OpenAPI 定義は**解決・検証しません**（参照のみ）。
+:::
+
+## 診断
+
+`event.action.apiCall` が未定義の `apiBindings` を参照している場合は **warning** になります。

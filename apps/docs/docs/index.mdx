@@ -28,6 +28,7 @@ YAML を主な記述形式とし、JSON Schema で検証できます。特定の
 - [ドキュメントの種類](/concepts/documents)
 - [`$ref` ガイド](/concepts/refs)
 - [状態遷移](/concepts/state-machine) — states / events / transitions
+- [API 連携](/concepts/api-bindings) — apiBindings（OpenAPI 参照）
 - [要素リファレンス: Screen](/reference/screen)
 
 ## ビューア
@@ -41,5 +42,5 @@ spec を fetch し、その場で `$ref` を解決して表示します。
 - ✅ `$ref` コンポーネント再利用・2 段検証（M1）
 - ✅ Viewer（Swagger UI 型・M2）
 - ✅ `states` / `events` / `transitions`（状態遷移・M3）
-- ⬜ `apiBindings`（OpenAPI 連携・M4）
+- ✅ `apiBindings`（OpenAPI 連携・M4）
 - ⬜ `compose`（allOf 相当・予約のみ）

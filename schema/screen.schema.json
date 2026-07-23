@@ -46,8 +46,58 @@
         "fields": { "$ref": "#/$defs/FieldMap" },
         "states": { "$ref": "#/$defs/StateMap" },
         "events": { "$ref": "#/$defs/EventMap" },
-        "transitions": { "$ref": "#/$defs/TransitionMap" }
+        "transitions": { "$ref": "#/$defs/TransitionMap" },
+        "apiBindings": { "$ref": "#/$defs/ApiBindingMap" }
       }
+    },
+
+    "ApiBindingMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/ApiBinding" }
+    },
+
+    "ApiBinding": {
+      "type": "object",
+      "required": ["openapi"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "openapi": {
+          "type": "object",
+          "required": ["operationId", "specRef"],
+          "additionalProperties": false,
+          "properties": {
+            "operationId": { "type": "string", "description": "OpenAPI の operationId" },
+            "specRef": { "type": "string", "description": "OpenAPI 定義への参照（ローカル相対パス）" }
+          }
+        },
+        "request": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": { "$ref": "#/$defs/ExpressionMap" },
+            "query": { "$ref": "#/$defs/ExpressionMap" },
+            "body": { "$ref": "#/$defs/ExpressionMap" }
+          }
+        },
+        "response": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mapping": { "$ref": "#/$defs/ExpressionMap" }
+          }
+        }
+      }
+    },
+
+    "ExpressionMap": {
+      "type": "object",
+      "description": "画面項目 ⇔ API フィールドの対応。値は式文字列（例 {fields.name} / data.name）。v0.1 では未パース。",
+      "additionalProperties": { "type": "string" }
     },
 
     "StateMap": {
