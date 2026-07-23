@@ -1,0 +1,103 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+}
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.page {
+  width: min(56rem, calc(100% - 2rem));
+  margin: 3rem auto;
+}
+.eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+.page-head h1 {
+  margin: 0.2rem 0 0.4rem;
+}
+.muted {
+  color: #6b7280;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1rem 0 0;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+.meta div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.meta dt {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+.meta dd {
+  margin: 0;
+}
+table.fields {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+table.fields th,
+table.fields td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+table.fields thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  background: #f9fafb;
+}
+table.fields tbody tr:last-child td {
+  border-bottom: none;
+}
+ul.rules {
+  margin: 0;
+  padding-left: 1rem;
+}
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.badge-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+.badge-ng {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.badge-ref {
+  background: #e0e7ff;
+  color: #3730a3;
+  cursor: help;
+}

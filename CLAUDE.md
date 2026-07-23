@@ -19,9 +19,14 @@
 
 ## プロジェクト構成（npm workspaces モノレポ）
 
-- `packages/core` … パース・`$ref` 解決・2 段検証
-- `packages/cli` … `screen-spec validate`
+- `packages/core` … パース・`$ref` 解決（async/loader 注入）・2 段検証。
+  主エントリはブラウザ安全（fs 非依存）。fs 依存は `@screen-spec/core/node` に隔離。
+  スキーマは `schema/screen.schema.json` を JSON import でインライン化（バンドル可能）。
+- `packages/cli` … `screen-spec validate`（`@screen-spec/core/node` を使用）
 - `apps/docs` … 言語仕様ドキュメントサイト（Blume）。`npm run dev --workspace @screen-spec/docs`
+- `apps/viewer` … 画面詳細設計書ビューア（React+Vite の client SPA・Swagger UI 型）。
+  spec を fetch しブラウザで解決。`VIEWER_BASE` で Pages サブパスを切替。
 - `schema/` … JSON Schema（draft 2020-12）
-- 依存メモ: vitest は vite@5、Blume は vite@8 が必要。ルートに vite@8、`overrides` で
-  vitest のみ vite@5 に固定してある（これを崩すと Blume のビルドが壊れる）。
+- 依存メモ: vitest は vite@5、Blume/viewer は vite@8 が必要。ルートに vite@8、`overrides` で
+  vitest のみ vite@5 に固定してある（これを崩すと Blume/viewer のビルドが壊れる）。
+- GitHub Pages: deploy workflow が docs（ルート）と viewer（`/viewer/`）を1アーティファクトに統合。
