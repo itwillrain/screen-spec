@@ -256,3 +256,48 @@ screen:
     expect(r.warnings.some((w) => w.stage === "openapi")).toBe(true);
   });
 });
+
+describe("compose（明示合成）", () => {
+  const BASE = "https://ex.test/";
+  const common = `specVersion: "0.1"
+components:
+  fields:
+    Base:
+      label: ベース
+      type: text
+      required: true`;
+  const loader: DocumentLoader = (uri) => {
+    const name = uri.slice(BASE.length).split("#")[0];
+    if (name === "common.yaml") return common;
+    throw new Error(`404 ${uri}`);
+  };
+
+  it("compose がマージし、兄弟キーが最優先で上書きする", async () => {
+    const screenText = `specVersion: "0.1"
+screen:
+  id: s
+  name: S
+  fields:
+    f:
+      compose:
+        - $ref: "./common.yaml#/components/fields/Base"
+      required: false`;
+    const raw = parseYaml(screenText);
+    const resolved = (await resolveRefs(raw, `${BASE}s.yaml`, loader)) as any;
+    expect(resolved.screen.fields.f).toEqual({ label: "ベース", type: "text", required: false });
+  });
+
+  it("compose を使った画面が検証を通る", async () => {
+    const screenText = `specVersion: "0.1"
+screen:
+  id: s
+  name: S
+  fields:
+    f:
+      compose:
+        - $ref: "./common.yaml#/components/fields/Base"
+      label: 上書きラベル`;
+    const result = await validateSpec(screenText, `${BASE}s.yaml`, loader);
+    expect(result.valid).toBe(true);
+  });
+});
