@@ -1,7 +1,9 @@
+// ブラウザ安全な主エントリ（node:fs に依存しない）。
+// Node 専用の fs ローダー・validateDocument は "@screen-spec/core/node" を参照。
 export { parseYaml } from "./parse.js";
-export { resolveRefs, findResidualRefs, RefError } from "./resolve.js";
+export { resolveRefs, findResidualRefs, RefError, type DocumentLoader } from "./resolve.js";
 export {
-  validateDocument,
+  validateSpec,
   type ValidateResult,
   type ValidationIssue,
   type ValidationStage,

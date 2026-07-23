@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 import { resolve as resolvePath } from "node:path";
-import { validateDocument } from "@screen-spec/core";
+import { validateDocument } from "@screen-spec/core/node";
 
 function printUsage(): void {
   console.error("Usage: screen-spec validate <file.yaml> [<file.yaml> ...]");
 }
 
-function runValidate(files: string[]): number {
+async function runValidate(files: string[]): Promise<number> {
   if (files.length === 0) {
     printUsage();
     return 2;
   }
   let hadError = false;
   for (const file of files) {
-    const result = validateDocument(resolvePath(file));
+    const result = await validateDocument(resolvePath(file));
     if (result.valid) {
       console.log(`✓ ${file} is valid`);
     } else {
@@ -27,7 +27,7 @@ function runValidate(files: string[]): number {
   return hadError ? 1 : 0;
 }
 
-function main(): number {
+async function main(): Promise<number> {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
     case "validate":
@@ -44,4 +44,4 @@ function main(): number {
   }
 }
 
-process.exit(main());
+main().then((code) => process.exit(code));
