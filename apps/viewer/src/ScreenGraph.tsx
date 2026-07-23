@@ -1,8 +1,6 @@
 import { useEffect, useId, useState } from 'react'
-import mermaid from 'mermaid'
+import { getMermaid } from './mermaid-loader'
 import type { ScreenView } from './screen-view'
-
-mermaid.initialize({ startOnLoad: false, theme: 'neutral' })
 
 function safeId(id: string): string {
   return id.replace(/[^\w]/g, '_')
@@ -44,8 +42,8 @@ export function ScreenGraph({ screens }: { screens: ScreenView[] }) {
 
   useEffect(() => {
     let cancelled = false
-    mermaid
-      .render(`graph_${id}`, toMermaid(screens))
+    getMermaid()
+      .then((mermaid) => mermaid.render(`graph_${id}`, toMermaid(screens)))
       .then(({ svg }) => {
         if (!cancelled) setSvg(svg)
       })
