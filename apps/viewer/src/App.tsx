@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { buildScreenView, fetchLoader, type ScreenView } from './screen-view'
+import { StateDiagram } from './StateDiagram'
 
 // 既定で読み込む spec（public/specs 配下・base 相対）
 const DEFAULT_SPEC = 'specs/user-edit.screen.yaml'
@@ -76,6 +77,17 @@ export function App() {
         </dl>
       </header>
 
+      {screen.warnings.length > 0 ? (
+        <section>
+          <h2>警告</h2>
+          <ul className="warnings">
+            {screen.warnings.map((w, i) => (
+              <li key={i}>⚠ {w}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section>
         <h2>フィールド一覧</h2>
         <p className="muted">
@@ -127,6 +139,14 @@ export function App() {
           </tbody>
         </table>
       </section>
+
+      {screen.stateMachine ? (
+        <section>
+          <h2>状態遷移</h2>
+          <p className="muted">states / events から生成した状態遷移図です。</p>
+          <StateDiagram sm={screen.stateMachine} />
+        </section>
+      ) : null}
     </main>
   )
 }

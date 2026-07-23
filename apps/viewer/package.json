@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@screen-spec/core": "0.1.0",
+    "mermaid": "^11.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -17,12 +17,31 @@ export interface FieldView {
   origin?: string;
 }
 
+export interface StateNode {
+  key: string;
+  name?: string;
+  initial: boolean;
+}
+
+export interface StateEdge {
+  from: string;
+  to: string;
+  label?: string;
+}
+
+export interface StateMachineView {
+  states: StateNode[];
+  edges: StateEdge[];
+}
+
 export interface ScreenView {
   id: string;
   name: string;
   description?: string;
   route?: string;
   fields: FieldView[];
+  stateMachine?: StateMachineView;
+  warnings: string[];
   valid: boolean;
   issueCount: number;
   sourceUri: string;
@@ -36,6 +55,19 @@ interface RawField {
   validations?: Array<{ rule?: string; message?: string }>;
 }
 
+interface RawState {
+  name?: string;
+  initial?: boolean;
+}
+
+interface RawEvent {
+  from?: string;
+  to?: string;
+  trigger?: string;
+  onSuccess?: { to?: string };
+  onError?: { to?: string };
+}
+
 interface SpecDoc {
   screen?: {
     id?: string;
@@ -43,7 +75,28 @@ interface SpecDoc {
     description?: string;
     route?: string;
     fields?: Record<string, RawField>;
+    states?: Record<string, RawState>;
+    events?: Record<string, RawEvent>;
   };
+}
+
+function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefined {
+  const states = screen?.states;
+  if (!states || Object.keys(states).length === 0) return undefined;
+
+  const nodes: StateNode[] = Object.entries(states).map(([key, v]) => ({
+    key,
+    name: v?.name,
+    initial: v?.initial === true,
+  }));
+
+  const edges: StateEdge[] = [];
+  for (const [key, ev] of Object.entries(screen?.events ?? {})) {
+    if (ev.from && ev.to) edges.push({ from: ev.from, to: ev.to, label: ev.trigger ? `${key} (${ev.trigger})` : key });
+    if (ev.to && ev.onSuccess?.to) edges.push({ from: ev.to, to: ev.onSuccess.to, label: "onSuccess" });
+    if (ev.to && ev.onError?.to) edges.push({ from: ev.to, to: ev.onError.to, label: "onError" });
+  }
+  return { states: nodes, edges };
 }
 
 /**
@@ -85,6 +138,8 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     description: resolved.screen?.description,
     route: resolved.screen?.route,
     fields,
+    stateMachine: buildStateMachine(resolved.screen),
+    warnings: result.warnings.map((w) => w.message),
     valid: result.valid,
     issueCount: result.issues.length,
     sourceUri: entryUri,
