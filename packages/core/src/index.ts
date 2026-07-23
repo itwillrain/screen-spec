@@ -8,3 +8,8 @@ export {
   type ValidationIssue,
   type ValidationStage,
 } from "./validate.js";
+export {
+  analyzeScreen,
+  type Diagnostic,
+  type DiagnosticSeverity,
+} from "./analyze.js";

@@ -23,6 +23,9 @@ async function runValidate(files: string[]): Promise<number> {
         console.error(`    [${issue.stage}] ${issue.message}`);
       }
     }
+    for (const warning of result.warnings) {
+      console.warn(`    ⚠ [${warning.stage}] ${warning.message}`);
+    }
   }
   return hadError ? 1 : 0;
 }

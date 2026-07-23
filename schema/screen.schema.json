@@ -43,7 +43,92 @@
           "type": "array",
           "items": { "$ref": "#/$defs/Permission" }
         },
-        "fields": { "$ref": "#/$defs/FieldMap" }
+        "fields": { "$ref": "#/$defs/FieldMap" },
+        "states": { "$ref": "#/$defs/StateMap" },
+        "events": { "$ref": "#/$defs/EventMap" },
+        "transitions": { "$ref": "#/$defs/TransitionMap" }
+      }
+    },
+
+    "StateMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/State" }
+    },
+
+    "State": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "initial": { "type": "boolean" }
+      }
+    },
+
+    "EventMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/Event" }
+    },
+
+    "Event": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "trigger": { "type": "string" },
+        "target": { "type": "string" },
+        "from": { "type": "string", "description": "遷移元の状態キー" },
+        "to": { "type": "string", "description": "遷移先の状態キー" },
+        "action": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "apiCall": { "type": "string", "description": "apiBinding のキー（v0.1 では未検証）" }
+          }
+        },
+        "onSuccess": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "to": { "type": "string", "description": "成功時の遷移先状態キー" },
+            "navigate": { "type": "string", "description": "遷移先の画面 id" }
+          }
+        },
+        "onError": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "to": { "type": "string", "description": "失敗時の遷移先状態キー" }
+          }
+        }
+      }
+    },
+
+    "TransitionMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/Transition" }
+    },
+
+    "Transition": {
+      "type": "object",
+      "required": ["to"],
+      "additionalProperties": false,
+      "properties": {
+        "to": { "type": "string", "description": "遷移先の画面 id" },
+        "trigger": { "type": "string" },
+        "description": { "type": "string" }
       }
     },
 

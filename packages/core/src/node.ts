@@ -16,7 +16,7 @@ export async function validateDocument(filePath: string): Promise<ValidateResult
   try {
     text = readFileSync(abs, "utf8");
   } catch {
-    return { valid: false, issues: [{ stage: "raw", path: "/", message: `File not found: ${filePath}` }] };
+    return { valid: false, warnings: [], issues: [{ stage: "raw", path: "/", message: `File not found: ${filePath}` }] };
   }
   return validateSpec(text, pathToFileURL(abs).href, nodeFileLoader);
 }

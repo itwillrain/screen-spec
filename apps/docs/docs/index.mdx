@@ -27,6 +27,7 @@ YAML を主な記述形式とし、JSON Schema で検証できます。特定の
 - [はじめる](/getting-started) — インストールと検証コマンド
 - [ドキュメントの種類](/concepts/documents)
 - [`$ref` ガイド](/concepts/refs)
+- [状態遷移](/concepts/state-machine) — states / events / transitions
 - [要素リファレンス: Screen](/reference/screen)
 
 ## ビューア
@@ -34,9 +35,11 @@ YAML を主な記述形式とし、JSON Schema で検証できます。特定の
 設計書をブラウザで閲覧できる [ビューア](/screen-spec/viewer/)（Swagger UI 型）。
 spec を fetch し、その場で `$ref` を解決して表示します。
 
-## まだ実装していないもの（後続マイルストーン）
+## 実装済み・未実装
 
-- `states` / `events` / `transitions`（状態遷移・M3）
-- `apiBindings`（OpenAPI 連携・M4）
-- Viewer（M2 以降）
-- `compose`（allOf 相当・予約のみ）
+- ✅ `screen` / `fields` / `validations` / `options` / `permissions`（M1）
+- ✅ `$ref` コンポーネント再利用・2 段検証（M1）
+- ✅ Viewer（Swagger UI 型・M2）
+- ✅ `states` / `events` / `transitions`（状態遷移・M3）
+- ⬜ `apiBindings`（OpenAPI 連携・M4）
+- ⬜ `compose`（allOf 相当・予約のみ）

@@ -1,0 +1,40 @@
+---
+title: Event
+description: 状態間の遷移。
+---
+
+# Event
+
+状態間の遷移。`screen.events` マップの値として定義します（キーがイベント識別子・camelCase）。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `from` | string | ✔ | 遷移元の状態キー |
+| `to` | string | ✔ | 遷移先の状態キー（即時遷移先） |
+| `trigger` | string | | 契機。例 `click`, `screenLoad` |
+| `target` | string | | 対象 UI 要素 |
+| `action` | object | | `{ apiCall: <apiBinding キー> }`（v0.1 では未検証） |
+| `onSuccess` | object | | `{ to: <状態キー>, navigate: <画面 id> }` |
+| `onError` | object | | `{ to: <状態キー> }` |
+
+`from` / `to` / `onSuccess.to` / `onError.to` は `states` に存在するキーである必要があります
+（未定義ならエラー）。
+
+## 例
+
+```yaml
+events:
+  submit:
+    trigger: click
+    target: submitButton
+    from: editing
+    to: submitting
+    action: { apiCall: updateUser }
+    onSuccess: { to: viewing, navigate: user-list }
+    onError: { to: error }
+```
+
+`action` を伴う場合、`to`（例: `submitting`）を起点に `onSuccess.to` / `onError.to` へ分岐します。
+`apiCall` は [ApiBinding](/concepts/state-machine)（M4）への参照で、v0.1 では文字列として保持のみ。

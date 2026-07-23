@@ -1,0 +1,32 @@
+---
+title: State
+description: 画面が取りうる状態の定義。
+---
+
+# State
+
+画面が取りうる状態。`screen.states` マップの値として定義します（キーが状態識別子・camelCase）。
+
+## フィールド
+
+| キー | 型 | 説明 |
+|---|---|---|
+| `name` | string | 表示名 |
+| `description` | string | 補足説明 |
+| `initial` | boolean | 初期状態なら `true`（1 画面に 1 つ） |
+
+## 例
+
+```yaml
+states:
+  viewing:
+    name: 閲覧中
+    initial: true
+  editing:
+    name: 編集中
+  error:
+    name: エラー
+```
+
+- 記述順が並び順（[コレクションはマップ](/concepts/collections)）
+- 初期状態が 0 個/複数だと警告になります（[状態遷移](/concepts/state-machine)）

@@ -6,14 +6,15 @@ import * as ajvFormats from "ajv-formats";
 import schema from "../../../schema/screen.schema.json" with { type: "json" };
 import { parseYaml } from "./parse.js";
 import { findResidualRefs, resolveRefs, RefError, type DocumentLoader } from "./resolve.js";
+import { analyzeScreen } from "./analyze.js";
 
 // ESM/CJS 相互運用: 実行環境差を吸収して呼び出し可能な関数を得る。
 type AddFormatsFn = (ajv: unknown, opts?: unknown) => unknown;
 const addFormats = ((ajvFormats as unknown as { default?: AddFormatsFn }).default ??
   (ajvFormats as unknown as AddFormatsFn)) as AddFormatsFn;
 
-/** 検証の段（決定 #7: raw → 解決 → resolved の2段構え）。 */
-export type ValidationStage = "raw" | "resolve" | "resolved";
+/** 検証の段（決定 #7: raw → 解決 → resolved の2段 ＋ 意味解析 analyze）。 */
+export type ValidationStage = "raw" | "resolve" | "resolved" | "analyze";
 
 export interface ValidationIssue {
   stage: ValidationStage;
@@ -24,6 +25,8 @@ export interface ValidationIssue {
 export interface ValidateResult {
   valid: boolean;
   issues: ValidationIssue[];
+  /** 致命ではない指摘（案C: 到達不能・initial 未指定など）。 */
+  warnings: ValidationIssue[];
 }
 
 let cachedValidate: ValidateFunction | undefined;
@@ -68,12 +71,16 @@ export async function validateSpec(
   try {
     raw = parseYaml(rawText);
   } catch (e) {
-    return { valid: false, issues: [{ stage: "raw", path: "/", message: `YAML parse error: ${(e as Error).message}` }] };
+    return {
+      valid: false,
+      warnings: [],
+      issues: [{ stage: "raw", path: "/", message: `YAML parse error: ${(e as Error).message}` }],
+    };
   }
 
   // 段1: raw
   if (!validate(raw)) {
-    return { valid: false, issues: toIssues(validate.errors, "raw") };
+    return { valid: false, warnings: [], issues: toIssues(validate.errors, "raw") };
   }
 
   // 段2: 解決
@@ -82,7 +89,7 @@ export async function validateSpec(
     resolved = await resolveRefs(raw, entryUri, load);
   } catch (e) {
     if (e instanceof RefError) {
-      return { valid: false, issues: [{ stage: "resolve", path: "/", message: e.message }] };
+      return { valid: false, warnings: [], issues: [{ stage: "resolve", path: "/", message: e.message }] };
     }
     throw e;
   }
@@ -91,14 +98,26 @@ export async function validateSpec(
   if (residual.length > 0) {
     return {
       valid: false,
+      warnings: [],
       issues: residual.map((p) => ({ stage: "resolve", path: p, message: `Unresolved $ref remains at ${p}` })),
     };
   }
 
   // 段3: resolved
   if (!validate(resolved)) {
-    return { valid: false, issues: toIssues(validate.errors, "resolved") };
+    return { valid: false, warnings: [], issues: toIssues(validate.errors, "resolved") };
   }
 
-  return { valid: true, issues: [] };
+  // 段4: 意味解析（状態機械・案C）
+  const screen = (resolved as { screen?: unknown } | null)?.screen;
+  const diagnostics = screen === undefined ? [] : analyzeScreen(screen);
+  const issues: ValidationIssue[] = [];
+  const warnings: ValidationIssue[] = [];
+  for (const d of diagnostics) {
+    const item: ValidationIssue = { stage: "analyze", path: d.where ? `/screen/${d.where}` : "/screen", message: d.message };
+    if (d.severity === "error") issues.push(item);
+    else warnings.push(item);
+  }
+
+  return { valid: issues.length === 0, issues, warnings };
 }

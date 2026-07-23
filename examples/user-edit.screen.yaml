@@ -25,3 +25,48 @@ screen:
         $ref: "./common.yaml#/components/options/RoleOptions"
       permission:
         editRoles: [admin]
+
+  # 状態遷移（決定 #10・案C）。キーが状態/イベント識別子、記述順が並び順。
+  states:
+    viewing:
+      name: 閲覧中
+      initial: true
+    editing:
+      name: 編集中
+    submitting:
+      name: 送信中
+    error:
+      name: エラー
+
+  events:
+    edit:
+      trigger: click
+      target: editButton
+      from: viewing
+      to: editing
+    submit:
+      trigger: click
+      target: submitButton
+      from: editing
+      to: submitting
+      action:
+        apiCall: updateUser
+      onSuccess:
+        to: viewing
+        navigate: user-list
+      onError:
+        to: error
+    cancel:
+      trigger: click
+      target: cancelButton
+      from: editing
+      to: viewing
+    retry:
+      trigger: click
+      from: error
+      to: editing
+
+  transitions:
+    toUserList:
+      to: user-list
+      trigger: submit.onSuccess

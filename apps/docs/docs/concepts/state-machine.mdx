@@ -1,0 +1,60 @@
+---
+title: 状態遷移
+description: states / events / transitions（案C・中間の厳密さ）。
+---
+
+# 状態遷移
+
+画面が取りうる状態と、その間の遷移を記述します。v0.1 は **案C（中間）** の厳密さを採ります。
+
+- `states`：状態の定義（マップ。1 つを `initial: true`）
+- `events`：状態間の遷移（`from` / `to` 必須）
+- `transitions`：画面間の遷移（遷移先の画面 id）
+
+## 例
+
+```yaml
+states:
+  viewing: { name: 閲覧中, initial: true }
+  editing: { name: 編集中 }
+  submitting: { name: 送信中 }
+  error: { name: エラー }
+
+events:
+  edit:
+    trigger: click
+    from: viewing
+    to: editing
+  submit:
+    trigger: click
+    from: editing
+    to: submitting
+    action: { apiCall: updateUser }
+    onSuccess: { to: viewing, navigate: user-list }
+    onError: { to: error }
+  cancel:
+    from: editing
+    to: viewing
+  retry:
+    from: error
+    to: editing
+
+transitions:
+  toUserList:
+    to: user-list
+    trigger: submit.onSuccess
+```
+
+## 検証と診断（案C）
+
+`states`/`events` は JSON Schema 検証に加え、意味解析を行います。
+
+- **error**：`from` / `to` / `onSuccess.to` / `onError.to` が**未定義の状態**を参照している
+- **warning**：初期状態が 0 個または複数、**到達不能な状態**がある
+
+設計途中を許容するため、到達性などは **警告**に留めます（エラーにはしません）。
+
+## v0.1 で扱わないもの（案B の予約）
+
+ガード条件、入れ子/並行状態、履歴状態、遷移の副作用スクリプトは非スコープです。
+これらは将来、既存記述と後方互換な追加キー／オプトインで導入する余地を残しています。

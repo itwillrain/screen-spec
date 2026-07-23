@@ -1,0 +1,31 @@
+---
+title: Transition
+description: 画面間の遷移。
+---
+
+# Transition
+
+画面間（Screen → Screen）の遷移。`screen.transitions` マップの値として定義します
+（キーが遷移識別子・camelCase）。状態間の遷移は [Event](/reference/event) を使います。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `to` | string | ✔ | 遷移先の画面 id |
+| `trigger` | string | | 契機。例 `submit.onSuccess`, `cancelButton.click` |
+| `description` | string | | 補足説明 |
+
+## 例
+
+```yaml
+transitions:
+  toUserList:
+    to: user-list
+    trigger: submit.onSuccess
+```
+
+:::note
+v0.1 では `to`（遷移先の画面 id）の**存在検証は行いません**（単一ドキュメントで完結するため）。
+複数画面をまたいだ整合性チェックは後続で扱います。
+:::

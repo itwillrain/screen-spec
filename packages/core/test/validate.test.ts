@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
-import { resolveRefs, parseYaml, validateSpec, type DocumentLoader } from "../src/index.js";
+import { resolveRefs, parseYaml, validateSpec, analyzeScreen, type DocumentLoader } from "../src/index.js";
 import { validateDocument, nodeFileLoader, fileUri } from "../src/node.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -75,5 +75,50 @@ describe("browser-style resolution (HTTP base URL + custom loader)", () => {
     const entry = `${BASE}user-edit.screen.yaml`;
     const result = await validateSpec(await httpLoader(entry), entry, httpLoader);
     expect(result.valid).toBe(true);
+  });
+});
+
+describe("状態機械の解析（analyzeScreen・案C）", () => {
+  it("正しい状態機械は診断なし", () => {
+    const screen = {
+      states: {
+        viewing: { initial: true },
+        editing: {},
+      },
+      events: {
+        edit: { from: "viewing", to: "editing" },
+      },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("未定義状態への参照は error", () => {
+    const screen = {
+      states: { viewing: { initial: true } },
+      events: { go: { from: "viewing", to: "missing" } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.severity === "error" && d.code === "undefined-state-ref")).toBe(true);
+  });
+
+  it("初期状態なしは warning", () => {
+    const screen = { states: { a: {}, b: {} }, events: { go: { from: "a", to: "b" } } };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.severity === "warning" && d.code === "no-initial-state")).toBe(true);
+  });
+
+  it("到達不能な状態は warning", () => {
+    const screen = {
+      states: { a: { initial: true }, b: {}, orphan: {} },
+      events: { go: { from: "a", to: "b" } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unreachable-state" && d.where === "orphan")).toBe(true);
+  });
+
+  it("サンプル画面（状態遷移つき）は error なし・warning なし", async () => {
+    const result = await validateDocument(example("user-edit.screen.yaml"));
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual([]);
   });
 });
