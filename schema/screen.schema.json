@@ -57,6 +57,7 @@
           "type": "array",
           "items": { "$ref": "#/$defs/Permission" }
         },
+        "design": { "$ref": "#/$defs/Design" },
         "fields": { "$ref": "#/$defs/FieldMap" },
         "states": { "$ref": "#/$defs/StateMap" },
         "events": { "$ref": "#/$defs/EventMap" },
@@ -280,6 +281,40 @@
       "properties": {
         "value": true,
         "label": { "type": "string" }
+      }
+    },
+
+    "Design": {
+      "title": "デザイン参照",
+      "description": "画面のデザイン資産への参照（Figma・モックアップ画像・関連リンク）。UI 実装は伴わない。",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "figma": { "type": "string", "format": "uri", "description": "Figma などデザインファイルの URL" },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url"],
+            "additionalProperties": false,
+            "properties": {
+              "url": { "type": "string", "format": "uri", "description": "モックアップ画像の URL" },
+              "caption": { "type": "string" }
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "url": { "type": "string", "format": "uri" }
+            }
+          }
+        }
       }
     },
 

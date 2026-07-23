@@ -4,6 +4,19 @@ screen:
   name: ユーザー編集画面
   description: ユーザー情報を編集する画面
   route: /users/{userId}/edit
+
+  # デザイン参照（Figma・モックアップ画像・関連リンク）。UI 実装は伴わない。
+  design:
+    figma: https://www.figma.com/file/EXAMPLE/user-edit
+    images:
+      - url: https://placehold.co/640x400?text=user-edit+viewing
+        caption: 初期表示（閲覧中）
+      - url: https://placehold.co/640x400?text=user-edit+editing
+        caption: 編集中
+    links:
+      - label: デザインガイドライン
+        url: https://example.com/design-guide
+
   fields:
     # マップのキー（name / email / role）がフィールド識別子。記述順＝表示順（決定 #5, #6）。
     name:

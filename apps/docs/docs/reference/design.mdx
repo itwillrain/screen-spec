@@ -1,0 +1,39 @@
+---
+title: Design
+description: 画面のデザイン参照（Figma・モックアップ画像・関連リンク）。
+---
+
+# Design
+
+画面のデザイン資産への参照。`screen.design` に置きます。**UI 実装は伴いません**
+（screen-spec は特定の UI フレームワークに依存しないため、見た目そのものではなく参照を持ちます）。
+
+## フィールド
+
+| キー | 型 | 説明 |
+|---|---|---|
+| `figma` | string (uri) | Figma などデザインファイルの URL |
+| `images` | `{ url, caption? }[]` | モックアップ画像の URL と説明 |
+| `links` | `{ label?, url }[]` | 関連リンク（デザインガイド等） |
+
+外部の `http(s)` URL を指定できます（`$ref` の「ローカル相対のみ」とは別の仕組みです）。
+
+## 例
+
+```yaml
+screen:
+  id: user-edit
+  name: ユーザー編集画面
+  design:
+    figma: https://www.figma.com/file/EXAMPLE/user-edit
+    images:
+      - url: https://.../user-edit-viewing.png
+        caption: 初期表示（閲覧中）
+      - url: https://.../user-edit-editing.png
+        caption: 編集中
+    links:
+      - label: デザインガイドライン
+        url: https://example.com/design-guide
+```
+
+ビューアでは各画面の「デザイン」セクションに Figma リンク・画像・関連リンクを表示します。

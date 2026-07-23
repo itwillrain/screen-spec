@@ -32,6 +32,40 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
         </dl>
       </header>
 
+      {screen.design ? (
+        <section>
+          <h2>デザイン</h2>
+          {screen.design.figma ? (
+            <p>
+              <a href={screen.design.figma} target="_blank" rel="noreferrer">
+                Figma を開く ↗
+              </a>
+            </p>
+          ) : null}
+          {screen.design.images.length > 0 ? (
+            <div className="mockups">
+              {screen.design.images.map((img, i) => (
+                <figure key={i} className="mockup">
+                  <img src={img.url} alt={img.caption ?? `mockup ${i + 1}`} loading="lazy" />
+                  {img.caption ? <figcaption className="muted">{img.caption}</figcaption> : null}
+                </figure>
+              ))}
+            </div>
+          ) : null}
+          {screen.design.links.length > 0 ? (
+            <ul className="rules">
+              {screen.design.links.map((l, i) => (
+                <li key={i}>
+                  <a href={l.url} target="_blank" rel="noreferrer">
+                    {l.label ?? l.url} ↗
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
       {screen.warnings.length > 0 ? (
         <section>
           <h2>警告</h2>

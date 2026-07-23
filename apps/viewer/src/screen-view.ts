@@ -48,12 +48,19 @@ export interface TransitionView {
   trigger?: string;
 }
 
+export interface DesignView {
+  figma?: string;
+  images: Array<{ url: string; caption?: string }>;
+  links: Array<{ label?: string; url: string }>;
+}
+
 export interface ScreenView {
   id: string;
   name: string;
   description?: string;
   route?: string;
   fields: FieldView[];
+  design?: DesignView;
   stateMachine?: StateMachineView;
   apiBindings: ApiBindingView[];
   transitions: TransitionView[];
@@ -97,12 +104,19 @@ interface RawTransition {
   trigger?: string;
 }
 
+interface RawDesign {
+  figma?: string;
+  images?: Array<{ url?: string; caption?: string }>;
+  links?: Array<{ label?: string; url?: string }>;
+}
+
 interface SpecDoc {
   screen?: {
     id?: string;
     name?: string;
     description?: string;
     route?: string;
+    design?: RawDesign;
     fields?: Record<string, RawField>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
@@ -136,6 +150,18 @@ function buildApiBindings(screen: SpecDoc["screen"]): ApiBindingView[] {
       responseMappings,
     };
   });
+}
+
+function buildDesign(design: RawDesign | undefined): DesignView | undefined {
+  if (!design) return undefined;
+  const images = (design.images ?? [])
+    .filter((i) => typeof i.url === "string")
+    .map((i) => ({ url: String(i.url), caption: i.caption }));
+  const links = (design.links ?? [])
+    .filter((l) => typeof l.url === "string")
+    .map((l) => ({ label: l.label, url: String(l.url) }));
+  if (!design.figma && images.length === 0 && links.length === 0) return undefined;
+  return { figma: design.figma, images, links };
 }
 
 function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefined {
@@ -202,6 +228,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     description: resolved.screen?.description,
     route: resolved.screen?.route,
     fields,
+    design: buildDesign(resolved.screen?.design),
     stateMachine: buildStateMachine(resolved.screen),
     apiBindings: buildApiBindings(resolved.screen),
     transitions: Object.entries(resolved.screen?.transitions ?? {}).map(([key, t]) => ({
