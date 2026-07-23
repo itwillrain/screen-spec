@@ -14,4 +14,9 @@ export default defineConfig({
   navigation: {
     repo: true,
   },
+  deployment: {
+    // GitHub Pages（プロジェクトページ）: https://itwillrain.github.io/screen-spec/
+    site: "https://itwillrain.github.io",
+    base: "/screen-spec",
+  },
 });
