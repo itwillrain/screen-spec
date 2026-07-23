@@ -1,0 +1,40 @@
+---
+title: Screen
+description: 画面のトップレベル定義。
+---
+
+# Screen
+
+画面ドキュメントのトップレベル要素。`screen` の下に配置します。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `id` | string (kebab-case) | ✔ | 画面の識別子。例 `user-edit` |
+| `name` | string | ✔ | 画面名 |
+| `description` | string | | 補足説明 |
+| `route` | string | | 画面のルート。例 `/users/{userId}/edit` |
+| `permissions` | [Permission](/reference/permission)[] | | 画面レベルの権限 |
+| `fields` | map&lt;camelCase, [Field](/reference/field) \| $ref&gt; | | 項目のマップ（記述順＝表示順） |
+
+## 例
+
+```yaml
+specVersion: "0.1"
+screen:
+  id: user-edit
+  name: ユーザー編集画面
+  description: ユーザー情報を編集する画面
+  route: /users/{userId}/edit
+  fields:
+    name:
+      label: 氏名
+      type: text
+      required: true
+    email:
+      $ref: "./common.yaml#/components/fields/EmailField"
+```
+
+- `id` は kebab-case（[命名規則](/concepts/naming)）
+- `fields` は[マップ](/concepts/collections)。キーが camelCase の識別子

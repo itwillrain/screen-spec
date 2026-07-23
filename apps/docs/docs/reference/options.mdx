@@ -1,0 +1,49 @@
+---
+title: Options
+description: 選択肢の定義（select / radio など）。
+---
+
+# Options
+
+`select` や `radio` などの選択肢。`field.options` の値、または `components.options` の定義として使います。
+
+## Option の形
+
+各選択肢は次のオブジェクトです。
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `value` | any | ✔ | 値 |
+| `label` | string | ✔ | 表示ラベル |
+
+## 例
+
+```yaml
+components:
+  options:
+    RoleOptions:
+      - { value: admin, label: 管理者 }
+      - { value: editor, label: 編集者 }
+      - { value: viewer, label: 閲覧者 }
+```
+
+フィールドから選択肢リストを `$ref` で参照します（純粋参照）。
+
+```yaml
+role:
+  label: ロール
+  type: select
+  options:
+    $ref: "./common.yaml#/components/options/RoleOptions"
+```
+
+インライン記述も可能です。
+
+```yaml
+role:
+  label: ロール
+  type: select
+  options:
+    - { value: admin, label: 管理者 }
+    - { value: editor, label: 編集者 }
+```

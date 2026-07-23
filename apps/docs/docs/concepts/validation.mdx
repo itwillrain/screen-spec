@@ -1,0 +1,40 @@
+---
+title: 検証フロー
+description: raw → resolve → resolved の 2 段検証。
+---
+
+# 検証フロー
+
+`screen-spec validate <file>` は、次の 2 段（＋解決）でドキュメントを検証します。
+
+## 1. raw（生検証）
+
+パース直後の YAML をそのまま JSON Schema で検証します。この段では `$ref` は
+「純粋参照（`{$ref: string}`）」として許容されます。命名規則や必須項目の違反はここで検出されます。
+
+## 2. resolve（参照解決）
+
+全 `$ref` を再帰的に解決し、正規化済みドキュメントを生成します。この過程で次を担保します。
+
+- 純粋参照（兄弟キーがないこと）
+- ローカル相対パスのみ・リモート/絶対パス不可
+- 循環参照の検出
+- 参照先の存在（見つからない `$ref` はエラー）
+
+## 3. resolved（正規化後の検証）
+
+解決済みドキュメントを同じスキーマで再検証します。これにより、`$ref` が**型の合わない対象**を
+指していたケース（例: バリデーション用の位置に選択肢リストを参照）を検出できます。
+
+## 診断の読み方
+
+エラーには段（`raw` / `resolve` / `resolved`）が付きます。
+
+```
+✗ examples/invalid.screen.yaml is invalid
+    [raw] /screen/id must match pattern "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+    [raw] /screen/fields/Email must match exactly one schema in oneOf
+```
+
+`must match exactly one schema in oneOf` は、多くの場合 `$ref` に兄弟キーがある（純粋参照違反）か、
+要素の形が不正であることを示します。

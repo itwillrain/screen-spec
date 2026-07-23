@@ -1,0 +1,33 @@
+---
+title: 命名規則
+description: 用途別の 3 つの命名規則（Pascal / camel / kebab）。
+---
+
+# 命名規則
+
+screen-spec は識別子を**用途ごと**に命名規則で分けます。OpenAPI の慣習（定義名は PascalCase、
+ペイロードのプロパティは camelCase）に倣ったものです。規則は JSON Schema の `patternProperties`
+で機械的に強制されます。
+
+| 識別子の種類 | 例 | 規則 | 検証パターン |
+|---|---|---|---|
+| コンポーネント定義名（`components.*` のキー） | `EmailField`, `Required` | PascalCase | `^[A-Z][A-Za-z0-9]*$` |
+| コレクションのキー（`fields` 等） | `email`, `firstName` | camelCase | `^[a-z][A-Za-z0-9]*$` |
+| 画面 ID（`screen.id`） | `user-edit` | kebab-case | `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` |
+
+## なぜ分けるのか
+
+`$ref` のパスを見ただけで、それが「定義（Pascal）」か「実体（camel）」かを区別できます。
+
+```yaml
+# 定義（PascalCase）
+components:
+  fields:
+    EmailField: { label: メール, type: email }
+
+# 実体（camelCase キー）が定義を参照
+screen:
+  fields:
+    email:
+      $ref: "./common.yaml#/components/fields/EmailField"
+```

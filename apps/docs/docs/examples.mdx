@@ -1,0 +1,82 @@
+---
+title: Examples
+description: サンプル YAML（common.yaml と user-edit.screen.yaml）の解説。
+---
+
+# Examples
+
+リポジトリの `examples/` にある 2 ファイルは、v0.1 の機能を一通り示すサンプルです。
+
+## common.yaml（共通コンポーネント）
+
+再利用する部品を `components` に定義します。`EmailField` は内部 `$ref` で `Required` /
+`EmailFormat` を参照しています。
+
+```yaml
+specVersion: "0.1"
+components:
+  validations:
+    Required:
+      rule: required
+      message: 必須項目です
+    EmailFormat:
+      rule: pattern
+      value: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+      message: メールアドレスの形式が正しくありません
+  fields:
+    EmailField:
+      label: メールアドレス
+      type: email
+      required: true
+      validations:
+        - $ref: "#/components/validations/Required"
+        - $ref: "#/components/validations/EmailFormat"
+  options:
+    RoleOptions:
+      - { value: admin, label: 管理者 }
+      - { value: editor, label: 編集者 }
+      - { value: viewer, label: 閲覧者 }
+```
+
+## user-edit.screen.yaml（画面）
+
+`fields` はマップで、キー（`name` / `email` / `role`）が識別子・記述順が表示順です。
+`email` は外部コンポーネントを純粋参照、`role.options` は選択肢リストを参照しています。
+
+```yaml
+specVersion: "0.1"
+screen:
+  id: user-edit
+  name: ユーザー編集画面
+  description: ユーザー情報を編集する画面
+  route: /users/{userId}/edit
+  fields:
+    name:
+      label: 氏名
+      type: text
+      required: true
+      validations:
+        - $ref: "./common.yaml#/components/validations/Required"
+        - rule: maxLength
+          value: 50
+          message: 50文字以内で入力してください
+    email:
+      $ref: "./common.yaml#/components/fields/EmailField"
+    role:
+      label: ロール
+      type: select
+      options:
+        $ref: "./common.yaml#/components/options/RoleOptions"
+      permission:
+        editRoles: [admin]
+```
+
+## 検証してみる
+
+```bash
+npm run validate examples/user-edit.screen.yaml
+# ✓ examples/user-edit.screen.yaml is valid
+```
+
+不正例 `examples/invalid.screen.yaml` は、id 命名・キー命名・`$ref` 純粋性の違反を含み、
+検証に失敗します（[検証フロー](/concepts/validation)）。

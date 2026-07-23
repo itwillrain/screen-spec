@@ -1,0 +1,44 @@
+---
+title: ドキュメントの種類
+description: 画面ドキュメントと共通コンポーネントドキュメント。
+---
+
+# ドキュメントの種類
+
+すべての screen-spec ドキュメントは `specVersion: "0.1"` を必須で持ち、次のいずれかを含みます。
+
+## 画面ドキュメント
+
+`screen` を持つドキュメント。1 画面の詳細設計を記述します。
+
+```yaml
+specVersion: "0.1"
+screen:
+  id: user-edit
+  name: ユーザー編集画面
+  route: /users/{userId}/edit
+  fields:
+    name:
+      label: 氏名
+      type: text
+```
+
+## 共通コンポーネントドキュメント
+
+`components` を持つドキュメント（例: `common.yaml`）。複数画面で再利用する部品を定義します。
+
+```yaml
+specVersion: "0.1"
+components:
+  validations:
+    Required:
+      rule: required
+      message: 必須項目です
+```
+
+`screen` と `components` は同一ドキュメントに併存しても構いませんが、v0.1 のサンプルでは
+共通部品を `common.yaml` に分離しています。
+
+## specVersion
+
+`specVersion` は許容バージョンを列挙し、未知バージョンは検証エラーになります。v0.1 では `"0.1"` のみ有効です。

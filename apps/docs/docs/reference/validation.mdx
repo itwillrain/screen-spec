@@ -1,0 +1,44 @@
+---
+title: Validation
+description: フィールドの検証ルール。
+---
+
+# Validation
+
+フィールドの検証ルール。`field.validations` の要素、または `components.validations` の定義として使います。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `rule` | string | ✔ | ルール名。例 `required`, `maxLength`, `pattern` |
+| `value` | any | | ルールのパラメータ（`maxLength` の桁数、`pattern` の正規表現など） |
+| `message` | string | | 検証失敗時のメッセージ |
+
+## 例
+
+```yaml
+components:
+  validations:
+    Required:
+      rule: required
+      message: 必須項目です
+    EmailFormat:
+      rule: pattern
+      value: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+      message: メールアドレスの形式が正しくありません
+```
+
+インラインでも記述できます。
+
+```yaml
+validations:
+  - rule: maxLength
+    value: 50
+    message: 50文字以内で入力してください
+```
+
+:::note
+v0.1 では `rule` は自由文字列です。ルール名の語彙（許可される値の列挙）は後続バージョンで
+整備する予定です。
+:::

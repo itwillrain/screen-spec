@@ -1,0 +1,56 @@
+---
+title: $ref ガイド
+description: 純粋参照・ローカル相対パスのみ・バリエーションは別コンポーネント。
+---
+
+# `$ref` ガイド
+
+コンポーネントの再利用は `$ref` で行います。v0.1 から**必須の機能**であり、OpenAPI の
+`components` + `$ref` モデルを踏襲しています。
+
+## 純粋参照（マージ禁止）
+
+`$ref` を持つオブジェクトには **兄弟キーを書けません**。マージや上書きはできません（OpenAPI 3.0 互換）。
+
+```yaml
+# OK: 純粋参照
+email:
+  $ref: "./common.yaml#/components/fields/EmailField"
+```
+
+```yaml
+# NG: 兄弟キー併記 → 検証エラー
+email:
+  $ref: "./common.yaml#/components/fields/EmailField"
+  label: 上書きのつもり
+```
+
+## バリエーションは別コンポーネント
+
+「共通定義とほぼ同じだが少し違う版」が欲しい場合は、**上書きではなく別コンポーネントとして定義**します。
+
+```yaml
+components:
+  fields:
+    EmailField:
+      label: メールアドレス
+      type: email
+      required: true
+    OptionalEmailField:      # 別コンポーネントとして定義
+      label: メールアドレス（任意）
+      type: email
+      required: false
+```
+
+## 参照の形式
+
+- **内部参照**: `#/components/validations/Required`
+- **外部参照**: `./common.yaml#/components/fields/EmailField`
+
+v0.1 では **ローカル相対パスのみ**をサポートします。`http(s)://` などのリモート参照や
+絶対パスは許可されません。循環参照は検出されエラーになります。
+
+## 将来の合成（compose）
+
+`$ref` はマージしないため、共通化の圧力が高まった場合に備え、将来 `compose`（`allOf` 相当の
+「合成の明示宣言」）を導入する余地を予約しています。v0.1 では非スコープです。

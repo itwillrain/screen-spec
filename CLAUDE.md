@@ -16,3 +16,12 @@
 - `.knowledge/`（Obsidian・commit禁止）: 検討途中のメモ・スクラッチ。
 - `docs/decisions/`（リポジトリ・共有される正式記録）: 確定した設計判断。
 - `.knowledge` から `docs/decisions/` への昇格は、内容を個別に確認してから行う。
+
+## プロジェクト構成（npm workspaces モノレポ）
+
+- `packages/core` … パース・`$ref` 解決・2 段検証
+- `packages/cli` … `screen-spec validate`
+- `apps/docs` … 言語仕様ドキュメントサイト（Blume）。`npm run dev --workspace @screen-spec/docs`
+- `schema/` … JSON Schema（draft 2020-12）
+- 依存メモ: vitest は vite@5、Blume は vite@8 が必要。ルートに vite@8、`overrides` で
+  vitest のみ vite@5 に固定してある（これを崩すと Blume のビルドが壊れる）。

@@ -1,0 +1,44 @@
+---
+title: Field
+description: 画面上の項目定義。
+---
+
+# Field
+
+画面上の 1 項目。`fields` マップの値、または `components.fields` の定義として使います。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `label` | string | ✔ | 表示ラベル |
+| `type` | enum | ✔ | 項目型（下記） |
+| `required` | boolean | | 必須かどうか |
+| `validations` | ([Validation](/reference/validation) \| $ref)[] | | 検証ルール |
+| `options` | [Option](/reference/options)[] \| $ref | | 選択肢（`select` などで使用） |
+| `permission` | [Permission](/reference/permission) | | 項目レベルの権限 |
+
+## `type` の値
+
+`text` / `textarea` / `email` / `number` / `date` / `select` / `checkbox` / `radio`
+
+## 例
+
+```yaml
+name:
+  label: 氏名
+  type: text
+  required: true
+  validations:
+    - $ref: "./common.yaml#/components/validations/Required"
+    - rule: maxLength
+      value: 50
+      message: 50文字以内で入力してください
+```
+
+`$ref` で項目そのものを参照することもできます（純粋参照）。
+
+```yaml
+email:
+  $ref: "./common.yaml#/components/fields/EmailField"
+```

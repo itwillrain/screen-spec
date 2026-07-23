@@ -1,0 +1,15 @@
+{
+  "name": "@screen-spec/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "screen-spec 言語仕様ドキュメントサイト（Blume）",
+  "scripts": {
+    "dev": "blume dev",
+    "build": "blume build",
+    "doctor": "blume doctor"
+  },
+  "dependencies": {
+    "blume": "^1.1.3"
+  }
+}

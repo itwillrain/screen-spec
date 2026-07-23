@@ -1,0 +1,47 @@
+---
+title: Permission
+description: ロールベースの表示・編集可否。
+---
+
+# Permission
+
+ロールベースのアクセス設計情報。画面レベル（`screen.permissions`）と項目レベル（`field.permission`）で使えます。
+
+:::note
+v0.1 の権限は **設計情報としての記述**です。実行時の認可制御は行いません。
+:::
+
+## フィールド
+
+| キー | 型 | 説明 |
+|---|---|---|
+| `role` | string | 対象ロール |
+| `access` | enum | `full` / `readwrite` / `readonly` |
+| `fields` | string[] | 対象フィールドのキー一覧 |
+| `editRoles` | string[] | 編集を許可するロール一覧 |
+
+## 例（画面レベル）
+
+```yaml
+screen:
+  id: user-edit
+  name: ユーザー編集画面
+  permissions:
+    - role: admin
+      access: full
+    - role: editor
+      access: readwrite
+      fields: [name, email]
+    - role: viewer
+      access: readonly
+```
+
+## 例（項目レベル）
+
+```yaml
+role:
+  label: ロール
+  type: select
+  permission:
+    editRoles: [admin]
+```

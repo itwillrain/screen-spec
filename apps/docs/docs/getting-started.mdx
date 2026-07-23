@@ -1,0 +1,50 @@
+---
+title: はじめる
+description: screen-spec のインストールと検証コマンド。
+---
+
+# はじめる
+
+## インストール
+
+```bash
+git clone git@github.com:itwillrain/screen-spec.git
+cd screen-spec
+npm install
+```
+
+## 検証する
+
+`screen-spec validate` は YAML の設計書を検証します。
+
+```bash
+npm run validate examples/user-edit.screen.yaml
+```
+
+妥当な場合:
+
+```
+✓ examples/user-edit.screen.yaml is valid
+```
+
+不正な場合は、段（`raw` / `resolve` / `resolved`）ごとの診断が表示され、終了コードは `1` になります。
+
+```
+✗ examples/invalid.screen.yaml is invalid
+    [raw] /screen/id must match pattern "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+    [raw] /screen/fields/Email must match exactly one schema in oneOf
+```
+
+## テスト
+
+```bash
+npm test        # vitest
+npm run typecheck
+```
+
+## ドキュメントサイト（このサイト）
+
+```bash
+npm install
+npm run dev --workspace @screen-spec/docs   # ローカルプレビュー
+```

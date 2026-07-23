@@ -1,0 +1,37 @@
+---
+title: screen-spec
+description: 画面詳細設計書を記述する OpenAPI ライクな言語仕様（v0.1）。
+---
+
+# screen-spec
+
+**screen-spec** は、画面詳細設計書を記述するための OpenAPI ライクな言語仕様です。
+YAML を主な記述形式とし、JSON Schema で検証できます。特定の UI フレームワークに依存しません。
+
+## 目的
+
+- 人間と AI の双方が読み書きしやすい設計書フォーマット
+- 画面・項目・状態・イベント・バリデーション・権限・API 連携・画面遷移を表現
+- 実画面の自動生成ではなく、まず **設計書の記述と検証** を目指す（v0.1）
+- 将来的な拡張と後方互換性を考慮
+
+## v0.1 でできること
+
+- `screen` と `components` の記述（YAML）
+- `$ref` によるコンポーネント再利用（**純粋参照**、OpenAPI 互換）
+- JSON Schema（draft 2020-12）＋リゾルバによる **2 段検証**
+- `screen-spec validate <file>` CLI
+
+## まず読む
+
+- [はじめる](/getting-started) — インストールと検証コマンド
+- [ドキュメントの種類](/concepts/documents)
+- [`$ref` ガイド](/concepts/refs)
+- [要素リファレンス: Screen](/reference/screen)
+
+## まだ実装していないもの（後続マイルストーン）
+
+- `states` / `events` / `transitions`（状態遷移・M3）
+- `apiBindings`（OpenAPI 連携・M4）
+- Viewer（M2 以降）
+- `compose`（allOf 相当・予約のみ）
