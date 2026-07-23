@@ -56,6 +56,3 @@ screen:
         query:
           keyword: "{fields.keyword}"
           role: "{fields.role}"
-      response:
-        mapping:
-          items: data.users

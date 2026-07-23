@@ -63,4 +63,8 @@ v0.1 では式は**パース・検証しません**（文字列として保持�
 
 ## 診断
 
-`event.action.apiCall` が未定義の `apiBindings` を参照している場合は **warning** になります。
+- `event.action.apiCall` が未定義の `apiBindings` を参照 → **warning**
+- 式 `{fields.X}` が未定義フィールドを参照 → **warning**
+- 式 `{screen.route.Y}` が route に無いパラメータを参照 → **warning**
+- `response.mapping` のキーが未定義フィールド → **warning**
+- （複数画面時）`transition.to` / `onSuccess.navigate` が未知の画面 id を参照 → **warning**

@@ -1,7 +1,7 @@
-// 状態機械（states/events）の意味解析（決定 #10・案C）。
+// 状態機械（states/events）と API 連携式（apiBindings）の意味解析。
 //  - 未定義の状態参照は error（構造的な誤り）
-//  - initial の 0 個 / 複数、到達不能な状態は warning（設計途中を許容）
-// JSON Schema では表現できないクロス参照・到達性を補完する。
+//  - initial の 0 個 / 複数、到達不能な状態、未定義参照（apiBinding / フィールド / route）は warning
+// JSON Schema では表現できないクロス参照・到達性を補完する（決定 #10 / #11）。
 
 export type DiagnosticSeverity = "error" | "warning";
 
@@ -9,7 +9,7 @@ export interface Diagnostic {
   severity: DiagnosticSeverity;
   code: string;
   message: string;
-  /** 関連する状態/イベントのキー（任意） */
+  /** 関連する状態/イベント/バインディングのキー（任意） */
   where?: string;
 }
 
@@ -21,45 +21,122 @@ interface EventLike {
   onError?: { to?: unknown };
 }
 
+interface ApiBindingLike {
+  request?: {
+    path?: Record<string, unknown>;
+    query?: Record<string, unknown>;
+    body?: Record<string, unknown>;
+  };
+  response?: { mapping?: Record<string, unknown> };
+}
+
 interface ScreenLike {
+  route?: unknown;
+  fields?: Record<string, unknown>;
   states?: Record<string, { initial?: unknown }>;
   events?: Record<string, EventLike>;
-  apiBindings?: Record<string, unknown>;
+  apiBindings?: Record<string, ApiBindingLike>;
 }
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
 }
 
-/**
- * 解決済み screen オブジェクトを解析し、診断を返す。
- * states が無い画面では何も報告しない（状態遷移は任意）。
- */
-export function analyzeScreen(screen: unknown): Diagnostic[] {
-  if (screen === null || typeof screen !== "object") return [];
-  const s = screen as ScreenLike;
+/** route 文字列（例 /users/{userId}/edit）からパスパラメータ名を抽出する。 */
+function routeParams(route: unknown): Set<string> {
+  const set = new Set<string>();
+  const r = asString(route);
+  if (!r) return set;
+  for (const m of r.matchAll(/\{([^}]+)\}/g)) set.add(m[1]);
+  return set;
+}
+
+/** 式文字列内の {fields.X} / {screen.route.Y} 参照を検査する。 */
+function checkExpression(
+  expr: unknown,
+  fieldKeys: Set<string>,
+  params: Set<string>,
+  where: string,
+  diagnostics: Diagnostic[],
+): void {
+  const s = asString(expr);
+  if (!s) return;
+  for (const m of s.matchAll(/\{([^}]+)\}/g)) {
+    const inner = m[1].trim();
+    if (inner.startsWith("fields.")) {
+      const f = inner.slice("fields.".length);
+      if (!fieldKeys.has(f)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-field-ref",
+          message: `apiBinding "${where}" の式が未定義のフィールド "${f}" を参照しています。`,
+          where,
+        });
+      }
+    } else if (inner.startsWith("screen.route.")) {
+      const p = inner.slice("screen.route.".length);
+      if (!params.has(p)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-route-param",
+          message: `apiBinding "${where}" の式が route に無いパラメータ "${p}" を参照しています。`,
+          where,
+        });
+      }
+    }
+    // それ以外のプレフィックスは v0.1 では未検査
+  }
+}
+
+/** apiBindings の request/response 式・マッピングを検査する（決定 #11）。 */
+function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const bindings = s.apiBindings;
+  if (!bindings) return;
+  const fieldKeys = new Set(Object.keys(s.fields ?? {}));
+  const params = routeParams(s.route);
+
+  for (const [key, b] of Object.entries(bindings)) {
+    for (const scope of ["path", "query", "body"] as const) {
+      const entries = b.request?.[scope];
+      if (entries) {
+        for (const value of Object.values(entries)) {
+          checkExpression(value, fieldKeys, params, key, diagnostics);
+        }
+      }
+    }
+    // response.mapping のキーは画面フィールド。存在しなければ warning。
+    for (const field of Object.keys(b.response?.mapping ?? {})) {
+      if (!fieldKeys.has(field)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-field-in-mapping",
+          message: `apiBinding "${key}" の response.mapping が未定義のフィールド "${field}" を指しています。`,
+          where: key,
+        });
+      }
+    }
+  }
+}
+
+/** 状態機械（states/events）を解析する（決定 #10・案C）。 */
+function analyzeStateMachine(s: ScreenLike, diagnostics: Diagnostic[]): void {
   const states = s.states;
   const events = s.events ?? {};
 
-  // states が無ければ状態遷移解析はスキップ。events だけあるのは不整合。
   if (!states || typeof states !== "object") {
     if (Object.keys(events).length > 0) {
-      return [
-        {
-          severity: "error",
-          code: "events-without-states",
-          message: "events が定義されていますが states がありません。",
-        },
-      ];
+      diagnostics.push({
+        severity: "error",
+        code: "events-without-states",
+        message: "events が定義されていますが states がありません。",
+      });
     }
-    return [];
+    return;
   }
 
-  const diagnostics: Diagnostic[] = [];
   const stateKeys = new Set(Object.keys(states));
   const bindingKeys = new Set(Object.keys(s.apiBindings ?? {}));
 
-  // initial の個数
   const initials = Object.entries(states)
     .filter(([, v]) => v && typeof v === "object" && v.initial === true)
     .map(([k]) => k);
@@ -77,7 +154,6 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
     });
   }
 
-  // 遷移エッジを集めつつ、未定義の状態参照を検出する
   const edges: Array<[string, string]> = [];
   const checkRef = (key: string, field: string, value: unknown): string | undefined => {
     const name = asString(value);
@@ -100,11 +176,9 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
     const onSuccess = checkRef(key, "onSuccess.to", ev.onSuccess?.to);
     const onError = checkRef(key, "onError.to", ev.onError?.to);
     if (from && to) edges.push([from, to]);
-    // action の結果分岐は to（即時遷移先）を起点とみなす
     if (to && onSuccess) edges.push([to, onSuccess]);
     if (to && onError) edges.push([to, onError]);
 
-    // action.apiCall が未定義の apiBinding を参照していれば warning（決定 #11）
     const apiCall = asString(ev.action?.apiCall);
     if (apiCall !== undefined && !bindingKeys.has(apiCall)) {
       diagnostics.push({
@@ -116,7 +190,6 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
     }
   }
 
-  // 到達可能性（初期状態が1つ以上あるときのみ）。到達不能な状態は warning。
   if (initials.length >= 1) {
     const adjacency = new Map<string, string[]>();
     for (const [a, b] of edges) {
@@ -146,6 +219,65 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
       }
     }
   }
+}
 
+/**
+ * 解決済み screen オブジェクトを解析し、診断を返す。
+ * states / apiBindings が無い部分はそれぞれスキップする。
+ */
+export function analyzeScreen(screen: unknown): Diagnostic[] {
+  if (screen === null || typeof screen !== "object") return [];
+  const s = screen as ScreenLike;
+  const diagnostics: Diagnostic[] = [];
+  analyzeApiExpressions(s, diagnostics);
+  analyzeStateMachine(s, diagnostics);
+  return diagnostics;
+}
+
+interface ProjectScreenLike {
+  transitions?: Record<string, { to?: unknown }>;
+  events?: Record<string, { onSuccess?: { navigate?: unknown } }>;
+}
+
+/** プロジェクト（複数画面）の横断解析入力。 */
+export interface ProjectScreen {
+  id: string;
+  /** 解決済み screen オブジェクト */
+  screen: unknown;
+}
+
+/**
+ * 複数画面をまたいだ参照を検査する。
+ * transition.to / event.onSuccess.navigate が未知の画面 id を指す場合は warning。
+ */
+export function analyzeProject(screens: ProjectScreen[]): Diagnostic[] {
+  const ids = new Set(screens.map((s) => s.id));
+  const diagnostics: Diagnostic[] = [];
+  for (const { id, screen } of screens) {
+    if (screen === null || typeof screen !== "object") continue;
+    const s = screen as ProjectScreenLike;
+    for (const [key, t] of Object.entries(s.transitions ?? {})) {
+      const to = asString(t.to);
+      if (to && !ids.has(to)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-screen-ref",
+          message: `画面 "${id}" の transition "${key}" が未知の画面 "${to}" を参照しています。`,
+          where: id,
+        });
+      }
+    }
+    for (const [key, ev] of Object.entries(s.events ?? {})) {
+      const nav = asString(ev.onSuccess?.navigate);
+      if (nav && !ids.has(nav)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-screen-ref",
+          message: `画面 "${id}" の event "${key}" の navigate が未知の画面 "${nav}" を参照しています。`,
+          where: id,
+        });
+      }
+    }
+  }
   return diagnostics;
 }

@@ -10,6 +10,8 @@ export {
 } from "./validate.js";
 export {
   analyzeScreen,
+  analyzeProject,
   type Diagnostic,
   type DiagnosticSeverity,
+  type ProjectScreen,
 } from "./analyze.js";

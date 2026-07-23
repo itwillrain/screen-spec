@@ -2,8 +2,15 @@ import { describe, it, expect } from "vitest";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
-import { resolveRefs, parseYaml, validateSpec, analyzeScreen, type DocumentLoader } from "../src/index.js";
-import { validateDocument, nodeFileLoader, fileUri } from "../src/node.js";
+import {
+  resolveRefs,
+  parseYaml,
+  validateSpec,
+  analyzeScreen,
+  analyzeProject,
+  type DocumentLoader,
+} from "../src/index.js";
+import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const examples = resolve(here, "../../../examples");
@@ -139,5 +146,77 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
       apiBindings: { updateUser: {} },
     };
     expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("式が未定義フィールド/route パラメータを参照すると warning", () => {
+    const screen = {
+      route: "/users/{userId}",
+      fields: { name: {} },
+      apiBindings: {
+        save: {
+          request: { body: { name: "{fields.missing}", id: "{screen.route.other}" } },
+        },
+      },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-field-ref")).toBe(true);
+    expect(diags.some((d) => d.code === "unknown-route-param")).toBe(true);
+  });
+
+  it("response.mapping のキーが未定義フィールドなら warning", () => {
+    const screen = {
+      fields: { name: {} },
+      apiBindings: { get: { response: { mapping: { ghost: "data.x" } } } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-field-in-mapping")).toBe(true);
+  });
+
+  it("正しい式・マッピングは診断なし", () => {
+    const screen = {
+      route: "/users/{userId}",
+      fields: { name: {}, email: {} },
+      apiBindings: {
+        get: {
+          request: { path: { userId: "{screen.route.userId}" } },
+          response: { mapping: { name: "data.name", email: "data.email" } },
+        },
+      },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+});
+
+describe("横断解析（analyzeProject）", () => {
+  it("既知の画面への遷移は診断なし", () => {
+    const screens = [
+      { id: "a", screen: { transitions: { t: { to: "b" } } } },
+      { id: "b", screen: { transitions: { t: { to: "a" } } } },
+    ];
+    expect(analyzeProject(screens)).toEqual([]);
+  });
+
+  it("未知の画面への transition / navigate は warning", () => {
+    const screens = [
+      {
+        id: "a",
+        screen: {
+          transitions: { t: { to: "ghost" } },
+          events: { go: { onSuccess: { navigate: "missing" } } },
+        },
+      },
+    ];
+    const diags = analyzeProject(screens);
+    expect(diags.filter((d) => d.code === "unknown-screen-ref")).toHaveLength(2);
+  });
+
+  it("実サンプル 2 画面は横断診断なし", async () => {
+    const a = (await resolveDocument(example("user-edit.screen.yaml"))) as { screen?: { id: string } };
+    const b = (await resolveDocument(example("user-list.screen.yaml"))) as { screen?: { id: string } };
+    const diags = analyzeProject([
+      { id: a.screen!.id, screen: a.screen },
+      { id: b.screen!.id, screen: b.screen },
+    ]);
+    expect(diags).toEqual([]);
   });
 });

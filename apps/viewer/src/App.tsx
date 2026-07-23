@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { analyzeProject } from '@screen-spec/core'
 import { loadAllScreens, fetchLoader, type ScreenView } from './screen-view'
 import { ScreenDetail } from './ScreenDetail'
 import { ScreenGraph } from './ScreenGraph'
@@ -87,6 +88,22 @@ export function App() {
               <h1>画面一覧</h1>
               <p className="muted">{screens.length} 画面。左のナビから各画面の詳細を開けます。</p>
             </header>
+
+            {(() => {
+              const crossWarnings = analyzeProject(
+                screens.map((s) => ({ id: s.id, screen: s.resolvedScreen })),
+              )
+              return crossWarnings.length > 0 ? (
+                <section>
+                  <h2>横断警告</h2>
+                  <ul className="warnings">
+                    {crossWarnings.map((d, i) => (
+                      <li key={i}>⚠ {d.message}</li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null
+            })()}
 
             <section>
               <h2>画面間遷移</h2>
