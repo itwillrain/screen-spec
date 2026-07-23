@@ -50,15 +50,19 @@ events:
 
 ## 式（expression）
 
-`request` / `response` の値は式文字列です。
+`request` の値は**テンプレート式**です。リテラル文字列と `{参照}` の並びで表します。
 
 - `{screen.route.userId}` … ルートパラメータ
 - `{fields.name}` … 画面項目の値
-- `data.name` … API レスポンス内のパス
+- `/users/{screen.route.userId}` … リテラル＋補間の混在
+- `response.mapping` の値（`data.name` 等）は API レスポンス内のパス
+
+テンプレートはパースされ、参照が検証されます（`fields.X` が実在フィールドか、
+`screen.route.Y` が route パラメータか）。構文エラー・未対応の参照ルートは **warning**。
+評価（実データの当てはめ）は設計書のスコープ外です。
 
 :::note
-v0.1 では式は**パース・検証しません**（文字列として保持のみ）。式エンジンは後続で扱います。
-また `specRef` の OpenAPI 定義は**解決・検証しません**（参照のみ）。
+`specRef` の OpenAPI 定義は operationId の存在のみ検証します（型・スキーマの突合は行いません）。
 :::
 
 ## 診断

@@ -15,3 +15,11 @@ export {
   type DiagnosticSeverity,
   type ProjectScreen,
 } from "./analyze.js";
+export {
+  parseTemplate,
+  templateRefs,
+  type ParsedTemplate,
+  type ExprPart,
+  type RefExpr,
+  type LiteralExpr,
+} from "./expr.js";

@@ -3,6 +3,8 @@
 //  - initial の 0 個 / 複数、到達不能な状態、未定義参照（apiBinding / フィールド / route）は warning
 // JSON Schema では表現できないクロス参照・到達性を補完する（決定 #10 / #11）。
 
+import { parseTemplate } from "./expr.js";
+
 export type DiagnosticSeverity = "error" | "warning";
 
 export interface Diagnostic {
@@ -51,7 +53,7 @@ function routeParams(route: unknown): Set<string> {
   return set;
 }
 
-/** 式文字列内の {fields.X} / {screen.route.Y} 参照を検査する。 */
+/** テンプレート式内の参照（{fields.X} / {screen.route.Y}）と構文を検査する。 */
 function checkExpression(
   expr: unknown,
   fieldKeys: Set<string>,
@@ -61,30 +63,47 @@ function checkExpression(
 ): void {
   const s = asString(expr);
   if (!s) return;
-  for (const m of s.matchAll(/\{([^}]+)\}/g)) {
-    const inner = m[1].trim();
-    if (inner.startsWith("fields.")) {
-      const f = inner.slice("fields.".length);
-      if (!fieldKeys.has(f)) {
+  const { parts, errors } = parseTemplate(s);
+
+  for (const err of errors) {
+    diagnostics.push({
+      severity: "warning",
+      code: "expression-syntax",
+      message: `apiBinding "${where}" の式に構文エラー: ${err}`,
+      where,
+    });
+  }
+
+  for (const part of parts) {
+    if (part.type !== "ref") continue;
+    if (part.root === "fields") {
+      const f = part.path[0];
+      if (part.path.length !== 1 || !f || !fieldKeys.has(f)) {
         diagnostics.push({
           severity: "warning",
           code: "unknown-field-ref",
-          message: `apiBinding "${where}" の式が未定義のフィールド "${f}" を参照しています。`,
+          message: `apiBinding "${where}" の式が未定義のフィールド "{${part.raw}}" を参照しています。`,
           where,
         });
       }
-    } else if (inner.startsWith("screen.route.")) {
-      const p = inner.slice("screen.route.".length);
-      if (!params.has(p)) {
+    } else if (part.root === "screen" && part.path[0] === "route") {
+      const p = part.path[1];
+      if (part.path.length !== 2 || !p || !params.has(p)) {
         diagnostics.push({
           severity: "warning",
           code: "unknown-route-param",
-          message: `apiBinding "${where}" の式が route に無いパラメータ "${p}" を参照しています。`,
+          message: `apiBinding "${where}" の式が route に無いパラメータ "{${part.raw}}" を参照しています。`,
           where,
         });
       }
+    } else {
+      diagnostics.push({
+        severity: "warning",
+        code: "unknown-expression-ref",
+        message: `apiBinding "${where}" の式 "{${part.raw}}" は未対応の参照です。`,
+        where,
+      });
     }
-    // それ以外のプレフィックスは v0.1 では未検査
   }
 }
 

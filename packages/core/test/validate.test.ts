@@ -8,6 +8,8 @@ import {
   validateSpec,
   analyzeScreen,
   analyzeProject,
+  parseTemplate,
+  templateRefs,
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
@@ -299,5 +301,36 @@ screen:
       label: 上書きラベル`;
     const result = await validateSpec(screenText, `${BASE}s.yaml`, loader);
     expect(result.valid).toBe(true);
+  });
+});
+
+describe("式エンジン（parseTemplate）", () => {
+  it("リテラルと複数補間をパースする", () => {
+    const { parts, errors } = parseTemplate("/users/{screen.route.userId}/x{fields.name}");
+    expect(errors).toEqual([]);
+    expect(parts).toEqual([
+      { type: "literal", text: "/users/" },
+      { type: "ref", root: "screen", path: ["route", "userId"], raw: "screen.route.userId" },
+      { type: "literal", text: "/x" },
+      { type: "ref", root: "fields", path: ["name"], raw: "fields.name" },
+    ]);
+  });
+
+  it("templateRefs が参照のみを返す", () => {
+    expect(templateRefs("{fields.a}{fields.b}").map((r) => r.raw)).toEqual(["fields.a", "fields.b"]);
+  });
+
+  it("未閉じ括弧・空式は構文エラー", () => {
+    expect(parseTemplate("{fields.a").errors.length).toBeGreaterThan(0);
+    expect(parseTemplate("{}").errors.length).toBeGreaterThan(0);
+  });
+
+  it("未知ルートの参照は analyze で warning", () => {
+    const screen = {
+      fields: { name: {} },
+      apiBindings: { b: { request: { body: { x: "{ctx.user}" } } } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-expression-ref")).toBe(true);
   });
 });
