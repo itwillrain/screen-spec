@@ -220,3 +220,39 @@ describe("横断解析（analyzeProject）", () => {
     expect(diags).toEqual([]);
   });
 });
+
+describe("OpenAPI specRef 検証", () => {
+  const BASE = "https://ex.test/";
+  const api = `openapi: 3.1.0
+info: { title: t, version: 1.0.0 }
+paths:
+  /x:
+    get:
+      operationId: getIt`;
+  const screenFor = (opId: string) => `specVersion: "0.1"
+screen:
+  id: s
+  name: S
+  apiBindings:
+    a:
+      openapi: { operationId: ${opId}, specRef: ./api.yaml }`;
+  const loaderFor = (screenText: string): DocumentLoader => (uri) => {
+    const name = uri.slice(BASE.length);
+    if (name === "screen.yaml") return screenText;
+    if (name === "api.yaml") return api;
+    throw new Error(`404 ${uri}`);
+  };
+
+  it("operationId が存在すれば warning なし", async () => {
+    const text = screenFor("getIt");
+    const r = await validateSpec(text, `${BASE}screen.yaml`, loaderFor(text));
+    expect(r.valid).toBe(true);
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("operationId が無ければ openapi warning", async () => {
+    const text = screenFor("nope");
+    const r = await validateSpec(text, `${BASE}screen.yaml`, loaderFor(text));
+    expect(r.warnings.some((w) => w.stage === "openapi")).toBe(true);
+  });
+});

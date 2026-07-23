@@ -13,8 +13,8 @@ type AddFormatsFn = (ajv: unknown, opts?: unknown) => unknown;
 const addFormats = ((ajvFormats as unknown as { default?: AddFormatsFn }).default ??
   (ajvFormats as unknown as AddFormatsFn)) as AddFormatsFn;
 
-/** 検証の段（決定 #7: raw → 解決 → resolved の2段 ＋ 意味解析 analyze）。 */
-export type ValidationStage = "raw" | "resolve" | "resolved" | "analyze";
+/** 検証の段（決定 #7: raw → 解決 → resolved の2段 ＋ 意味解析 analyze ＋ openapi 参照）。 */
+export type ValidationStage = "raw" | "resolve" | "resolved" | "analyze" | "openapi";
 
 export interface ValidationIssue {
   stage: ValidationStage;
@@ -48,6 +48,71 @@ function toIssues(errors: ErrorObject[] | null | undefined, stage: ValidationSta
     path: e.instancePath || "/",
     message: `${e.instancePath || "/"} ${e.message ?? "is invalid"}`.trim(),
   }));
+}
+
+const HTTP_METHODS = ["get", "put", "post", "delete", "patch", "options", "head", "trace"];
+
+/** OpenAPI ドキュメントから operationId の集合を収集する。 */
+function collectOperationIds(openapi: unknown): Set<string> {
+  const ids = new Set<string>();
+  const paths = (openapi as { paths?: unknown } | null)?.paths;
+  if (paths && typeof paths === "object") {
+    for (const item of Object.values(paths as Record<string, unknown>)) {
+      if (item && typeof item === "object") {
+        for (const method of HTTP_METHODS) {
+          const op = (item as Record<string, unknown>)[method];
+          const opId = (op as { operationId?: unknown } | undefined)?.operationId;
+          if (typeof opId === "string") ids.add(opId);
+        }
+      }
+    }
+  }
+  return ids;
+}
+
+/** apiBindings の specRef を解決し、operationId の存在を検証する（決定 #11・warning）。 */
+async function checkOpenApiRefs(
+  screen: unknown,
+  entryUri: string,
+  load: DocumentLoader,
+): Promise<ValidationIssue[]> {
+  const bindings = (screen as { apiBindings?: Record<string, unknown> } | null)?.apiBindings;
+  if (!bindings || typeof bindings !== "object") return [];
+
+  const warnings: ValidationIssue[] = [];
+  const opIdCache = new Map<string, Set<string> | null>(); // null = 取得失敗
+
+  for (const [key, binding] of Object.entries(bindings)) {
+    const openapi = (binding as { openapi?: { operationId?: unknown; specRef?: unknown } }).openapi;
+    const specRef = typeof openapi?.specRef === "string" ? openapi.specRef : undefined;
+    const operationId = typeof openapi?.operationId === "string" ? openapi.operationId : undefined;
+    if (!specRef || !operationId) continue;
+
+    const targetUri = new URL(specRef, entryUri).href;
+    if (!opIdCache.has(targetUri)) {
+      try {
+        const text = await load(targetUri);
+        opIdCache.set(targetUri, collectOperationIds(parseYaml(text)));
+      } catch {
+        opIdCache.set(targetUri, null);
+      }
+    }
+    const ids = opIdCache.get(targetUri);
+    if (ids === null) {
+      warnings.push({
+        stage: "openapi",
+        path: `/screen/apiBindings/${key}`,
+        message: `apiBinding "${key}" の specRef を取得できません: ${specRef}`,
+      });
+    } else if (ids && !ids.has(operationId)) {
+      warnings.push({
+        stage: "openapi",
+        path: `/screen/apiBindings/${key}`,
+        message: `apiBinding "${key}" の operationId "${operationId}" が ${specRef} に見つかりません。`,
+      });
+    }
+  }
+  return warnings;
 }
 
 /**
@@ -108,7 +173,7 @@ export async function validateSpec(
     return { valid: false, warnings: [], issues: toIssues(validate.errors, "resolved") };
   }
 
-  // 段4: 意味解析（状態機械・案C）
+  // 段4: 意味解析（状態機械・式・案C）
   const screen = (resolved as { screen?: unknown } | null)?.screen;
   const diagnostics = screen === undefined ? [] : analyzeScreen(screen);
   const issues: ValidationIssue[] = [];
@@ -117,6 +182,11 @@ export async function validateSpec(
     const item: ValidationIssue = { stage: "analyze", path: d.where ? `/screen/${d.where}` : "/screen", message: d.message };
     if (d.severity === "error") issues.push(item);
     else warnings.push(item);
+  }
+
+  // 段5: OpenAPI 参照（specRef の operationId 検証）
+  if (screen !== undefined) {
+    warnings.push(...(await checkOpenApiRefs(screen, entryUri, load)));
   }
 
   return { valid: issues.length === 0, issues, warnings };
