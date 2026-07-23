@@ -5,6 +5,33 @@ info:
   title: Users API
   version: 1.0.0
 paths:
+  /users:
+    get:
+      operationId: listUsers
+      parameters:
+        - name: keyword
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          type: object
   /users/{userId}:
     get:
       operationId: getUserById

@@ -42,6 +42,12 @@ export interface ApiBindingView {
   responseMappings: Array<{ field: string; expr: string }>;
 }
 
+export interface TransitionView {
+  key: string;
+  to: string;
+  trigger?: string;
+}
+
 export interface ScreenView {
   id: string;
   name: string;
@@ -50,6 +56,7 @@ export interface ScreenView {
   fields: FieldView[];
   stateMachine?: StateMachineView;
   apiBindings: ApiBindingView[];
+  transitions: TransitionView[];
   warnings: string[];
   valid: boolean;
   issueCount: number;
@@ -83,6 +90,11 @@ interface RawApiBinding {
   response?: { mapping?: Record<string, string> };
 }
 
+interface RawTransition {
+  to?: string;
+  trigger?: string;
+}
+
 interface SpecDoc {
   screen?: {
     id?: string;
@@ -93,6 +105,7 @@ interface SpecDoc {
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
     apiBindings?: Record<string, RawApiBinding>;
+    transitions?: Record<string, RawTransition>;
   };
 }
 
@@ -150,8 +163,14 @@ function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefi
 export async function buildScreenView(entryUri: string, load: DocumentLoader): Promise<ScreenView> {
   const rawText = await load(entryUri);
   const raw = parseYaml(rawText) as SpecDoc;
-  const resolved = (await resolveRefs(raw, entryUri, load)) as SpecDoc;
   const result = await validateSpec(rawText, entryUri, load);
+  // 不正な画面でも表示できるよう、解決に失敗したら未解決の raw にフォールバックする。
+  let resolved: SpecDoc = raw;
+  try {
+    resolved = (await resolveRefs(raw, entryUri, load)) as SpecDoc;
+  } catch {
+    resolved = raw;
+  }
 
   const rawFields = raw.screen?.fields ?? {};
   const resolvedFields = resolved.screen?.fields ?? {};
@@ -183,11 +202,33 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     fields,
     stateMachine: buildStateMachine(resolved.screen),
     apiBindings: buildApiBindings(resolved.screen),
+    transitions: Object.entries(resolved.screen?.transitions ?? {}).map(([key, t]) => ({
+      key,
+      to: String(t.to ?? ""),
+      trigger: t.trigger,
+    })),
     warnings: result.warnings.map((w) => w.message),
     valid: result.valid,
     issueCount: result.issues.length,
     sourceUri: entryUri,
   };
+}
+
+/**
+ * マニフェスト（spec ファイル名の配列）を読み、全画面のビューモデルを構築する。
+ * @param specsBaseUri specs ディレクトリの絶対 URL（末尾スラッシュ）
+ */
+export async function loadAllScreens(
+  specsBaseUri: string,
+  load: DocumentLoader,
+): Promise<ScreenView[]> {
+  const manifestText = await load(new URL("manifest.json", specsBaseUri).href);
+  const files = JSON.parse(manifestText) as string[];
+  const screens = await Promise.all(
+    files.map((file) => buildScreenView(new URL(file, specsBaseUri).href, load)),
+  );
+  // 記述順を保ちつつ id で安定させる
+  return screens;
 }
 
 /** ブラウザ向けの fetch ローダー。 */

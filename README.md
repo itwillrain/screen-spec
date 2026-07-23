@@ -48,6 +48,7 @@ npm run build --workspace @screen-spec/docs   # 静的ビルド（apps/docs/dist
 ## ビューア（Swagger UI 型）
 
 設計書を閲覧するクライアント SPA。ブラウザが spec(YAML) を fetch し、その場で `$ref` 解決・検証して表示する。
+複数画面（`*.screen.yaml`）を一覧し、各画面の項目・状態遷移図・API 連携、および**画面間遷移図**を表示する。
 
 ```bash
 npm run dev   --workspace @screen-spec/viewer   # ローカルプレビュー
@@ -56,7 +57,11 @@ npm run build --workspace @screen-spec/viewer   # 静的ビルド（apps/viewer/
 
 GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配置（deploy workflow が統合）。
 
-## ステータス
+## ステータス（v0.1）
 
-M0＋M1 完了（スキーマ・core・CLI・サンプル・ドキュメントサイト）。
-状態遷移（`states`/`events`）・API 連携（`apiBindings`）・Viewer は後続マイルストーン。
+- ✅ M1: スキーマ・core・CLI・`$ref`・2 段検証
+- ✅ M2: Viewer（Swagger UI 型・クライアント解決）
+- ✅ M3: `states` / `events` / `transitions`（状態機械解析・Mermaid 図）
+- ✅ M4: `apiBindings`（OpenAPI 参照＋項目マッピング）
+- ✅ M5: 複数画面対応・画面間遷移可視化
+- ⬜ 今後: `compose`（allOf 相当）、式エンジン、OpenAPI 解決、複数画面の横断検証

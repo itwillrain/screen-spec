@@ -1,0 +1,61 @@
+specVersion: "0.1"
+screen:
+  id: user-list
+  name: ユーザー一覧画面
+  description: ユーザーを検索・一覧する画面
+  route: /users
+  fields:
+    keyword:
+      label: 検索キーワード
+      type: text
+      validations:
+        - $ref: "./common.yaml#/components/validations/Required"
+    role:
+      label: ロール絞り込み
+      type: select
+      options:
+        $ref: "./common.yaml#/components/options/RoleOptions"
+
+  states:
+    loading:
+      name: 読み込み中
+      initial: true
+    loaded:
+      name: 表示中
+    empty:
+      name: 該当なし
+
+  events:
+    onLoaded:
+      trigger: dataLoaded
+      from: loading
+      to: loaded
+    onEmpty:
+      trigger: dataEmpty
+      from: loading
+      to: empty
+    search:
+      trigger: submit
+      target: searchButton
+      from: loaded
+      to: loading
+      action:
+        apiCall: listUsers
+
+  transitions:
+    toUserEdit:
+      to: user-edit
+      trigger: rowClick
+
+  apiBindings:
+    listUsers:
+      openapi:
+        operationId: listUsers
+        specRef: ./openapi/users.yaml
+      request:
+        query:
+          keyword: "{fields.keyword}"
+          role: "{fields.role}"
+      response:
+        mapping:
+          items: data.users
