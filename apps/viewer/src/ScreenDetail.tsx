@@ -41,6 +41,43 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
         </dl>
       </header>
 
+      {screen.params ? (
+        <section>
+          <h2>パラメータ</h2>
+          {(['path', 'query'] as const).map((kind) =>
+            screen.params && screen.params[kind].length > 0 ? (
+              <div key={kind}>
+                <h3>{kind}</h3>
+                <table className="fields">
+                  <thead>
+                    <tr>
+                      <th>名前</th>
+                      <th>型</th>
+                      <th>必須</th>
+                      <th>既定</th>
+                      <th>候補</th>
+                      <th>説明</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {screen.params[kind].map((p) => (
+                      <tr key={p.name}>
+                        <td><code>{p.name}</code></td>
+                        <td>{p.type ? <code>{p.type}</code> : <span className="muted">—</span>}</td>
+                        <td>{p.required ? '✔' : ''}</td>
+                        <td>{p.default !== undefined ? <code>{String(p.default)}</code> : <span className="muted">—</span>}</td>
+                        <td>{p.enum ? <code>{p.enum.map(String).join(', ')}</code> : <span className="muted">—</span>}</td>
+                        <td>{p.description ?? <span className="muted">—</span>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null,
+          )}
+        </section>
+      ) : null}
+
       {screen.design ? (
         <section>
           <h2>デザイン</h2>

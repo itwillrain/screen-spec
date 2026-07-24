@@ -53,6 +53,7 @@
         "name": { "type": "string" },
         "description": { "type": "string" },
         "route": { "type": "string" },
+        "params": { "$ref": "#/$defs/Params" },
         "permissions": {
           "type": "array",
           "items": { "$ref": "#/$defs/Permission" }
@@ -292,6 +293,40 @@
       "properties": {
         "value": true,
         "label": { "type": "string" }
+      }
+    },
+
+    "Params": {
+      "title": "画面パラメータ（path / query）",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/ParamMap" },
+        "query": { "$ref": "#/$defs/ParamMap" }
+      }
+    },
+
+    "ParamMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/Param" }
+    },
+
+    "Param": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "integer", "boolean"]
+        },
+        "required": { "type": "boolean" },
+        "default": true,
+        "description": { "type": "string" },
+        "enum": { "type": "array" }
       }
     },
 

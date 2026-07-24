@@ -384,3 +384,38 @@ describe("条件式（parseCondition / visibleWhen）", () => {
     expect(analyzeScreen(screen)).toEqual([]);
   });
 });
+
+describe("params（path / query）", () => {
+  it("route プレースホルダと path 宣言が一致すれば診断なし", () => {
+    const screen = {
+      route: "/users/{userId}",
+      params: { path: { userId: { type: "string" } } },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("route に無い path 宣言・未宣言のプレースホルダは warning", () => {
+    const screen = {
+      route: "/users/{userId}",
+      params: { path: { ghost: { type: "string" } } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "path-param-not-in-route")).toBe(true);
+    expect(diags.some((d) => d.code === "undeclared-path-param")).toBe(true);
+  });
+
+  it("式が宣言済み query パラメータを参照すれば診断なし、未宣言なら warning", () => {
+    const ok = {
+      params: { query: { tab: { type: "string" } } },
+      fields: { a: {} },
+      apiBindings: { b: { request: { query: { tab: "{screen.query.tab}" } } } },
+    };
+    expect(analyzeScreen(ok)).toEqual([]);
+
+    const bad = {
+      fields: { a: {} },
+      apiBindings: { b: { request: { query: { tab: "{screen.query.missing}" } } } },
+    };
+    expect(analyzeScreen(bad).some((d) => d.code === "unknown-query-param")).toBe(true);
+  });
+});

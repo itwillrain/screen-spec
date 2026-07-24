@@ -38,6 +38,7 @@ interface LayoutLike {
 
 interface ScreenLike {
   route?: unknown;
+  params?: { path?: Record<string, unknown>; query?: Record<string, unknown> };
   fields?: Record<string, unknown>;
   layout?: LayoutLike;
   states?: Record<string, { initial?: unknown }>;
@@ -49,6 +50,15 @@ function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
 }
 
+/** path/query パラメータ名の集合を得る（route プレースホルダ ∪ 宣言）。 */
+function paramSets(s: ScreenLike): { pathParams: Set<string>; queryParams: Set<string> } {
+  const pathParams = routeParams(s.route);
+  if (s.params?.path) for (const k of Object.keys(s.params.path)) pathParams.add(k);
+  const queryParams = new Set<string>();
+  if (s.params?.query) for (const k of Object.keys(s.params.query)) queryParams.add(k);
+  return { pathParams, queryParams };
+}
+
 /** route 文字列（例 /users/{userId}/edit）からパスパラメータ名を抽出する。 */
 function routeParams(route: unknown): Set<string> {
   const set = new Set<string>();
@@ -58,17 +68,17 @@ function routeParams(route: unknown): Set<string> {
   return set;
 }
 
-/** 参照（fields.X / screen.route.Y）が実在するか検査する（テンプレート・条件式で共用）。 */
-function checkRefPart(
-  ref: RefExpr,
-  fieldKeys: Set<string>,
-  params: Set<string>,
-  where: string,
-  diagnostics: Diagnostic[],
-): void {
+interface RefContext {
+  fieldKeys: Set<string>;
+  pathParams: Set<string>;
+  queryParams: Set<string>;
+}
+
+/** 参照（fields.X / screen.route.Y / screen.query.Y）が実在するか検査する。 */
+function checkRefPart(ref: RefExpr, ctx: RefContext, where: string, diagnostics: Diagnostic[]): void {
   if (ref.root === "fields") {
     const f = ref.path[0];
-    if (ref.path.length !== 1 || !f || !fieldKeys.has(f)) {
+    if (ref.path.length !== 1 || !f || !ctx.fieldKeys.has(f)) {
       diagnostics.push({
         severity: "warning",
         code: "unknown-field-ref",
@@ -78,11 +88,21 @@ function checkRefPart(
     }
   } else if (ref.root === "screen" && ref.path[0] === "route") {
     const p = ref.path[1];
-    if (ref.path.length !== 2 || !p || !params.has(p)) {
+    if (ref.path.length !== 2 || !p || !ctx.pathParams.has(p)) {
       diagnostics.push({
         severity: "warning",
         code: "unknown-route-param",
-        message: `"${where}" の式が route に無いパラメータ "${ref.raw}" を参照しています。`,
+        message: `"${where}" の式が未定義の path パラメータ "${ref.raw}" を参照しています。`,
+        where,
+      });
+    }
+  } else if (ref.root === "screen" && ref.path[0] === "query") {
+    const p = ref.path[1];
+    if (ref.path.length !== 2 || !p || !ctx.queryParams.has(p)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unknown-query-param",
+        message: `"${where}" の式が未定義の query パラメータ "${ref.raw}" を参照しています。`,
         where,
       });
     }
@@ -96,14 +116,8 @@ function checkRefPart(
   }
 }
 
-/** テンプレート式内の参照（{fields.X} / {screen.route.Y}）と構文を検査する。 */
-function checkExpression(
-  expr: unknown,
-  fieldKeys: Set<string>,
-  params: Set<string>,
-  where: string,
-  diagnostics: Diagnostic[],
-): void {
+/** テンプレート式内の参照（{fields.X} / {screen.route.Y} / {screen.query.Y}）と構文を検査する。 */
+function checkExpression(expr: unknown, ctx: RefContext, where: string, diagnostics: Diagnostic[]): void {
   const s = asString(expr);
   if (!s) return;
   const { parts, errors } = parseTemplate(s);
@@ -116,7 +130,35 @@ function checkExpression(
     });
   }
   for (const part of parts) {
-    if (part.type === "ref") checkRefPart(part, fieldKeys, params, where, diagnostics);
+    if (part.type === "ref") checkRefPart(part, ctx, where, diagnostics);
+  }
+}
+
+/** route のプレースホルダと params.path 宣言の整合を検査する。 */
+function analyzeParams(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const declaredPath = s.params?.path;
+  if (!declaredPath) return;
+  const routePlaceholders = routeParams(s.route);
+  const declaredKeys = new Set(Object.keys(declaredPath));
+  for (const key of declaredKeys) {
+    if (!routePlaceholders.has(key)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "path-param-not-in-route",
+        message: `path パラメータ "${key}" は route に現れません。`,
+        where: key,
+      });
+    }
+  }
+  for (const key of routePlaceholders) {
+    if (!declaredKeys.has(key)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "undeclared-path-param",
+        message: `route のプレースホルダ "{${key}}" が params.path に宣言されていません。`,
+        where: key,
+      });
+    }
   }
 }
 
@@ -124,8 +166,8 @@ function checkExpression(
 function analyzeVisibility(s: ScreenLike, diagnostics: Diagnostic[]): void {
   const fields = s.fields;
   if (!fields) return;
-  const fieldKeys = new Set(Object.keys(fields));
-  const params = routeParams(s.route);
+  const { pathParams, queryParams } = paramSets(s);
+  const ctx: RefContext = { fieldKeys: new Set(Object.keys(fields)), pathParams, queryParams };
   for (const [key, f] of Object.entries(fields)) {
     const vw = asString((f as { visibleWhen?: unknown }).visibleWhen);
     if (!vw) continue;
@@ -138,7 +180,7 @@ function analyzeVisibility(s: ScreenLike, diagnostics: Diagnostic[]): void {
         where: key,
       });
     }
-    for (const ref of refs) checkRefPart(ref, fieldKeys, params, key, diagnostics);
+    for (const ref of refs) checkRefPart(ref, ctx, key, diagnostics);
   }
 }
 
@@ -147,14 +189,15 @@ function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
   const bindings = s.apiBindings;
   if (!bindings) return;
   const fieldKeys = new Set(Object.keys(s.fields ?? {}));
-  const params = routeParams(s.route);
+  const { pathParams, queryParams } = paramSets(s);
+  const ctx: RefContext = { fieldKeys, pathParams, queryParams };
 
   for (const [key, b] of Object.entries(bindings)) {
     for (const scope of ["path", "query", "body"] as const) {
       const entries = b.request?.[scope];
       if (entries) {
         for (const value of Object.values(entries)) {
-          checkExpression(value, fieldKeys, params, key, diagnostics);
+          checkExpression(value, ctx, key, diagnostics);
         }
       }
     }
@@ -321,6 +364,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   if (screen === null || typeof screen !== "object") return [];
   const s = screen as ScreenLike;
   const diagnostics: Diagnostic[] = [];
+  analyzeParams(s, diagnostics);
   analyzeLayout(s, diagnostics);
   analyzeVisibility(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);

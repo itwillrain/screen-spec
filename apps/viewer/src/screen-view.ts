@@ -69,11 +69,26 @@ export interface DesignView {
   links: Array<{ label?: string; url: string }>;
 }
 
+export interface ParamView {
+  name: string;
+  type?: string;
+  required?: boolean;
+  default?: unknown;
+  description?: string;
+  enum?: unknown[];
+}
+
+export interface ParamsView {
+  path: ParamView[];
+  query: ParamView[];
+}
+
 export interface ScreenView {
   id: string;
   name: string;
   description?: string;
   route?: string;
+  params?: ParamsView;
   fields: FieldView[];
   layout?: LayoutView;
   design?: DesignView;
@@ -141,6 +156,36 @@ interface RawDesign {
   links?: Array<{ label?: string; url?: string }>;
 }
 
+interface RawParam {
+  type?: string;
+  required?: boolean;
+  default?: unknown;
+  description?: string;
+  enum?: unknown[];
+}
+
+interface RawParams {
+  path?: Record<string, RawParam>;
+  query?: Record<string, RawParam>;
+}
+
+function buildParams(params: RawParams | undefined): ParamsView | undefined {
+  if (!params) return undefined;
+  const toList = (m: Record<string, RawParam> | undefined): ParamView[] =>
+    Object.entries(m ?? {}).map(([name, p]) => ({
+      name,
+      type: p.type,
+      required: p.required,
+      default: p.default,
+      description: p.description,
+      enum: p.enum,
+    }));
+  const path = toList(params.path);
+  const query = toList(params.query);
+  if (path.length === 0 && query.length === 0) return undefined;
+  return { path, query };
+}
+
 interface SpecDoc {
   screen?: {
     id?: string;
@@ -149,6 +194,7 @@ interface SpecDoc {
     route?: string;
     design?: RawDesign;
     layout?: RawLayout;
+    params?: RawParams;
     fields?: Record<string, RawField>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
@@ -276,6 +322,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     name: String(resolved.screen?.name ?? ""),
     description: resolved.screen?.description,
     route: resolved.screen?.route,
+    params: buildParams(resolved.screen?.params),
     fields,
     layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),

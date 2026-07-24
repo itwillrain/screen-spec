@@ -5,6 +5,19 @@ screen:
   description: ユーザー情報を編集する画面
   route: /users/{userId}/edit
 
+  # 画面パラメータ（path は route のプレースホルダ、query は URL クエリ）。
+  params:
+    path:
+      userId:
+        type: string
+        required: true
+        description: 対象ユーザーの ID
+    query:
+      tab:
+        type: string
+        default: profile
+        enum: [profile, security]
+
   # デザイン参照（Figma・モックアップ画像・関連リンク）。UI 実装は伴わない。
   design:
     figma: https://www.figma.com/file/EXAMPLE/user-edit

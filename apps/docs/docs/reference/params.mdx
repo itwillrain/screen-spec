@@ -1,0 +1,50 @@
+---
+title: Params
+description: 画面パラメータ（path / query）の宣言。
+---
+
+# Params
+
+画面のパラメータを明示宣言します。`screen.params` に `path` と `query` を置きます
+（キーはパラメータ名・camelCase）。
+
+- **path**: `route` のプレースホルダ（`/users/{userId}` の `userId`）に対応
+- **query**: URL クエリ文字列のパラメータ
+
+## Param のフィールド
+
+| キー | 型 | 説明 |
+|---|---|---|
+| `type` | enum | `string` / `number` / `integer` / `boolean` |
+| `required` | boolean | 必須か |
+| `default` | any | 既定値 |
+| `enum` | any[] | 取りうる値 |
+| `description` | string | 説明 |
+
+## 例
+
+```yaml
+screen:
+  route: /users/{userId}/edit
+  params:
+    path:
+      userId:
+        type: string
+        required: true
+    query:
+      tab:
+        type: string
+        default: profile
+        enum: [profile, security]
+```
+
+## 式からの参照
+
+- `{screen.route.userId}` … path パラメータ
+- `{screen.query.tab}` … query パラメータ
+
+## 診断
+
+- `route` のプレースホルダが `params.path` に未宣言 → **warning**
+- `params.path` の宣言が `route` に現れない → **warning**
+- 式が未宣言の path/query パラメータを参照 → **warning**
