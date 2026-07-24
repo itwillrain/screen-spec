@@ -1,6 +1,8 @@
 # screen-spec
 
-画面詳細設計書を記述する OpenAPI ライクな言語仕様（v0.1）と、その関連ツール。
+[![CI](https://github.com/itwillrain/screen-spec/actions/workflows/ci.yml/badge.svg)](https://github.com/itwillrain/screen-spec/actions/workflows/ci.yml)
+
+画面詳細設計書を記述する OpenAPI ライクな言語仕様と、その関連ツール。
 
 - YAML を主な記述形式とし、JSON Schema（draft 2020-12）で検証できる
 - `$ref` によるコンポーネント再利用（純粋参照・OpenAPI 互換）
