@@ -81,6 +81,57 @@ ul.nav {
   border-radius: 6px;
   font: inherit;
 }
+.binding {
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+.binding h3 {
+  margin: 0 0 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.op {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+}
+.method {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  color: #fff;
+}
+.method-get { background: #2563eb; }
+.method-put { background: #d97706; }
+.method-post { background: #16a34a; }
+.method-delete { background: #dc2626; }
+.method-patch { background: #7c3aed; }
+.op-param {
+  margin-right: 0.4rem;
+}
+.binding-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.binding-cols h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+}
+.small {
+  font-size: 0.78rem;
+}
+.badge.mini {
+  padding: 0 0.3rem;
+  font-size: 0.65rem;
+}
 .tabs {
   display: flex;
   flex-wrap: wrap;

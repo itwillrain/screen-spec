@@ -14,6 +14,7 @@ import {
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
+import { findOperation } from "../src/openapi.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const examples = resolve(here, "../../../examples");
@@ -382,6 +383,28 @@ describe("条件式（parseCondition / visibleWhen）", () => {
   it("正しい visibleWhen は診断なし", () => {
     const screen = { fields: { role: {}, x: { visibleWhen: 'fields.role == "admin"' } } };
     expect(analyzeScreen(screen)).toEqual([]);
+  });
+});
+
+describe("findOperation（OpenAPI 解決）", () => {
+  it("サンプル OpenAPI から operation を解決する", () => {
+    const doc = parseYaml(readFileSync(example("openapi/users.yaml"), "utf8"));
+
+    const update = findOperation(doc, "updateUserById");
+    expect(update?.method).toBe("PUT");
+    expect(update?.path).toBe("/users/{userId}");
+    expect(update?.parameters.map((p) => p.name)).toContain("userId");
+    expect(update?.requestFields).toEqual(["name", "email", "role"]);
+
+    const list = findOperation(doc, "listUsers");
+    expect(list?.method).toBe("GET");
+    expect(list?.parameters.map((p) => `${p.in}:${p.name}`)).toEqual(["query:keyword", "query:role"]);
+    expect(list?.responseFields).toEqual(["data"]);
+  });
+
+  it("未知 operationId は undefined", () => {
+    const doc = parseYaml(readFileSync(example("openapi/users.yaml"), "utf8"));
+    expect(findOperation(doc, "nope")).toBeUndefined();
   });
 });
 

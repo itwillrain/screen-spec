@@ -16,6 +16,11 @@ export {
   type ProjectScreen,
 } from "./analyze.js";
 export {
+  findOperation,
+  type OpenApiOperation,
+  type OpenApiParameter,
+} from "./openapi.js";
+export {
   parseTemplate,
   templateRefs,
   parseCondition,

@@ -1,6 +1,13 @@
 // ブラウザ内で spec を解決して表示用ビューモデルを組み立てる。
 // core はブラウザ安全なエントリ（parse / resolveRefs / validateSpec）だけを使う。
-import { parseYaml, resolveRefs, validateSpec, type DocumentLoader } from "@screen-spec/core";
+import {
+  parseYaml,
+  resolveRefs,
+  validateSpec,
+  findOperation,
+  type DocumentLoader,
+  type OpenApiOperation,
+} from "@screen-spec/core";
 
 export interface FieldValidationView {
   rule: string;
@@ -55,6 +62,8 @@ export interface ApiBindingView {
   specRef: string;
   requestMappings: Array<{ scope: string; key: string; expr: string }>;
   responseMappings: Array<{ field: string; expr: string }>;
+  /** specRef を解決して得た実 operation（見つかれば） */
+  operation?: OpenApiOperation;
 }
 
 export interface TransitionView {
@@ -292,6 +301,20 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     resolved = raw;
   }
 
+  // apiBindings の specRef を解決して実 operation を紐付ける。
+  const apiBindings = buildApiBindings(resolved.screen);
+  const openapiCache = new Map<string, unknown>();
+  for (const b of apiBindings) {
+    if (!b.specRef || !b.operationId) continue;
+    try {
+      const url = new URL(b.specRef, entryUri).href;
+      if (!openapiCache.has(url)) openapiCache.set(url, parseYaml(await load(url)));
+      b.operation = findOperation(openapiCache.get(url), b.operationId);
+    } catch {
+      // 取得/解決に失敗しても表示は継続（検証側で warning 済み）
+    }
+  }
+
   const rawFields = raw.screen?.fields ?? {};
   const resolvedFields = resolved.screen?.fields ?? {};
 
@@ -327,7 +350,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),
     stateMachine: buildStateMachine(resolved.screen),
-    apiBindings: buildApiBindings(resolved.screen),
+    apiBindings,
     transitions: Object.entries(resolved.screen?.transitions ?? {}).map(([key, t]) => ({
       key,
       to: String(t.to ?? ""),

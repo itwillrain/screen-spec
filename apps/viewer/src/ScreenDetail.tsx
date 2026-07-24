@@ -242,48 +242,91 @@ function ParamsTab({ screen }: { screen: ScreenView }) {
 function ApiTab({ screen }: { screen: ScreenView }) {
   return (
     <section>
-      <table className="fields">
-        <thead>
-          <tr>
-            <th>キー</th>
-            <th>operationId</th>
-            <th>specRef</th>
-            <th>request</th>
-            <th>response</th>
-          </tr>
-        </thead>
-        <tbody>
-          {screen.apiBindings.map((b) => (
-            <tr key={b.key}>
-              <td><code>{b.key}</code></td>
-              <td><code>{b.operationId}</code></td>
-              <td><code>{b.specRef}</code></td>
-              <td>
+      {screen.apiBindings.map((b) => {
+        const op = b.operation
+        const reqFields = new Set(op?.requestFields ?? [])
+        const resFields = new Set(op?.responseFields ?? [])
+        return (
+          <div key={b.key} className="binding">
+            <h3>
+              <code>{b.key}</code>
+              {op ? (
+                <span className="op">
+                  <span className={`method method-${op.method.toLowerCase()}`}>{op.method}</span>
+                  <code>{op.path}</code>
+                </span>
+              ) : (
+                <span className="badge badge-ng" title={`${b.specRef} に ${b.operationId} が見つかりません`}>
+                  未解決
+                </span>
+              )}
+            </h3>
+            <p className="muted">
+              <code>{b.operationId}</code> @ <code>{b.specRef}</code>
+              {op?.summary ? ` — ${op.summary}` : ''}
+            </p>
+
+            {op && op.parameters.length > 0 ? (
+              <p className="muted">
+                params:{' '}
+                {op.parameters.map((p) => (
+                  <code key={`${p.in}:${p.name}`} className="op-param">
+                    {p.in}:{p.name}
+                    {p.required ? '*' : ''}
+                  </code>
+                ))}
+              </p>
+            ) : null}
+
+            <div className="binding-cols">
+              <div>
+                <h4>request</h4>
                 {b.requestMappings.length === 0 ? (
                   <span className="muted">—</span>
                 ) : (
                   <ul className="rules">
-                    {b.requestMappings.map((m, i) => (
-                      <li key={i}><code>{m.scope}.{m.key}</code> ← <code>{m.expr}</code></li>
-                    ))}
+                    {b.requestMappings.map((m, i) => {
+                      const known = m.scope !== 'body' || reqFields.has(m.key)
+                      return (
+                        <li key={i}>
+                          <code>{m.scope}.{m.key}</code>
+                          {!known ? <span className="badge badge-ng mini" title="OpenAPI に無い項目">?</span> : null}
+                          {' '}← <code>{m.expr}</code>
+                        </li>
+                      )
+                    })}
                   </ul>
                 )}
-              </td>
-              <td>
+                {op ? (
+                  <p className="muted small">OpenAPI body: {op.requestFields.join(', ') || '—'}</p>
+                ) : null}
+              </div>
+              <div>
+                <h4>response</h4>
                 {b.responseMappings.length === 0 ? (
                   <span className="muted">—</span>
                 ) : (
                   <ul className="rules">
-                    {b.responseMappings.map((m, i) => (
-                      <li key={i}><code>{m.field}</code> ← <code>{m.expr}</code></li>
-                    ))}
+                    {b.responseMappings.map((m, i) => {
+                      const top = m.expr.split('.')[0]
+                      const known = resFields.has(m.field) || resFields.has(top)
+                      return (
+                        <li key={i}>
+                          <code>{m.field}</code> ← <code>{m.expr}</code>
+                          {op && !known ? <span className="badge badge-ng mini" title="OpenAPI レスポンスに無い項目">?</span> : null}
+                        </li>
+                      )
+                    })}
                   </ul>
                 )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                {op ? (
+                  <p className="muted small">OpenAPI response: {op.responseFields.join(', ') || '—'}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </section>
   )
 }
