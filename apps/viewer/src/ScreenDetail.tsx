@@ -246,6 +246,15 @@ function ApiTab({ screen }: { screen: ScreenView }) {
         const op = b.operation
         const reqFields = new Set(op?.requestFields ?? [])
         const resFields = new Set(op?.responseFields ?? [])
+        const queryParams = new Set(op?.parameters.filter((p) => p.in === 'query').map((p) => p.name))
+        const pathParams = new Set(op?.parameters.filter((p) => p.in === 'path').map((p) => p.name))
+        const requestKnown = (scope: string, key: string): boolean => {
+          if (!op) return true
+          if (scope === 'body') return reqFields.has(key)
+          if (scope === 'query') return queryParams.has(key)
+          if (scope === 'path') return pathParams.has(key)
+          return true
+        }
         return (
           <div key={b.key} className="binding">
             <h3>
@@ -286,7 +295,7 @@ function ApiTab({ screen }: { screen: ScreenView }) {
                 ) : (
                   <ul className="rules">
                     {b.requestMappings.map((m, i) => {
-                      const known = m.scope !== 'body' || reqFields.has(m.key)
+                      const known = requestKnown(m.scope, m.key)
                       return (
                         <li key={i}>
                           <code>{m.scope}.{m.key}</code>

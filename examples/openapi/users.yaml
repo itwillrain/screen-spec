@@ -1,78 +1,138 @@
-# screen-spec の apiBindings.specRef から参照される OpenAPI 定義（最小例）。
-# v0.1 の screen-spec はこのファイルを解決・検証しない（参照のみ）。
+# screen-spec の apiBindings.specRef から参照される OpenAPI 定義。
+# v0.1 系の screen-spec はこのファイルを厳密検証しない（operationId の存在のみ確認）。
+# ビューアは findOperation で operation を解決し、メソッド/パス/項目を表示する。
 openapi: 3.1.0
 info:
   title: Users API
   version: 1.0.0
+  description: サンプル向けのユーザー管理 API。
+  contact:
+    name: screen-spec
+    url: https://github.com/itwillrain/screen-spec
+  license:
+    name: MIT
+servers:
+  - url: https://api.example.com/v1
+    description: 本番
+
 paths:
   /users:
     get:
       operationId: listUsers
+      summary: ユーザー一覧を取得
       parameters:
         - name: keyword
           in: query
-          schema:
-            type: string
+          schema: { type: string }
         - name: role
           in: query
-          schema:
-            type: string
+          schema: { $ref: "#/components/schemas/Role" }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      users:
-                        type: array
-                        items:
-                          type: object
-  /users/{userId}:
-    get:
-      operationId: getUserById
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      name: { type: string }
-                      email: { type: string }
-                      role: { type: string }
-    put:
-      operationId: updateUserById
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
+              schema: { $ref: "#/components/schemas/UserListResponse" }
+    post:
+      operationId: createUser
+      summary: ユーザーを作成
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                name: { type: string }
-                email: { type: string }
-                role: { type: string }
+            schema: { $ref: "#/components/schemas/UserInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getUserById
+      summary: ユーザーを取得
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      operationId: updateUserById
+      summary: ユーザーを更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      operationId: deleteUserById
+      summary: ユーザーを削除
+      responses:
+        "204": { description: No Content }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  schemas:
+    Role:
+      type: string
+      enum: [admin, editor, viewer]
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/Role" }
+    UserInput:
+      type: object
+      required: [name, email, role]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/Role" }
+    UserResponse:
+      type: object
+      properties:
+        data: { $ref: "#/components/schemas/User" }
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/User" }
+        total: { type: integer }
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

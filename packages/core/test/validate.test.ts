@@ -393,13 +393,22 @@ describe("findOperation（OpenAPI 解決）", () => {
     const update = findOperation(doc, "updateUserById");
     expect(update?.method).toBe("PUT");
     expect(update?.path).toBe("/users/{userId}");
-    expect(update?.parameters.map((p) => p.name)).toContain("userId");
+    // path 階層の userId がマージされる
+    expect(update?.parameters.map((p) => `${p.in}:${p.name}`)).toContain("path:userId");
+    // requestBody は $ref(UserInput) を解決して項目を得る
     expect(update?.requestFields).toEqual(["name", "email", "role"]);
+    // response は $ref(UserResponse) → { data }
+    expect(update?.responseFields).toEqual(["data"]);
 
     const list = findOperation(doc, "listUsers");
     expect(list?.method).toBe("GET");
-    expect(list?.parameters.map((p) => `${p.in}:${p.name}`)).toEqual(["query:keyword", "query:role"]);
-    expect(list?.responseFields).toEqual(["data"]);
+    expect(list?.parameters.map((p) => `${p.in}:${p.name}`)).toEqual([
+      "query:keyword",
+      "query:role",
+      "query:page",
+    ]);
+    // $ref(UserListResponse) → { data, total }
+    expect(list?.responseFields).toEqual(["data", "total"]);
   });
 
   it("未知 operationId は undefined", () => {

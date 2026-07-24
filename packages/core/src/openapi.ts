@@ -1,5 +1,5 @@
 // OpenAPI ドキュメントから operation を解決する軽量ユーティリティ。
-// v0.1 系では inline スキーマのみを対象とし、components/$ref の深追いはしない。
+// OpenAPI 内部の $ref（#/components/...）とパス階層 parameters に対応する。
 
 export interface OpenApiParameter {
   name: string;
@@ -26,37 +26,60 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
-function topLevelProps(schema: unknown): string[] {
-  if (isObject(schema) && isObject(schema.properties)) {
-    return Object.keys(schema.properties);
+/** OpenAPI 内部参照（#/a/b/c）を解決する。深さ制限つきで循環を防ぐ。 */
+function deref(root: unknown, node: unknown, depth = 0): unknown {
+  if (depth > 20 || !isObject(node)) return node;
+  const ref = node.$ref;
+  if (typeof ref !== "string" || !ref.startsWith("#/")) return node;
+  const parts = ref
+    .slice(2)
+    .split("/")
+    .map((p) => p.replace(/~1/g, "/").replace(/~0/g, "~"));
+  let current: unknown = root;
+  for (const part of parts) {
+    if (!isObject(current)) return undefined;
+    current = current[part];
   }
+  return deref(root, current, depth + 1);
+}
+
+function topLevelProps(root: unknown, schema: unknown): string[] {
+  const s = deref(root, schema);
+  if (isObject(s) && isObject(s.properties)) return Object.keys(s.properties);
   return [];
 }
 
-function jsonSchema(container: unknown): unknown {
-  // { content: { "application/json": { schema } } } から schema を取り出す
-  if (!isObject(container)) return undefined;
-  const content = container.content;
-  if (!isObject(content)) return undefined;
-  const json = content["application/json"];
+/** { content: { "application/json": { schema } } } から schema を取り出す（$ref 解決込み）。 */
+function jsonSchema(root: unknown, container: unknown): unknown {
+  const c = deref(root, container);
+  if (!isObject(c) || !isObject(c.content)) return undefined;
+  const json = c.content["application/json"];
   return isObject(json) ? json.schema : undefined;
 }
 
-function extractParameters(op: Record<string, unknown>): OpenApiParameter[] {
-  const params = op.parameters;
-  if (!Array.isArray(params)) return [];
-  const out: OpenApiParameter[] = [];
-  for (const p of params) {
-    if (!isObject(p) || typeof p.name !== "string" || typeof p.in !== "string") continue;
-    const schema = isObject(p.schema) ? p.schema : undefined;
-    out.push({
-      name: p.name,
-      in: p.in,
-      required: p.required === true,
-      type: typeof schema?.type === "string" ? schema.type : undefined,
-    });
+function schemaType(root: unknown, schema: unknown): string | undefined {
+  const s = deref(root, schema);
+  if (isObject(s) && typeof s.type === "string") return s.type;
+  return undefined;
+}
+
+/** path-item と operation の parameters をマージする（name+in で operation 側が優先）。 */
+function collectParameters(root: unknown, itemParams: unknown, opParams: unknown): OpenApiParameter[] {
+  const byKey = new Map<string, OpenApiParameter>();
+  for (const list of [itemParams, opParams]) {
+    if (!Array.isArray(list)) continue;
+    for (const raw of list) {
+      const p = deref(root, raw);
+      if (!isObject(p) || typeof p.name !== "string" || typeof p.in !== "string") continue;
+      byKey.set(`${p.in}:${p.name}`, {
+        name: p.name,
+        in: p.in,
+        required: p.required === true,
+        type: schemaType(root, p.schema),
+      });
+    }
   }
-  return out;
+  return [...byKey.values()];
 }
 
 function firstSuccessResponse(responses: unknown): unknown {
@@ -80,9 +103,9 @@ export function findOperation(openapi: unknown, operationId: string): OpenApiOpe
         method: method.toUpperCase(),
         path,
         summary: typeof op.summary === "string" ? op.summary : undefined,
-        parameters: extractParameters(op),
-        requestFields: topLevelProps(jsonSchema(op.requestBody)),
-        responseFields: topLevelProps(jsonSchema(firstSuccessResponse(op.responses))),
+        parameters: collectParameters(openapi, item.parameters, op.parameters),
+        requestFields: topLevelProps(openapi, jsonSchema(openapi, op.requestBody)),
+        responseFields: topLevelProps(openapi, jsonSchema(openapi, firstSuccessResponse(op.responses))),
       };
     }
   }
