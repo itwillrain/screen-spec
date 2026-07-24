@@ -275,6 +275,28 @@ function ApiTab({ screen }: { screen: ScreenView }) {
               {op?.summary ? ` — ${op.summary}` : ''}
             </p>
 
+            {b.specUrl ? (
+              <p className="op-links">
+                <a
+                  href={`https://redocly.github.io/redoc/?url=${encodeURIComponent(b.specUrl)}#operation/${b.operationId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Redoc で開く ↗
+                </a>
+                <a
+                  href={`https://petstore.swagger.io/?url=${encodeURIComponent(b.specUrl)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Swagger UI で開く ↗
+                </a>
+                <a href={b.specUrl} target="_blank" rel="noreferrer">
+                  OpenAPI (raw) ↗
+                </a>
+              </p>
+            ) : null}
+
             {op && op.parameters.length > 0 ? (
               <p className="muted">
                 params:{' '}

@@ -71,6 +71,10 @@ events:
 メソッド・パス・パラメータ・リクエスト/レスポンス項目**を表示します。マッピングした項目が
 OpenAPI 側に存在しない場合は印（`?`）で示します。
 
+さらに各バインディングから **Redoc / Swagger UI** で OpenAPI を開くリンクを提供します
+（Redoc は該当 operation へディープリンク）。外部ツールは spec を URL で取得するため、
+**公開URLで配信されている場合**に機能します（ローカル dev では localhost が外部から取得できません）。
+
 ## 診断
 
 - `event.action.apiCall` が未定義の `apiBindings` を参照 → **warning**

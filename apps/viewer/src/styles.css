@@ -115,6 +115,13 @@ ul.nav {
 .op-param {
   margin-right: 0.4rem;
 }
+.op-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+}
 .binding-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -62,6 +62,8 @@ export interface ApiBindingView {
   specRef: string;
   requestMappings: Array<{ scope: string; key: string; expr: string }>;
   responseMappings: Array<{ field: string; expr: string }>;
+  /** specRef を解決した絶対 URL（Redoc/Swagger UI 連携用） */
+  specUrl?: string;
   /** specRef を解決して得た実 operation（見つかれば） */
   operation?: OpenApiOperation;
 }
@@ -308,6 +310,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     if (!b.specRef || !b.operationId) continue;
     try {
       const url = new URL(b.specRef, entryUri).href;
+      b.specUrl = url;
       if (!openapiCache.has(url)) openapiCache.set(url, parseYaml(await load(url)));
       b.operation = findOperation(openapiCache.get(url), b.operationId);
     } catch {
