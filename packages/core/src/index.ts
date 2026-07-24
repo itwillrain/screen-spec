@@ -18,8 +18,14 @@ export {
 export {
   parseTemplate,
   templateRefs,
+  parseCondition,
   type ParsedTemplate,
   type ExprPart,
   type RefExpr,
   type LiteralExpr,
+  type ParsedCondition,
+  type ConditionNode,
+  type Comparison,
+  type CompareOp,
+  type CondOperand,
 } from "./expr.js";

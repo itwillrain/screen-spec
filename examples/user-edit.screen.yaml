@@ -57,6 +57,8 @@ screen:
       label: 予備メールアドレス
       required: false
       width: half
+      # 表示条件（式エンジン）: role が admin のときのみ表示。
+      visibleWhen: fields.role == "admin"
 
   # 状態遷移（決定 #10・案C）。キーが状態/イベント識別子、記述順が並び順。
   states:

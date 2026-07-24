@@ -13,6 +13,7 @@ export interface FieldView {
   type: string;
   required: boolean;
   width?: string;
+  visibleWhen?: string;
   validations: FieldValidationView[];
   /** フィールド自体が $ref 由来なら、その参照文字列 */
   origin?: string;
@@ -91,6 +92,7 @@ interface RawField {
   type?: string;
   required?: boolean;
   width?: string;
+  visibleWhen?: string;
   validations?: Array<{ rule?: string; message?: string }>;
 }
 
@@ -250,6 +252,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
       type: String(rf.type ?? ""),
       required: Boolean(rf.required),
       width: typeof rf.width === "string" ? rf.width : undefined,
+      visibleWhen: typeof rf.visibleWhen === "string" ? rf.visibleWhen : undefined,
       validations,
       origin,
     };

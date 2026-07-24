@@ -10,6 +10,7 @@ import {
   analyzeProject,
   parseTemplate,
   templateRefs,
+  parseCondition,
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
@@ -349,6 +350,37 @@ describe("layout 検査", () => {
 
   it("全フィールドを配置すれば診断なし", () => {
     const screen = { fields: { a: {}, b: {} }, layout: { sections: [{ fields: ["a", "b"] }] } };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+});
+
+describe("条件式（parseCondition / visibleWhen）", () => {
+  it("比較と &&/|| をパースする", () => {
+    const r = parseCondition('fields.role == "admin" && fields.name != ""');
+    expect(r.errors).toEqual([]);
+    expect(r.ast?.type).toBe("and");
+    expect(r.refs.map((x) => x.raw)).toEqual(["fields.role", "fields.name"]);
+  });
+
+  it("構文エラーを報告する", () => {
+    expect(parseCondition("fields.role ==").errors.length).toBeGreaterThan(0);
+    expect(parseCondition("").errors.length).toBeGreaterThan(0);
+  });
+
+  it("visibleWhen の未定義フィールド参照は warning", () => {
+    const screen = { fields: { role: {}, x: { visibleWhen: 'fields.ghost == "y"' } } };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-field-ref" && d.where === "x")).toBe(true);
+  });
+
+  it("visibleWhen の構文エラーは warning", () => {
+    const screen = { fields: { x: { visibleWhen: "fields.role ==" } } };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "condition-syntax")).toBe(true);
+  });
+
+  it("正しい visibleWhen は診断なし", () => {
+    const screen = { fields: { role: {}, x: { visibleWhen: 'fields.role == "admin"' } } };
     expect(analyzeScreen(screen)).toEqual([]);
   });
 });

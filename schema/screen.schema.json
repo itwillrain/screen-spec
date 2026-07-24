@@ -240,6 +240,10 @@
           "enum": ["full", "half", "third"],
           "description": "表示幅ヒント（UI 非依存）"
         },
+        "visibleWhen": {
+          "type": "string",
+          "description": "表示条件式（例: fields.role == \"admin\"）。UI 非依存の宣言。"
+        },
         "validations": {
           "type": "array",
           "items": { "$ref": "#/$defs/ValidationOrRef" }

@@ -90,6 +90,7 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
               <th>型</th>
               <th>必須</th>
               <th>バリデーション</th>
+              <th>表示条件</th>
               <th>由来</th>
             </tr>
           </thead>
@@ -112,6 +113,13 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
                         </li>
                       ))}
                     </ul>
+                  )}
+                </td>
+                <td>
+                  {field.visibleWhen ? (
+                    <code>{field.visibleWhen}</code>
+                  ) : (
+                    <span className="muted">—</span>
                   )}
                 </td>
                 <td>

@@ -14,9 +14,26 @@ description: 画面上の項目定義。
 | `label` | string | ✔ | 表示ラベル |
 | `type` | enum | ✔ | 項目型（下記） |
 | `required` | boolean | | 必須かどうか |
+| `width` | enum | | 表示幅ヒント `full` / `half` / `third` |
+| `visibleWhen` | string | | 表示条件式（例 `fields.role == "admin"`） |
 | `validations` | ([Validation](/reference/validation) \| $ref)[] | | 検証ルール |
 | `options` | [Option](/reference/options)[] \| $ref | | 選択肢（`select` などで使用） |
 | `permission` | [Permission](/reference/permission) | | 項目レベルの権限 |
+
+## 表示条件（visibleWhen）
+
+`visibleWhen` は条件式で、`true` のときにフィールドを表示する意図を宣言します（UI 実装は伴いません）。
+
+```yaml
+altEmail:
+  label: 予備メール
+  type: email
+  visibleWhen: fields.role == "admin"
+```
+
+- 比較演算子 `==` `!=` `>` `<` `>=` `<=`、論理 `&&` `||`（括弧なし・左結合）
+- 参照は `fields.X` / `screen.route.Y`、リテラルは文字列/数値/`true`/`false`/`null`
+- 構文エラー・未定義参照は **warning**
 
 ## `type` の値
 
