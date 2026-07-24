@@ -244,6 +244,7 @@
           "type": "string",
           "description": "表示条件式（例: fields.role == \"admin\"）。UI 非依存の宣言。"
         },
+        "design": { "$ref": "#/$defs/Design" },
         "validations": {
           "type": "array",
           "items": { "$ref": "#/$defs/ValidationOrRef" }
@@ -314,6 +315,11 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
         "title": { "type": "string" },
+        "region": {
+          "type": "string",
+          "enum": ["header", "body", "footer", "sidebar"],
+          "description": "配置領域（既定 body）"
+        },
         "columns": { "type": "integer", "minimum": 1, "maximum": 4, "description": "列数（既定 1）" },
         "fields": {
           "type": "array",

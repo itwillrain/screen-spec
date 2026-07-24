@@ -14,6 +14,7 @@ export interface FieldView {
   required: boolean;
   width?: string;
   visibleWhen?: string;
+  design?: DesignView;
   validations: FieldValidationView[];
   /** フィールド自体が $ref 由来なら、その参照文字列 */
   origin?: string;
@@ -22,6 +23,7 @@ export interface FieldView {
 export interface LayoutSectionView {
   id?: string;
   title?: string;
+  region?: string;
   columns: number;
   fieldKeys: string[];
 }
@@ -93,11 +95,18 @@ interface RawField {
   required?: boolean;
   width?: string;
   visibleWhen?: string;
+  design?: RawDesign;
   validations?: Array<{ rule?: string; message?: string }>;
 }
 
 interface RawLayout {
-  sections?: Array<{ id?: string; title?: string; columns?: number; fields?: string[] }>;
+  sections?: Array<{
+    id?: string;
+    title?: string;
+    region?: string;
+    columns?: number;
+    fields?: string[];
+  }>;
 }
 
 interface RawState {
@@ -180,6 +189,7 @@ function buildLayout(layout: RawLayout | undefined): LayoutView | undefined {
     sections: sections.map((sec) => ({
       id: sec.id,
       title: sec.title,
+      region: sec.region,
       columns: typeof sec.columns === "number" && sec.columns >= 1 ? sec.columns : 1,
       fieldKeys: Array.isArray(sec.fields) ? sec.fields.map(String) : [],
     })),
@@ -253,6 +263,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
       required: Boolean(rf.required),
       width: typeof rf.width === "string" ? rf.width : undefined,
       visibleWhen: typeof rf.visibleWhen === "string" ? rf.visibleWhen : undefined,
+      design: buildDesign(rf.design),
       validations,
       origin,
     };

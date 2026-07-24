@@ -225,11 +225,31 @@ ul.warnings {
   color: #6b7280;
   font-size: 0.8em;
 }
-.cell-width {
-  align-self: flex-start;
+.cell-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+.cell-width,
+.cell-cond {
   font-size: 0.7rem;
   color: #3730a3;
   background: #e0e7ff;
   border-radius: 999px;
   padding: 0 0.4rem;
+}
+.cell-cond {
+  color: #92400e;
+  background: #fef3c7;
+  cursor: help;
+}
+.cell-design {
+  text-decoration: none;
+}
+.badge-region {
+  margin-left: 0.5rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-weight: 600;
 }

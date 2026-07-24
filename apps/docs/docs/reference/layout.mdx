@@ -22,8 +22,12 @@ description: 画面レイアウト（言語レベルの構造）。
 |---|---|---|---|
 | `id` | string (camelCase) | | セクション識別子 |
 | `title` | string | | 見出し |
+| `region` | enum | | 配置領域 `header` / `body` / `footer` / `sidebar`（既定 body） |
 | `columns` | integer (1–4) | | 列数（既定 1） |
 | `fields` | string[] | ✔ | 配置するフィールドキー |
+
+各フィールドには `design`（[デザイン参照](/reference/design)）も指定でき、画面全体の `screen.design`
+とは別に項目単位のモックアップ/リンクを持てます。
 
 各フィールド側には表示幅ヒント `width`（`full` / `half` / `third`）を指定できます。
 

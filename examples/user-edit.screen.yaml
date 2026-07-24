@@ -22,10 +22,12 @@ screen:
     sections:
       - id: basic
         title: 基本情報
+        region: body
         columns: 2
         fields: [name, email, altEmail]
       - id: authz
         title: 権限
+        region: sidebar
         fields: [role]
 
   fields:
@@ -50,6 +52,11 @@ screen:
         $ref: "./common.yaml#/components/options/RoleOptions"
       permission:
         editRoles: [admin]
+      # フィールド単位のデザイン参照。
+      design:
+        images:
+          - url: https://placehold.co/320x120?text=role+select
+            caption: ロール選択のモック
     # compose（決定 #12）: EmailField を土台に、ラベルと必須のみローカルで上書き。
     altEmail:
       compose:

@@ -145,7 +145,10 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
             const fieldByKey = new Map(screen.fields.map((f) => [f.key, f]))
             return (
               <div key={sec.id ?? i} className="layout-section">
-                {sec.title ? <h3>{sec.title}</h3> : null}
+                <h3>
+                  {sec.title ?? sec.id ?? `section ${i + 1}`}
+                  {sec.region ? <span className="badge badge-region">{sec.region}</span> : null}
+                </h3>
                 <div
                   className="layout-grid"
                   style={{ gridTemplateColumns: `repeat(${sec.columns}, 1fr)` }}
@@ -153,11 +156,20 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
                   {sec.fieldKeys.map((key) => {
                     const f = fieldByKey.get(key)
                     const span = f?.width === 'full' ? sec.columns : 1
+                    const designUrl = f?.design?.figma ?? f?.design?.images[0]?.url
                     return (
                       <div key={key} className="layout-cell" style={{ gridColumn: `span ${span}` }}>
                         <span className="cell-label">{f?.label ?? key}</span>
                         <code className="cell-key">{key}</code>
-                        {f?.width ? <span className="cell-width">{f.width}</span> : null}
+                        <span className="cell-tags">
+                          {f?.width ? <span className="cell-width">{f.width}</span> : null}
+                          {f?.visibleWhen ? <span className="cell-cond" title={f.visibleWhen}>条件</span> : null}
+                          {designUrl ? (
+                            <a className="cell-design" href={designUrl} target="_blank" rel="noreferrer">
+                              🎨
+                            </a>
+                          ) : null}
+                        </span>
                       </div>
                     )
                   })}
