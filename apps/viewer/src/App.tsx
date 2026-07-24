@@ -15,6 +15,7 @@ type Selection = 'overview' | string
 export function App() {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [selected, setSelected] = useState<Selection>('overview')
+  const [navFilter, setNavFilter] = useState('')
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL
@@ -50,11 +51,22 @@ export function App() {
 
   const screens = state.screens
   const current = selected === 'overview' ? undefined : screens.find((s) => s.id === selected)
+  const nq = navFilter.trim().toLowerCase()
+  const navScreens = nq
+    ? screens.filter((s) => s.id.toLowerCase().includes(nq) || s.name.toLowerCase().includes(nq))
+    : screens
 
   return (
     <div className="layout">
       <nav className="sidebar">
         <p className="eyebrow">screen-spec viewer</p>
+        <input
+          className="filter"
+          type="search"
+          placeholder="画面を検索"
+          value={navFilter}
+          onChange={(e) => setNavFilter(e.target.value)}
+        />
         <ul className="nav">
           <li>
             <button
@@ -64,7 +76,7 @@ export function App() {
               概要
             </button>
           </li>
-          {screens.map((s) => (
+          {navScreens.map((s) => (
             <li key={s.id}>
               <button
                 className={selected === s.id ? 'nav-item active' : 'nav-item'}

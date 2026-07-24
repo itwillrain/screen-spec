@@ -73,6 +73,25 @@ ul.nav {
   cursor: pointer;
   text-decoration: underline;
 }
+.filter {
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font: inherit;
+}
+pre.raw {
+  margin: 0;
+  padding: 1rem;
+  background: #0b1021;
+  color: #e5e7eb;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
 .eyebrow {
   margin: 0;
   font-size: 0.8rem;

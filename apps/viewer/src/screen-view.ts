@@ -84,6 +84,8 @@ export interface ScreenView {
   valid: boolean;
   issueCount: number;
   sourceUri: string;
+  /** エントリ spec の原文（Raw YAML 表示用） */
+  rawText: string;
   /** 横断解析（analyzeProject）用の解決済み screen オブジェクト */
   resolvedScreen: unknown;
 }
@@ -288,6 +290,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     valid: result.valid,
     issueCount: result.issues.length,
     sourceUri: entryUri,
+    rawText,
     resolvedScreen: resolved.screen,
   };
 }

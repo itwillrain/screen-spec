@@ -1,7 +1,16 @@
+import { useState } from 'react'
 import { StateDiagram } from './StateDiagram'
 import type { ScreenView } from './screen-view'
 
 export function ScreenDetail({ screen }: { screen: ScreenView }) {
+  const [filter, setFilter] = useState('')
+  const [showRaw, setShowRaw] = useState(false)
+  const q = filter.trim().toLowerCase()
+  const fields = q
+    ? screen.fields.filter(
+        (f) => f.key.toLowerCase().includes(q) || f.label.toLowerCase().includes(q),
+      )
+    : screen.fields
   return (
     <>
       <header className="page-head">
@@ -82,6 +91,13 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
         <p className="muted">
           記述順＝表示順。ブラウザで <code>$ref</code> を解決して表示しています。
         </p>
+        <input
+          className="filter"
+          type="search"
+          placeholder="フィールドを絞り込み（キー/ラベル）"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
         <table className="fields">
           <thead>
             <tr>
@@ -95,7 +111,7 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
             </tr>
           </thead>
           <tbody>
-            {screen.fields.map((field) => (
+            {fields.map((field) => (
               <tr key={field.key}>
                 <td><code>{field.key}</code></td>
                 <td>{field.label}</td>
@@ -253,6 +269,16 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
           </ul>
         </section>
       ) : null}
+
+      <section>
+        <h2>
+          Raw YAML{' '}
+          <button className="link" onClick={() => setShowRaw((v) => !v)}>
+            {showRaw ? '隠す' : '表示'}
+          </button>
+        </h2>
+        {showRaw ? <pre className="raw">{screen.rawText}</pre> : null}
+      </section>
     </>
   )
 }
