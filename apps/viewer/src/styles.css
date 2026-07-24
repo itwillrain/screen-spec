@@ -81,6 +81,31 @@ ul.nav {
   border-radius: 6px;
   font: inherit;
 }
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.tab {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.85rem;
+  font: inherit;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab:hover {
+  color: #1a1a1a;
+}
+.tab.active {
+  color: #3730a3;
+  border-bottom-color: #3730a3;
+  font-weight: 600;
+}
 pre.raw {
   margin: 0;
   padding: 1rem;

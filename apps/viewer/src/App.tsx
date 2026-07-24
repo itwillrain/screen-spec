@@ -92,7 +92,12 @@ export function App() {
 
       <main className="page">
         {current ? (
-          <ScreenDetail screen={current} />
+          <ScreenDetail
+            key={current.id}
+            screen={current}
+            screenIds={screens.map((s) => s.id)}
+            onNavigate={(id) => setSelected(id)}
+          />
         ) : (
           <>
             <header className="page-head">

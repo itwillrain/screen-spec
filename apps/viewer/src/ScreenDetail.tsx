@@ -2,15 +2,28 @@ import { useState } from 'react'
 import { StateDiagram } from './StateDiagram'
 import type { ScreenView } from './screen-view'
 
-export function ScreenDetail({ screen }: { screen: ScreenView }) {
-  const [filter, setFilter] = useState('')
-  const [showRaw, setShowRaw] = useState(false)
-  const q = filter.trim().toLowerCase()
-  const fields = q
-    ? screen.fields.filter(
-        (f) => f.key.toLowerCase().includes(q) || f.label.toLowerCase().includes(q),
-      )
-    : screen.fields
+interface Props {
+  screen: ScreenView
+  /** 読み込み済みの画面 id（遷移先がジャンプ可能か判定） */
+  screenIds: string[]
+  onNavigate: (screenId: string) => void
+}
+
+export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
+  const tabs = [
+    { id: 'fields', label: '項目', show: true },
+    { id: 'layout', label: 'レイアウト', show: !!screen.layout },
+    { id: 'params', label: 'パラメータ', show: !!screen.params },
+    { id: 'states', label: '状態遷移', show: !!screen.stateMachine },
+    { id: 'api', label: 'API 連携', show: screen.apiBindings.length > 0 },
+    { id: 'transitions', label: '画面遷移', show: screen.transitions.length > 0 },
+    { id: 'design', label: 'デザイン', show: !!screen.design },
+    { id: 'raw', label: 'Raw YAML', show: true },
+  ].filter((t) => t.show)
+
+  const [tab, setTab] = useState('fields')
+  const active = tabs.some((t) => t.id === tab) ? tab : 'fields'
+
   return (
     <>
       <header className="page-head">
@@ -41,281 +54,300 @@ export function ScreenDetail({ screen }: { screen: ScreenView }) {
         </dl>
       </header>
 
-      {screen.params ? (
-        <section>
-          <h2>パラメータ</h2>
-          {(['path', 'query'] as const).map((kind) =>
-            screen.params && screen.params[kind].length > 0 ? (
-              <div key={kind}>
-                <h3>{kind}</h3>
-                <table className="fields">
-                  <thead>
-                    <tr>
-                      <th>名前</th>
-                      <th>型</th>
-                      <th>必須</th>
-                      <th>既定</th>
-                      <th>候補</th>
-                      <th>説明</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {screen.params[kind].map((p) => (
-                      <tr key={p.name}>
-                        <td><code>{p.name}</code></td>
-                        <td>{p.type ? <code>{p.type}</code> : <span className="muted">—</span>}</td>
-                        <td>{p.required ? '✔' : ''}</td>
-                        <td>{p.default !== undefined ? <code>{String(p.default)}</code> : <span className="muted">—</span>}</td>
-                        <td>{p.enum ? <code>{p.enum.map(String).join(', ')}</code> : <span className="muted">—</span>}</td>
-                        <td>{p.description ?? <span className="muted">—</span>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null,
-          )}
-        </section>
-      ) : null}
-
-      {screen.design ? (
-        <section>
-          <h2>デザイン</h2>
-          {screen.design.figma ? (
-            <p>
-              <a href={screen.design.figma} target="_blank" rel="noreferrer">
-                Figma を開く ↗
-              </a>
-            </p>
-          ) : null}
-          {screen.design.images.length > 0 ? (
-            <div className="mockups">
-              {screen.design.images.map((img, i) => (
-                <figure key={i} className="mockup">
-                  <img src={img.url} alt={img.caption ?? `mockup ${i + 1}`} loading="lazy" />
-                  {img.caption ? <figcaption className="muted">{img.caption}</figcaption> : null}
-                </figure>
-              ))}
-            </div>
-          ) : null}
-          {screen.design.links.length > 0 ? (
-            <ul className="rules">
-              {screen.design.links.map((l, i) => (
-                <li key={i}>
-                  <a href={l.url} target="_blank" rel="noreferrer">
-                    {l.label ?? l.url} ↗
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
-      ) : null}
-
       {screen.warnings.length > 0 ? (
-        <section>
-          <h2>警告</h2>
-          <ul className="warnings">
-            {screen.warnings.map((w, i) => (
-              <li key={i}>⚠ {w}</li>
-            ))}
-          </ul>
-        </section>
+        <ul className="warnings">
+          {screen.warnings.map((w, i) => (
+            <li key={i}>⚠ {w}</li>
+          ))}
+        </ul>
       ) : null}
 
-      <section>
-        <h2>フィールド一覧</h2>
-        <p className="muted">
-          記述順＝表示順。ブラウザで <code>$ref</code> を解決して表示しています。
-        </p>
-        <input
-          className="filter"
-          type="search"
-          placeholder="フィールドを絞り込み（キー/ラベル）"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-        <table className="fields">
-          <thead>
-            <tr>
-              <th>キー</th>
-              <th>ラベル</th>
-              <th>型</th>
-              <th>必須</th>
-              <th>バリデーション</th>
-              <th>表示条件</th>
-              <th>由来</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fields.map((field) => (
-              <tr key={field.key}>
-                <td><code>{field.key}</code></td>
-                <td>{field.label}</td>
-                <td><code>{field.type}</code></td>
-                <td>{field.required ? '✔' : ''}</td>
-                <td>
-                  {field.validations.length === 0 ? (
-                    <span className="muted">—</span>
-                  ) : (
-                    <ul className="rules">
-                      {field.validations.map((v, i) => (
-                        <li key={i}>
-                          <code>{v.rule}</code>
-                          {v.message ? <span className="muted"> — {v.message}</span> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </td>
-                <td>
-                  {field.visibleWhen ? (
-                    <code>{field.visibleWhen}</code>
-                  ) : (
-                    <span className="muted">—</span>
-                  )}
-                </td>
-                <td>
-                  {field.origin ? (
-                    <span className="badge badge-ref" title={field.origin}>
-                      $ref
-                    </span>
-                  ) : (
-                    <span className="muted">inline</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <nav className="tabs">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            className={active === t.id ? 'tab active' : 'tab'}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
-      {screen.layout ? (
+      {active === 'fields' ? <FieldsTab screen={screen} /> : null}
+      {active === 'layout' && screen.layout ? <LayoutTab screen={screen} /> : null}
+      {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
+      {active === 'states' && screen.stateMachine ? (
         <section>
-          <h2>レイアウト</h2>
-          <p className="muted">言語レベルの構造（セクション・列・幅ヒント）。</p>
-          {screen.layout.sections.map((sec, i) => {
-            const fieldByKey = new Map(screen.fields.map((f) => [f.key, f]))
-            return (
-              <div key={sec.id ?? i} className="layout-section">
-                <h3>
-                  {sec.title ?? sec.id ?? `section ${i + 1}`}
-                  {sec.region ? <span className="badge badge-region">{sec.region}</span> : null}
-                </h3>
-                <div
-                  className="layout-grid"
-                  style={{ gridTemplateColumns: `repeat(${sec.columns}, 1fr)` }}
-                >
-                  {sec.fieldKeys.map((key) => {
-                    const f = fieldByKey.get(key)
-                    const span = f?.width === 'full' ? sec.columns : 1
-                    const designUrl = f?.design?.figma ?? f?.design?.images[0]?.url
-                    return (
-                      <div key={key} className="layout-cell" style={{ gridColumn: `span ${span}` }}>
-                        <span className="cell-label">{f?.label ?? key}</span>
-                        <code className="cell-key">{key}</code>
-                        <span className="cell-tags">
-                          {f?.width ? <span className="cell-width">{f.width}</span> : null}
-                          {f?.visibleWhen ? <span className="cell-cond" title={f.visibleWhen}>条件</span> : null}
-                          {designUrl ? (
-                            <a className="cell-design" href={designUrl} target="_blank" rel="noreferrer">
-                              🎨
-                            </a>
-                          ) : null}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </section>
-      ) : null}
-
-      {screen.stateMachine ? (
-        <section>
-          <h2>状態遷移</h2>
           <p className="muted">states / events から生成した状態遷移図です。</p>
           <StateDiagram sm={screen.stateMachine} />
         </section>
       ) : null}
-
-      {screen.apiBindings.length > 0 ? (
+      {active === 'api' ? <ApiTab screen={screen} /> : null}
+      {active === 'transitions' ? (
+        <TransitionsTab screen={screen} screenIds={screenIds} onNavigate={onNavigate} />
+      ) : null}
+      {active === 'design' && screen.design ? <DesignTab screen={screen} /> : null}
+      {active === 'raw' ? (
         <section>
-          <h2>API 連携</h2>
-          <table className="fields">
-            <thead>
-              <tr>
-                <th>キー</th>
-                <th>operationId</th>
-                <th>specRef</th>
-                <th>request</th>
-                <th>response</th>
-              </tr>
-            </thead>
-            <tbody>
-              {screen.apiBindings.map((b) => (
-                <tr key={b.key}>
-                  <td><code>{b.key}</code></td>
-                  <td><code>{b.operationId}</code></td>
-                  <td><code>{b.specRef}</code></td>
-                  <td>
-                    {b.requestMappings.length === 0 ? (
-                      <span className="muted">—</span>
-                    ) : (
-                      <ul className="rules">
-                        {b.requestMappings.map((m, i) => (
-                          <li key={i}>
-                            <code>{m.scope}.{m.key}</code> ← <code>{m.expr}</code>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                  <td>
-                    {b.responseMappings.length === 0 ? (
-                      <span className="muted">—</span>
-                    ) : (
-                      <ul className="rules">
-                        {b.responseMappings.map((m, i) => (
-                          <li key={i}>
-                            <code>{m.field}</code> ← <code>{m.expr}</code>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <pre className="raw">{screen.rawText}</pre>
         </section>
       ) : null}
-
-      {screen.transitions.length > 0 ? (
-        <section>
-          <h2>画面遷移</h2>
-          <ul className="rules">
-            {screen.transitions.map((t) => (
-              <li key={t.key}>
-                <code>{t.key}</code> → <code>{t.to}</code>
-                {t.trigger ? <span className="muted"> （{t.trigger}）</span> : null}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <section>
-        <h2>
-          Raw YAML{' '}
-          <button className="link" onClick={() => setShowRaw((v) => !v)}>
-            {showRaw ? '隠す' : '表示'}
-          </button>
-        </h2>
-        {showRaw ? <pre className="raw">{screen.rawText}</pre> : null}
-      </section>
     </>
+  )
+}
+
+function FieldsTab({ screen }: { screen: ScreenView }) {
+  const [filter, setFilter] = useState('')
+  const q = filter.trim().toLowerCase()
+  const fields = q
+    ? screen.fields.filter((f) => f.key.toLowerCase().includes(q) || f.label.toLowerCase().includes(q))
+    : screen.fields
+  return (
+    <section>
+      <p className="muted">
+        記述順＝表示順。ブラウザで <code>$ref</code> を解決して表示しています。
+      </p>
+      <input
+        className="filter"
+        type="search"
+        placeholder="フィールドを絞り込み（キー/ラベル）"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
+      <table className="fields">
+        <thead>
+          <tr>
+            <th>キー</th>
+            <th>ラベル</th>
+            <th>型</th>
+            <th>必須</th>
+            <th>バリデーション</th>
+            <th>表示条件</th>
+            <th>由来</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fields.map((field) => (
+            <tr key={field.key}>
+              <td><code>{field.key}</code></td>
+              <td>{field.label}</td>
+              <td><code>{field.type}</code></td>
+              <td>{field.required ? '✔' : ''}</td>
+              <td>
+                {field.validations.length === 0 ? (
+                  <span className="muted">—</span>
+                ) : (
+                  <ul className="rules">
+                    {field.validations.map((v, i) => (
+                      <li key={i}>
+                        <code>{v.rule}</code>
+                        {v.message ? <span className="muted"> — {v.message}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </td>
+              <td>{field.visibleWhen ? <code>{field.visibleWhen}</code> : <span className="muted">—</span>}</td>
+              <td>
+                {field.origin ? (
+                  <span className="badge badge-ref" title={field.origin}>$ref</span>
+                ) : (
+                  <span className="muted">inline</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  )
+}
+
+function LayoutTab({ screen }: { screen: ScreenView }) {
+  const fieldByKey = new Map(screen.fields.map((f) => [f.key, f]))
+  return (
+    <section>
+      <p className="muted">言語レベルの構造（セクション・列・幅ヒント）。</p>
+      {screen.layout!.sections.map((sec, i) => (
+        <div key={sec.id ?? i} className="layout-section">
+          <h3>
+            {sec.title ?? sec.id ?? `section ${i + 1}`}
+            {sec.region ? <span className="badge badge-region">{sec.region}</span> : null}
+          </h3>
+          <div className="layout-grid" style={{ gridTemplateColumns: `repeat(${sec.columns}, 1fr)` }}>
+            {sec.fieldKeys.map((key) => {
+              const f = fieldByKey.get(key)
+              const span = f?.width === 'full' ? sec.columns : 1
+              const designUrl = f?.design?.figma ?? f?.design?.images[0]?.url
+              return (
+                <div key={key} className="layout-cell" style={{ gridColumn: `span ${span}` }}>
+                  <span className="cell-label">{f?.label ?? key}</span>
+                  <code className="cell-key">{key}</code>
+                  <span className="cell-tags">
+                    {f?.width ? <span className="cell-width">{f.width}</span> : null}
+                    {f?.visibleWhen ? <span className="cell-cond" title={f.visibleWhen}>条件</span> : null}
+                    {designUrl ? (
+                      <a className="cell-design" href={designUrl} target="_blank" rel="noreferrer">🎨</a>
+                    ) : null}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+function ParamsTab({ screen }: { screen: ScreenView }) {
+  return (
+    <section>
+      {(['path', 'query'] as const).map((kind) =>
+        screen.params && screen.params[kind].length > 0 ? (
+          <div key={kind}>
+            <h3>{kind}</h3>
+            <table className="fields">
+              <thead>
+                <tr>
+                  <th>名前</th>
+                  <th>型</th>
+                  <th>必須</th>
+                  <th>既定</th>
+                  <th>候補</th>
+                  <th>説明</th>
+                </tr>
+              </thead>
+              <tbody>
+                {screen.params[kind].map((p) => (
+                  <tr key={p.name}>
+                    <td><code>{p.name}</code></td>
+                    <td>{p.type ? <code>{p.type}</code> : <span className="muted">—</span>}</td>
+                    <td>{p.required ? '✔' : ''}</td>
+                    <td>{p.default !== undefined ? <code>{String(p.default)}</code> : <span className="muted">—</span>}</td>
+                    <td>{p.enum ? <code>{p.enum.map(String).join(', ')}</code> : <span className="muted">—</span>}</td>
+                    <td>{p.description ?? <span className="muted">—</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null,
+      )}
+    </section>
+  )
+}
+
+function ApiTab({ screen }: { screen: ScreenView }) {
+  return (
+    <section>
+      <table className="fields">
+        <thead>
+          <tr>
+            <th>キー</th>
+            <th>operationId</th>
+            <th>specRef</th>
+            <th>request</th>
+            <th>response</th>
+          </tr>
+        </thead>
+        <tbody>
+          {screen.apiBindings.map((b) => (
+            <tr key={b.key}>
+              <td><code>{b.key}</code></td>
+              <td><code>{b.operationId}</code></td>
+              <td><code>{b.specRef}</code></td>
+              <td>
+                {b.requestMappings.length === 0 ? (
+                  <span className="muted">—</span>
+                ) : (
+                  <ul className="rules">
+                    {b.requestMappings.map((m, i) => (
+                      <li key={i}><code>{m.scope}.{m.key}</code> ← <code>{m.expr}</code></li>
+                    ))}
+                  </ul>
+                )}
+              </td>
+              <td>
+                {b.responseMappings.length === 0 ? (
+                  <span className="muted">—</span>
+                ) : (
+                  <ul className="rules">
+                    {b.responseMappings.map((m, i) => (
+                      <li key={i}><code>{m.field}</code> ← <code>{m.expr}</code></li>
+                    ))}
+                  </ul>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  )
+}
+
+function TransitionsTab({
+  screen,
+  screenIds,
+  onNavigate,
+}: {
+  screen: ScreenView
+  screenIds: string[]
+  onNavigate: (id: string) => void
+}) {
+  const known = new Set(screenIds)
+  return (
+    <section>
+      <p className="muted">遷移先が読み込み済みならクリックでその仕様書へ移動します。</p>
+      <ul className="rules">
+        {screen.transitions.map((t) => (
+          <li key={t.key}>
+            <code>{t.key}</code> →{' '}
+            {known.has(t.to) ? (
+              <button className="link" onClick={() => onNavigate(t.to)}>
+                <code>{t.to}</code> ↗
+              </button>
+            ) : (
+              <code title="未読み込みの画面">{t.to}</code>
+            )}
+            {t.trigger ? <span className="muted"> （{t.trigger}）</span> : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function DesignTab({ screen }: { screen: ScreenView }) {
+  const design = screen.design!
+  return (
+    <section>
+      {design.figma ? (
+        <p>
+          <a href={design.figma} target="_blank" rel="noreferrer">Figma を開く ↗</a>
+        </p>
+      ) : null}
+      {design.images.length > 0 ? (
+        <div className="mockups">
+          {design.images.map((img, i) => (
+            <figure key={i} className="mockup">
+              <img src={img.url} alt={img.caption ?? `mockup ${i + 1}`} loading="lazy" />
+              {img.caption ? <figcaption className="muted">{img.caption}</figcaption> : null}
+            </figure>
+          ))}
+        </div>
+      ) : null}
+      {design.links.length > 0 ? (
+        <ul className="rules">
+          {design.links.map((l, i) => (
+            <li key={i}>
+              <a href={l.url} target="_blank" rel="noreferrer">{l.label ?? l.url} ↗</a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
   )
 }
