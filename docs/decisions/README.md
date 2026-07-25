@@ -17,7 +17,7 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
 - [0003 — event の期待結果と API エラー挙動](./0003-event-expects-and-api-errors.md)
   — ステータス: **Accepted**（優先度2 実装済み）
 - [0004 — 権限マトリクス（role×resource×operation）](./0004-access-control-matrix.md)
-  — ステータス: **Accepted**（優先度3 実装中）
+  — ステータス: **Accepted**（優先度3 実装済み・ビューア表示含む）
 
 ## v0.1 決定の一覧
 

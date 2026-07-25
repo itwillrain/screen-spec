@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { StateDiagram } from './StateDiagram'
-import type { EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
+import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
 
 interface Props {
   screen: ScreenView
@@ -14,6 +14,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
     { id: 'fields', label: '項目', show: true },
     { id: 'layout', label: 'レイアウト', show: !!screen.layout },
     { id: 'params', label: 'パラメータ', show: !!screen.params },
+    { id: 'access', label: '権限', show: !!screen.accessControl },
     { id: 'states', label: '状態遷移', show: !!screen.stateMachine },
     { id: 'api', label: 'API 連携', show: screen.apiBindings.length > 0 },
     { id: 'transitions', label: '画面遷移', show: screen.transitions.length > 0 },
@@ -77,6 +78,9 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       {active === 'fields' ? <FieldsTab screen={screen} /> : null}
       {active === 'layout' && screen.layout ? <LayoutTab screen={screen} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
+      {active === 'access' && screen.accessControl ? (
+        <AccessTab screen={screen} accessControl={screen.accessControl} />
+      ) : null}
       {active === 'states' && screen.stateMachine ? (
         <StatesTab screen={screen} />
       ) : null}
@@ -324,6 +328,118 @@ function ParamsTab({ screen }: { screen: ScreenView }) {
           </div>
         ) : null,
       )}
+    </section>
+  )
+}
+
+/** "*" 既定を解決した実効値（個別指定 > "*" > 未定義）。 */
+function effectiveAccess(
+  map: Record<string, { view?: boolean; edit?: boolean; execute?: boolean }>,
+  key: string,
+  prop: 'view' | 'edit' | 'execute',
+): boolean | undefined {
+  const specific = map[key]?.[prop]
+  if (typeof specific === 'boolean') return specific
+  const wild = map['*']?.[prop]
+  return typeof wild === 'boolean' ? wild : undefined
+}
+
+function AccessCell({ value }: { value?: boolean }) {
+  if (value === true) return <span className="ac-yes">✓</span>
+  if (value === false) return <span className="ac-no">✗</span>
+  return <span className="muted">—</span>
+}
+
+function AccessTab({
+  screen,
+  accessControl,
+}: {
+  screen: ScreenView
+  accessControl: AccessControlView
+}) {
+  const roles = accessControl.roles
+  const fieldKeys = screen.fields.map((f) => f.key)
+  const eventKeys = screen.events.map((e) => e.key)
+  return (
+    <section>
+      <p className="muted">role × リソース × 操作。<code>*</code> 既定を解決した実効値です。</p>
+
+      <h3>画面（view）</h3>
+      <table className="fields">
+        <thead>
+          <tr>
+            <th>role</th>
+            <th>view</th>
+          </tr>
+        </thead>
+        <tbody>
+          {roles.map((r) => (
+            <tr key={r.role}>
+              <td><code>{r.role}</code></td>
+              <td><AccessCell value={r.screenView} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>フィールド（view / edit）</h3>
+      <table className="fields matrix">
+        <thead>
+          <tr>
+            <th rowSpan={2}>field</th>
+            {roles.map((r) => (
+              <th key={r.role} colSpan={2}>{r.role}</th>
+            ))}
+          </tr>
+          <tr>
+            {roles.map((r) => (
+              <Fragment key={r.role}>
+                <th>view</th>
+                <th>edit</th>
+              </Fragment>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {fieldKeys.map((fk) => (
+            <tr key={fk}>
+              <td><code>{fk}</code></td>
+              {roles.map((r) => (
+                <Fragment key={r.role}>
+                  <td><AccessCell value={effectiveAccess(r.fields, fk, 'view')} /></td>
+                  <td><AccessCell value={effectiveAccess(r.fields, fk, 'edit')} /></td>
+                </Fragment>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {eventKeys.length > 0 ? (
+        <>
+          <h3>イベント（execute）</h3>
+          <table className="fields matrix">
+            <thead>
+              <tr>
+                <th>event</th>
+                {roles.map((r) => (
+                  <th key={r.role}>{r.role}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {eventKeys.map((ek) => (
+                <tr key={ek}>
+                  <td><code>{ek}</code></td>
+                  {roles.map((r) => (
+                    <td key={r.role}><AccessCell value={effectiveAccess(r.events, ek, 'execute')} /></td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
     </section>
   )
 }

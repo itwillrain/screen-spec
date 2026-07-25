@@ -139,6 +139,21 @@ ul.nav {
   padding: 0 0.3rem;
   font-size: 0.65rem;
 }
+table.matrix th,
+table.matrix td {
+  text-align: center;
+}
+table.matrix td:first-child,
+table.matrix th:first-child {
+  text-align: left;
+}
+.ac-yes {
+  color: #166534;
+  font-weight: 700;
+}
+.ac-no {
+  color: #b91c1c;
+}
 .tabs {
   display: flex;
   flex-wrap: wrap;

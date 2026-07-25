@@ -138,12 +138,26 @@ export interface ParamsView {
   query: ParamView[];
 }
 
+export interface RoleAccessView {
+  role: string;
+  screenView?: boolean;
+  /** フィールドキー→{view,edit}（"*" 既定を含む） */
+  fields: Record<string, { view?: boolean; edit?: boolean }>;
+  /** イベントキー→{execute}（"*" 既定を含む） */
+  events: Record<string, { execute?: boolean }>;
+}
+
+export interface AccessControlView {
+  roles: RoleAccessView[];
+}
+
 export interface ScreenView {
   id: string;
   name: string;
   description?: string;
   route?: string;
   params?: ParamsView;
+  accessControl?: AccessControlView;
   fields: FieldView[];
   layout?: LayoutView;
   design?: DesignView;
@@ -284,11 +298,34 @@ interface SpecDoc {
     design?: RawDesign;
     layout?: RawLayout;
     params?: RawParams;
+    accessControl?: {
+      roles?: Record<
+        string,
+        {
+          screen?: { view?: boolean };
+          fields?: Record<string, { view?: boolean; edit?: boolean }>;
+          events?: Record<string, { execute?: boolean }>;
+        }
+      >;
+    };
     fields?: Record<string, RawField>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
     apiBindings?: Record<string, RawApiBinding>;
     transitions?: Record<string, RawTransition>;
+  };
+}
+
+function buildAccessControl(screen: SpecDoc["screen"]): AccessControlView | undefined {
+  const roles = screen?.accessControl?.roles;
+  if (!roles || Object.keys(roles).length === 0) return undefined;
+  return {
+    roles: Object.entries(roles).map(([role, ac]) => ({
+      role,
+      screenView: ac.screen?.view,
+      fields: ac.fields ?? {},
+      events: ac.events ?? {},
+    })),
   };
 }
 
@@ -475,6 +512,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     description: resolved.screen?.description,
     route: resolved.screen?.route,
     params: buildParams(resolved.screen?.params),
+    accessControl: buildAccessControl(resolved.screen),
     fields,
     layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),
