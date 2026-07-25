@@ -18,6 +18,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
     { id: 'states', label: '状態遷移', show: !!screen.stateMachine },
     { id: 'api', label: 'API 連携', show: screen.apiBindings.length > 0 },
     { id: 'transitions', label: '画面遷移', show: screen.transitions.length > 0 },
+    { id: 'tests', label: `テスト項目 (${screen.testItems.length})`, show: screen.testItems.length > 0 },
     { id: 'design', label: 'デザイン', show: !!screen.design },
     { id: 'raw', label: 'Raw YAML', show: true },
   ].filter((t) => t.show)
@@ -88,6 +89,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       {active === 'transitions' ? (
         <TransitionsTab screen={screen} screenIds={screenIds} onNavigate={onNavigate} />
       ) : null}
+      {active === 'tests' ? <TestItemsTab screen={screen} /> : null}
       {active === 'design' && screen.design ? <DesignTab screen={screen} /> : null}
       {active === 'raw' ? (
         <section>
@@ -95,6 +97,46 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
         </section>
       ) : null}
     </>
+  )
+}
+
+function TestItemsTab({ screen }: { screen: ScreenView }) {
+  const [category, setCategory] = useState('all')
+  const categories = Array.from(new Set(screen.testItems.map((item) => item.category)))
+  const items = category === 'all'
+    ? screen.testItems
+    : screen.testItems.filter((item) => item.category === category)
+  return (
+    <section>
+      <p className="muted">形式化された仕様から機械的に導出したテスト候補です。</p>
+      <div className="test-filters" role="group" aria-label="テストカテゴリ">
+        {['all', ...categories].map((value) => (
+          <button
+            key={value}
+            className={category === value ? 'test-filter active' : 'test-filter'}
+            onClick={() => setCategory(value)}
+          >
+            {value === 'all' ? `すべて (${screen.testItems.length})` : value}
+          </button>
+        ))}
+      </div>
+      <table className="fields test-items">
+        <thead>
+          <tr><th>ID</th><th>カテゴリ</th><th>対象</th><th>テスト条件</th><th>期待結果</th></tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td><code>{item.id}</code></td>
+              <td><span className="badge badge-region">{item.category}</span></td>
+              <td><code>{item.target}</code></td>
+              <td>{item.title}</td>
+              <td>{item.expected}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   )
 }
 

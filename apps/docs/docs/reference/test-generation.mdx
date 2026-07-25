@@ -1,0 +1,48 @@
+---
+title: Test generation
+description: 画面仕様からテスト項目候補を自動導出する。
+---
+
+# Test generation
+
+`@screen-spec/core` の `generateTestItems(screen)` は、解決済みscreenからテスト項目候補を
+決定的に導出します。Viewerでは各画面の「テスト項目」タブから確認できます。
+
+## 導出対象
+
+| category | 入力 |
+|---|---|
+| `required` / `validation` | fieldのrequiredと既知バリデーション語彙 |
+| `visibility` / `enablement` | `visibleWhen` / `enabledWhen` |
+| `transition` | event、成功・失敗分岐、error cases、`expects` |
+| `permission` | `accessControl`のrole×field×event実効権限 |
+| `param` | path/queryのrequired、enum、default |
+
+未知のバリデーションルールは意味論を安全に導出できないため対象外です。
+生成物は実行コードではなく、テスト項目書や各テストフレームワークへ渡す中間表現です。
+
+## API
+
+```ts
+import { generateTestItems } from "@screen-spec/core";
+
+const items = generateTestItems(resolvedScreen);
+for (const item of items) {
+  console.log(item.id, item.category, item.title, item.expected);
+}
+```
+
+各項目は次の形です。
+
+```ts
+interface TestItem {
+  id: string;
+  category: "validation" | "required" | "visibility" | "enablement" |
+    "transition" | "permission" | "param";
+  target: string;
+  title: string;
+  expected: string;
+}
+```
+
+`testData`文書との結合やCSV/Markdown出力は今後の拡張です。

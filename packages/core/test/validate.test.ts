@@ -12,6 +12,7 @@ import {
   parseTemplate,
   templateRefs,
   parseCondition,
+  generateTestItems,
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
@@ -708,6 +709,61 @@ describe("testData ドキュメント（ADR 0005）", () => {
   it("fixture id 重複は error", () => {
     const diags = analyzeTestData({ fixtures: [{ id: "a" }, { id: "a" }] });
     expect(diags.some((d) => d.severity === "error" && d.code === "duplicate-fixture-id")).toBe(true);
+  });
+});
+
+describe("テスト項目自動生成", () => {
+  it("形式化された画面仕様から主要カテゴリを導出する", () => {
+    const items = generateTestItems({
+      fields: {
+        name: {
+          required: true,
+          validations: [{ rule: "maxLength", value: 10 }],
+          visibleWhen: 'fields.role == "admin"',
+          enabledWhen: 'fields.status == "draft"',
+        },
+        role: {},
+      },
+      states: { editing: {}, submitting: {}, done: {}, error: {} },
+      events: {
+        submit: {
+          from: "editing",
+          to: "submitting",
+          expects: { state: "submitting" },
+          onSuccess: {
+            to: "done",
+            expects: { state: "done", message: { kind: "success", text: "保存しました" } },
+          },
+          onError: {
+            to: "error",
+            cases: [{ when: { status: 409 }, to: "editing", expects: { state: "editing" } }],
+          },
+        },
+      },
+      accessControl: {
+        roles: {
+          editor: {
+            screen: { view: true },
+            fields: { "*": { view: true, edit: false }, name: { edit: true } },
+            events: { submit: { execute: true } },
+          },
+        },
+      },
+      params: { query: { tab: { required: true, enum: ["profile"], default: "profile" } } },
+    });
+
+    const categories = new Set(items.map((item) => item.category));
+    expect(categories).toEqual(new Set(["required", "validation", "visibility", "enablement", "transition", "permission", "param"]));
+    expect(items.some((item) => item.id === "field.name.maxLength.over")).toBe(true);
+    expect(items.some((item) => item.id === "event.submit.error.case0" && item.expected.includes("state=editing"))).toBe(true);
+    expect(items.some((item) => item.id === "event.submit.success" && item.expected.includes("保存しました"))).toBe(true);
+    expect(items.some((item) => item.id === "access.editor.field.name" && item.expected.includes("編集=可"))).toBe(true);
+    expect(new Set(items.map((item) => item.id)).size).toBe(items.length);
+  });
+
+  it("未知バリデーションは自動導出しない", () => {
+    const items = generateTestItems({ fields: { a: { validations: [{ rule: "customBiz" }] } } });
+    expect(items).toEqual([]);
   });
 });
 

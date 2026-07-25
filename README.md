@@ -68,5 +68,7 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ M5: 複数画面対応・画面間遷移可視化
 - ✅ バリデーション語彙の形式化（既知ルール＋型付き値、未知ルールは warning）
 - ✅ event の期待結果（`expects`）と API エラー挙動の形式化・Viewer表示
-- ⬜ 次: 権限マトリクス（role×field×操作）の明示化
-- ⬜ 今後: フィールド既定値・`enabledWhen`、`compose`、複数画面の横断検証
+- ✅ 権限マトリクス（role×field×operation）の形式化・Viewer表示
+- ✅ フィールド既定値・`enabledWhen`、テストデータ文書
+- ✅ 画面仕様からのテスト項目候補生成・Viewer表示
+- ⬜ 今後: `compose`、複数画面の横断検証、テストデータ結合、CSV/Markdown出力

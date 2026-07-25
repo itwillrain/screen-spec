@@ -5,8 +5,10 @@ import {
   resolveRefs,
   validateSpec,
   findOperation,
+  generateTestItems,
   type DocumentLoader,
   type OpenApiOperation,
+  type TestItem,
 } from "@screen-spec/core";
 
 export interface FieldValidationView {
@@ -167,6 +169,7 @@ export interface ScreenView {
   events: EventView[];
   apiBindings: ApiBindingView[];
   transitions: TransitionView[];
+  testItems: TestItem[];
   warnings: string[];
   valid: boolean;
   issueCount: number;
@@ -530,6 +533,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
       to: String(t.to ?? ""),
       trigger: t.trigger,
     })),
+    testItems: generateTestItems(resolved.screen),
     warnings: result.warnings.map((w) => w.message),
     valid: result.valid,
     issueCount: result.issues.length,

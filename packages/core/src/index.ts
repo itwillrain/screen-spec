@@ -28,6 +28,11 @@ export {
   type RuleValueKind,
 } from "./validation-rules.js";
 export {
+  generateTestItems,
+  type TestItem,
+  type TestCategory,
+} from "./testgen.js";
+export {
   parseTemplate,
   templateRefs,
   parseCondition,

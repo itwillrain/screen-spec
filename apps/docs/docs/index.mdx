@@ -33,6 +33,7 @@ YAML を主な記述形式とし、JSON Schema で検証できます。特定の
 - [レイアウト](/reference/layout) — 言語レベルの構造（セクション/列/幅）
 - [デザイン参照](/reference/design) — Figma / 画像 / リンク
 - [テストデータ](/reference/test-data) — フィクスチャ（別ドキュメント種別）
+- [テスト項目生成](/reference/test-generation) — 仕様からテスト候補を自動導出
 - [要素リファレンス: Screen](/reference/screen)
 
 ## ビューア
@@ -48,4 +49,6 @@ spec を fetch し、その場で `$ref` を解決して表示します。複数
 - ✅ Viewer（Swagger UI 型・M2）
 - ✅ `states` / `events` / `transitions`（状態遷移・M3）
 - ✅ `apiBindings`（OpenAPI 連携・M4）
+- ✅ 権限マトリクス、field既定値・`enabledWhen`、テストデータ
+- ✅ テスト項目候補の自動導出とViewer表示
 - ⬜ `compose`（allOf 相当・予約のみ）
