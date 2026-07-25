@@ -38,4 +38,5 @@ testData:
 
 ## 帰結
 - 画面仕様は純粋に保たれ、テストデータは差し替え／複数セットを持てる。
+- `generateTestItems(screen, testData)`は各fixtureを構造化されたテスト項目へ変換し、Viewerも画面idで関連付ける。
 - 受け入れ条件（AC）や業務ルールはさらに別ソース（BDD 等）に委ねてよい（本 ADR の対象外）。

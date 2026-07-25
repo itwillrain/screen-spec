@@ -321,6 +321,10 @@ interface SpecDoc {
     apiBindings?: Record<string, RawApiBinding>;
     transitions?: Record<string, RawTransition>;
   };
+  testData?: {
+    screen?: string;
+    fixtures?: unknown[];
+  };
 }
 
 function buildAccessControl(screen: SpecDoc["screen"]): AccessControlView | undefined {
@@ -461,7 +465,11 @@ function buildEvents(screen: SpecDoc["screen"]): EventView[] {
  * @param entryUri エントリ spec の絶対 URL
  * @param load URI からテキストを取得するローダー（ブラウザは fetch）
  */
-export async function buildScreenView(entryUri: string, load: DocumentLoader): Promise<ScreenView> {
+export async function buildScreenView(
+  entryUri: string,
+  load: DocumentLoader,
+  testDataDocuments: SpecDoc[] = [],
+): Promise<ScreenView> {
   const rawText = await load(entryUri);
   const raw = parseYaml(rawText) as SpecDoc;
   const result = await validateSpec(rawText, entryUri, load);
@@ -515,6 +523,10 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     };
   });
 
+  const matchingTestData = testDataDocuments.find((document) =>
+    document.testData?.screen === resolved.screen?.id
+  )?.testData;
+
   return {
     id: String(resolved.screen?.id ?? ""),
     name: String(resolved.screen?.name ?? ""),
@@ -533,7 +545,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
       to: String(t.to ?? ""),
       trigger: t.trigger,
     })),
-    testItems: generateTestItems(resolved.screen),
+    testItems: generateTestItems(resolved.screen, matchingTestData),
     warnings: result.warnings.map((w) => w.message),
     valid: result.valid,
     issueCount: result.issues.length,
@@ -553,8 +565,18 @@ export async function loadAllScreens(
 ): Promise<ScreenView[]> {
   const manifestText = await load(new URL("manifest.json", specsBaseUri).href);
   const files = JSON.parse(manifestText) as string[];
+  let testDataDocuments: SpecDoc[] = [];
+  try {
+    const testDataManifestText = await load(new URL("test-data-manifest.json", specsBaseUri).href);
+    const testDataFiles = JSON.parse(testDataManifestText) as string[];
+    testDataDocuments = await Promise.all(
+      testDataFiles.map(async (file) => parseYaml(await load(new URL(file, specsBaseUri).href)) as SpecDoc),
+    );
+  } catch {
+    // testData manifest は任意。存在しない既存配信でも画面表示を継続する。
+  }
   const screens = await Promise.all(
-    files.map((file) => buildScreenView(new URL(file, specsBaseUri).href, load)),
+    files.map((file) => buildScreenView(new URL(file, specsBaseUri).href, load, testDataDocuments)),
   );
   // 記述順を保ちつつ id で安定させる
   return screens;

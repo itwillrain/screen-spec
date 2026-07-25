@@ -457,3 +457,17 @@ ul.warnings {
   max-width: 15rem;
   overflow-wrap: anywhere;
 }
+.test-context {
+  margin: 0;
+  min-width: 12rem;
+}
+.test-context dt {
+  color: #6b7280;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.test-context dd {
+  margin: 0 0 0.35rem;
+  overflow-wrap: anywhere;
+}

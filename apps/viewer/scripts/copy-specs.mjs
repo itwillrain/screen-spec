@@ -29,4 +29,9 @@ const screens = readdirSync(examplesDir)
   .sort();
 writeFileSync(resolve(outDir, "manifest.json"), JSON.stringify(screens, null, 2));
 
-console.log(`[copy-specs] copied specs and wrote manifest.json (${screens.length} screens)`);
+const testData = readdirSync(examplesDir)
+  .filter((n) => n.endsWith(".fixtures.yaml") && !n.includes("invalid"))
+  .sort();
+writeFileSync(resolve(outDir, "test-data-manifest.json"), JSON.stringify(testData, null, 2));
+
+console.log(`[copy-specs] copied specs and wrote manifests (${screens.length} screens, ${testData.length} testData)`);

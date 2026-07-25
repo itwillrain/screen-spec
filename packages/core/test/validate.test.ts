@@ -765,6 +765,41 @@ describe("テスト項目自動生成", () => {
     const items = generateTestItems({ fields: { a: { validations: [{ rule: "customBiz" }] } } });
     expect(items).toEqual([]);
   });
+
+  it("testDataから前提・入力・初期表示期待値を構造化して導出する", () => {
+    const items = generateTestItems(
+      { id: "user-edit", fields: { name: {}, role: {} } },
+      {
+        screen: "user-edit",
+        fixtures: [{
+          id: "existingEditor",
+          description: "既存editorを表示",
+          params: { userId: "u-001" },
+          given: { user: { id: "u-001", role: "editor" } },
+          expected: { fields: { name: "田中太郎", role: "editor" } },
+        }],
+      },
+    );
+    expect(items).toContainEqual({
+      id: "fixture.existingEditor.initial",
+      category: "fixture",
+      target: "existingEditor",
+      title: "既存editorを表示",
+      expected: 'name="田中太郎" / role="editor"',
+      fixtureId: "existingEditor",
+      params: { userId: "u-001" },
+      given: { user: { id: "u-001", role: "editor" } },
+      expectedFields: { name: "田中太郎", role: "editor" },
+    });
+  });
+
+  it("別画面向けtestDataは導出しない", () => {
+    const items = generateTestItems(
+      { id: "user-edit" },
+      { screen: "user-list", fixtures: [{ id: "list" }] },
+    );
+    expect(items).toEqual([]);
+  });
 });
 
 describe("findOperation（OpenAPI 解決）", () => {

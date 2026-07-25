@@ -9,7 +9,8 @@ export type TestCategory =
   | "enablement"
   | "transition"
   | "permission"
-  | "param";
+  | "param"
+  | "fixture";
 
 export interface TestItem {
   id: string;
@@ -17,6 +18,10 @@ export interface TestItem {
   target: string;
   title: string;
   expected: string;
+  fixtureId?: string;
+  params?: Record<string, unknown>;
+  given?: Record<string, unknown>;
+  expectedFields?: Record<string, unknown>;
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {
@@ -130,7 +135,7 @@ function fieldValidationItems(key: string, field: FieldLike): TestItem[] {
 }
 
 /** 解決済み screen からテスト項目を導出する。 */
-export function generateTestItems(screen: unknown): TestItem[] {
+export function generateTestItems(screen: unknown, testData?: unknown): TestItem[] {
   if (!isObject(screen)) return [];
   const items: TestItem[] = [];
   const fields = isObject(screen.fields) ? screen.fields : {};
@@ -278,6 +283,38 @@ export function generateTestItems(screen: unknown): TestItem[] {
         if (p.default !== undefined) {
           items.push({ id: `param.${kind}.${name}.default`, category: "param", target: name, title: `${kind} ${name}: 未指定`, expected: `既定値 ${String(p.default)} が使われる` });
         }
+      }
+    }
+  }
+
+  // testData：フィクスチャごとの前提パラメータ・データと初期表示期待値
+  if (isObject(testData)) {
+    const targetScreen = asString(testData.screen);
+    const screenId = asString(screen.id);
+    const fixtures = Array.isArray(testData.fixtures) ? testData.fixtures : [];
+    if (targetScreen === undefined || screenId === undefined || targetScreen === screenId) {
+      for (const raw of fixtures) {
+        if (!isObject(raw)) continue;
+        const fixtureId = asString(raw.id);
+        if (!fixtureId) continue;
+        const params = isObject(raw.params) ? raw.params : undefined;
+        const given = isObject(raw.given) ? raw.given : undefined;
+        const expected = isObject(raw.expected) ? raw.expected : undefined;
+        const expectedFields = expected && isObject(expected.fields) ? expected.fields : undefined;
+        const fieldText = expectedFields
+          ? Object.entries(expectedFields).map(([key, value]) => `${key}=${JSON.stringify(value)}`).join(" / ")
+          : "初期表示を確認する";
+        items.push({
+          id: `fixture.${fixtureId}.initial`,
+          category: "fixture",
+          target: fixtureId,
+          title: asString(raw.description) ?? `fixture=${fixtureId}: 初期表示`,
+          expected: fieldText,
+          fixtureId,
+          params,
+          given,
+          expectedFields,
+        });
       }
     }
   }

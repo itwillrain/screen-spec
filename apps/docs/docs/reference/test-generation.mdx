@@ -5,7 +5,7 @@ description: 画面仕様からテスト項目候補を自動導出する。
 
 # Test generation
 
-`@screen-spec/core` の `generateTestItems(screen)` は、解決済みscreenからテスト項目候補を
+`@screen-spec/core` の `generateTestItems(screen, testData?)` は、解決済みscreenと任意のtestDataからテスト項目候補を
 決定的に導出します。Viewerでは各画面の「テスト項目」タブから確認できます。
 
 ## 導出対象
@@ -17,6 +17,7 @@ description: 画面仕様からテスト項目候補を自動導出する。
 | `transition` | event、成功・失敗分岐、error cases、`expects` |
 | `permission` | `accessControl`のrole×field×event実効権限 |
 | `param` | path/queryのrequired、enum、default |
+| `fixture` | `testData.fixtures`のparams、given、expected.fields |
 
 未知のバリデーションルールは意味論を安全に導出できないため対象外です。
 生成物は実行コードではなく、テスト項目書や各テストフレームワークへ渡す中間表現です。
@@ -26,7 +27,7 @@ description: 画面仕様からテスト項目候補を自動導出する。
 ```ts
 import { generateTestItems } from "@screen-spec/core";
 
-const items = generateTestItems(resolvedScreen);
+const items = generateTestItems(resolvedScreen, resolvedTestData);
 for (const item of items) {
   console.log(item.id, item.category, item.title, item.expected);
 }
@@ -38,11 +39,18 @@ for (const item of items) {
 interface TestItem {
   id: string;
   category: "validation" | "required" | "visibility" | "enablement" |
-    "transition" | "permission" | "param";
+    "transition" | "permission" | "param" | "fixture";
   target: string;
   title: string;
   expected: string;
+  fixtureId?: string;
+  params?: Record<string, unknown>;
+  given?: Record<string, unknown>;
+  expectedFields?: Record<string, unknown>;
 }
 ```
 
-`testData`文書との結合やCSV/Markdown出力は今後の拡張です。
+第2引数は省略可能で、既存のscreen単体生成と互換です。`testData.screen`がscreenのidと異なる場合は
+フィクスチャ項目を生成しません。Viewerは配信された`*.fixtures.yaml`を対象画面へ自動的に関連付けます。
+
+CSV/Markdown出力は今後の拡張です。

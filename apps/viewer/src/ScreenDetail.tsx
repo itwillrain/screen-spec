@@ -122,7 +122,7 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
       </div>
       <table className="fields test-items">
         <thead>
-          <tr><th>ID</th><th>カテゴリ</th><th>対象</th><th>テスト条件</th><th>期待結果</th></tr>
+          <tr><th>ID</th><th>カテゴリ</th><th>対象</th><th>テスト条件</th><th>前提・入力</th><th>期待結果</th></tr>
         </thead>
         <tbody>
           {items.map((item) => (
@@ -131,6 +131,14 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
               <td><span className="badge badge-region">{item.category}</span></td>
               <td><code>{item.target}</code></td>
               <td>{item.title}</td>
+              <td>
+                {item.params || item.given ? (
+                  <dl className="test-context">
+                    {item.params ? <><dt>params</dt><dd><code>{JSON.stringify(item.params)}</code></dd></> : null}
+                    {item.given ? <><dt>given</dt><dd><code>{JSON.stringify(item.given)}</code></dd></> : null}
+                  </dl>
+                ) : <span className="muted">—</span>}
+              </td>
               <td>{item.expected}</td>
             </tr>
           ))}

@@ -8,6 +8,8 @@ description: 画面を参照する別ドキュメント種別。テストの前�
 テスト項目書の「前提データ」「期待される初期表示」を、画面仕様とは**別のドキュメント**に分離します
 （[ADR 0005](https://github.com/itwillrain/screen-spec/blob/main/docs/decisions/0005-test-data-document.md)）。
 これにより画面仕様（`screen`）は純粋に保たれ、テストデータは差し替え・複数セットが持てます。
+`generateTestItems(screen, testData)`へ渡すと、各fixtureから前提・入力・初期表示期待値を持つ
+`fixture`カテゴリのテスト項目を生成できます。Viewerも対象画面へ自動的に関連付けます。
 
 ルート文書は `screen` / `components` / **`testData`** のいずれかです。
 
