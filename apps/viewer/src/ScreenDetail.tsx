@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { StateDiagram } from './StateDiagram'
-import type { ScreenView } from './screen-view'
+import type { EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
 
 interface Props {
   screen: ScreenView
@@ -78,10 +78,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       {active === 'layout' && screen.layout ? <LayoutTab screen={screen} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'states' && screen.stateMachine ? (
-        <section>
-          <p className="muted">states / events から生成した状態遷移図です。</p>
-          <StateDiagram sm={screen.stateMachine} />
-        </section>
+        <StatesTab screen={screen} />
       ) : null}
       {active === 'api' ? <ApiTab screen={screen} /> : null}
       {active === 'transitions' ? (
@@ -95,6 +92,98 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       ) : null}
     </>
   )
+}
+
+function StatesTab({ screen }: { screen: ScreenView }) {
+  return (
+    <section>
+      <p className="muted">states / events から生成した状態遷移図と、分岐ごとの期待結果です。</p>
+      <StateDiagram sm={screen.stateMachine!} />
+      {screen.events.length > 0 ? (
+        <div className="events">
+          <h2>イベント詳細</h2>
+          {screen.events.map((event) => (
+            <article key={event.key} className="event-card">
+              <header>
+                <h3><code>{event.key}</code></h3>
+                {event.trigger ? <span className="badge badge-region">{event.trigger}</span> : null}
+                {event.target ? <span className="muted">target: <code>{event.target}</code></span> : null}
+              </header>
+              <p className="event-route">
+                <code>{event.from ?? '?'}</code> → <code>{event.to ?? '?'}</code>
+                {event.apiCall ? <> · API <code>{event.apiCall}</code></> : null}
+              </p>
+              <OutcomeBlock label="即時" outcome={{ to: event.to, expects: event.expects }} />
+              {event.onSuccess ? <OutcomeBlock label="成功" outcome={event.onSuccess} /> : null}
+              {event.onError ? (
+                <>
+                  <OutcomeBlock label="既定エラー" outcome={event.onError} />
+                  {event.onError.cases.map((errorCase, index) => (
+                    <OutcomeBlock
+                      key={`${errorCase.status ?? '*'}:${errorCase.code ?? '*'}:${index}`}
+                      label={`エラー条件 ${[
+                        errorCase.status !== undefined ? `HTTP ${errorCase.status}` : null,
+                        errorCase.code ? `code=${errorCase.code}` : null,
+                      ].filter(Boolean).join(' / ')}`}
+                      outcome={errorCase}
+                    />
+                  ))}
+                </>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function OutcomeBlock({ label, outcome }: { label: string; outcome: EventOutcomeView }) {
+  if (!outcome.to && !outcome.navigate && !outcome.expects) return null
+  return (
+    <div className="event-outcome">
+      <h4>{label}</h4>
+      <p>
+        {outcome.to ? <>state → <code>{outcome.to}</code></> : null}
+        {outcome.navigate ? <> · navigate → <code>{outcome.navigate}</code></> : null}
+      </p>
+      {outcome.expects ? <ExpectationDetails expects={outcome.expects} /> : null}
+    </div>
+  )
+}
+
+function ExpectationDetails({ expects }: { expects: ExpectationView }) {
+  return (
+    <div className="expectation">
+      <span className="expectation-label">expects</span>
+      <ul className="rules">
+        {expects.state ? <li>state: <code>{expects.state}</code></li> : null}
+        {expects.navigate ? <li>navigate: <code>{expects.navigate}</code></li> : null}
+        {expects.message ? (
+          <li>
+            message: <span className={`message-kind message-${expects.message.kind}`}>{expects.message.kind}</span>{' '}
+            {expects.message.text ? <span>{expects.message.text}</span> : null}
+            {expects.message.key ? <code>{expects.message.key}</code> : null}
+          </li>
+        ) : null}
+        {expects.fields.map((field) => (
+          <li key={field.field}>
+            field <code>{field.field}</code>:{' '}
+            {field.expression !== undefined ? <>expression=<code>{field.expression}</code>{' '}</> : null}
+            {field.value !== undefined ? <>value=<code>{formatExpectedValue(field.value)}</code>{' '}</> : null}
+            {field.visible !== undefined ? <>visible=<code>{String(field.visible)}</code>{' '}</> : null}
+            {field.enabled !== undefined ? <>enabled=<code>{String(field.enabled)}</code></> : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function formatExpectedValue(value: unknown): string {
+  if (typeof value === 'string') return value
+  const json = JSON.stringify(value)
+  return json === undefined ? String(value) : json
 }
 
 function FieldsTab({ screen }: { screen: ScreenView }) {

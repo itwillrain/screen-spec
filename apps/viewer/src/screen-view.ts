@@ -56,6 +56,50 @@ export interface StateMachineView {
   edges: StateEdge[];
 }
 
+export interface ExpectedMessageView {
+  kind: string;
+  text?: string;
+  key?: string;
+}
+
+export interface FieldExpectationView {
+  field: string;
+  value?: unknown;
+  expression?: string;
+  visible?: boolean;
+  enabled?: boolean;
+}
+
+export interface ExpectationView {
+  state?: string;
+  navigate?: string;
+  message?: ExpectedMessageView;
+  fields: FieldExpectationView[];
+}
+
+export interface EventOutcomeView {
+  to?: string;
+  navigate?: string;
+  expects?: ExpectationView;
+}
+
+export interface ErrorCaseView extends EventOutcomeView {
+  status?: number;
+  code?: string;
+}
+
+export interface EventView {
+  key: string;
+  trigger?: string;
+  target?: string;
+  from?: string;
+  to?: string;
+  apiCall?: string;
+  expects?: ExpectationView;
+  onSuccess?: EventOutcomeView;
+  onError?: EventOutcomeView & { cases: ErrorCaseView[] };
+}
+
 export interface ApiBindingView {
   key: string;
   operationId: string;
@@ -104,6 +148,7 @@ export interface ScreenView {
   layout?: LayoutView;
   design?: DesignView;
   stateMachine?: StateMachineView;
+  events: EventView[];
   apiBindings: ApiBindingView[];
   transitions: TransitionView[];
   warnings: string[];
@@ -146,8 +191,41 @@ interface RawEvent {
   from?: string;
   to?: string;
   trigger?: string;
-  onSuccess?: { to?: string };
-  onError?: { to?: string };
+  target?: string;
+  action?: { apiCall?: string };
+  expects?: RawExpectation;
+  onSuccess?: RawEventOutcome;
+  onError?: RawEventOutcome & { cases?: RawErrorCase[] };
+}
+
+interface RawExpectedMessage {
+  kind?: string;
+  text?: string;
+  key?: string;
+}
+
+interface RawFieldExpectation {
+  value?: unknown;
+  expression?: string;
+  visible?: boolean;
+  enabled?: boolean;
+}
+
+interface RawExpectation {
+  state?: string;
+  navigate?: string;
+  message?: RawExpectedMessage;
+  fields?: Record<string, RawFieldExpectation>;
+}
+
+interface RawEventOutcome {
+  to?: string;
+  navigate?: string;
+  expects?: RawExpectation;
+}
+
+interface RawErrorCase extends RawEventOutcome {
+  when?: { status?: number; code?: string };
 }
 
 interface RawApiBinding {
@@ -282,8 +360,56 @@ function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefi
     if (ev.from && ev.to) edges.push({ from: ev.from, to: ev.to, label: ev.trigger ? `${key} (${ev.trigger})` : key });
     if (ev.to && ev.onSuccess?.to) edges.push({ from: ev.to, to: ev.onSuccess.to, label: "onSuccess" });
     if (ev.to && ev.onError?.to) edges.push({ from: ev.to, to: ev.onError.to, label: "onError" });
+    for (const errorCase of ev.onError?.cases ?? []) {
+      if (!ev.to || !errorCase.to) continue;
+      const conditions = [
+        errorCase.when?.status !== undefined ? String(errorCase.when.status) : undefined,
+        errorCase.when?.code,
+      ].filter(Boolean);
+      edges.push({ from: ev.to, to: errorCase.to, label: `onError ${conditions.join(" / ")}` });
+    }
   }
   return { states: nodes, edges };
+}
+
+function buildExpectation(raw: RawExpectation | undefined): ExpectationView | undefined {
+  if (!raw) return undefined;
+  const message = raw.message?.kind
+    ? { kind: raw.message.kind, text: raw.message.text, key: raw.message.key }
+    : undefined;
+  const fields = Object.entries(raw.fields ?? {}).map(([field, expected]) => ({ field, ...expected }));
+  return { state: raw.state, navigate: raw.navigate, message, fields };
+}
+
+function buildOutcome(raw: RawEventOutcome | undefined): EventOutcomeView | undefined {
+  if (!raw) return undefined;
+  return { to: raw.to, navigate: raw.navigate, expects: buildExpectation(raw.expects) };
+}
+
+function buildEvents(screen: SpecDoc["screen"]): EventView[] {
+  return Object.entries(screen?.events ?? {}).map(([key, event]) => {
+    const onError = event.onError
+      ? {
+          ...buildOutcome(event.onError),
+          cases: (event.onError.cases ?? []).map((errorCase) => ({
+            ...buildOutcome(errorCase),
+            status: errorCase.when?.status,
+            code: errorCase.when?.code,
+          })),
+        }
+      : undefined;
+    return {
+      key,
+      trigger: event.trigger,
+      target: event.target,
+      from: event.from,
+      to: event.to,
+      apiCall: event.action?.apiCall,
+      expects: buildExpectation(event.expects),
+      onSuccess: buildOutcome(event.onSuccess),
+      onError,
+    };
+  });
 }
 
 /**
@@ -353,6 +479,7 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
     layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),
     stateMachine: buildStateMachine(resolved.screen),
+    events: buildEvents(resolved.screen),
     apiBindings,
     transitions: Object.entries(resolved.screen?.transitions ?? {}).map(([key, t]) => ({
       key,

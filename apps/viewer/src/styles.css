@@ -355,3 +355,64 @@ ul.warnings {
   color: #6b7280;
   font-weight: 600;
 }
+.events {
+  margin-top: 1.5rem;
+}
+.events h2 {
+  font-size: 1.1rem;
+}
+.event-card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+.event-card > header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.event-card h3,
+.event-card h4,
+.event-card p {
+  margin: 0;
+}
+.event-route {
+  margin-top: 0.45rem !important;
+}
+.event-outcome {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: #f9fafb;
+  border-left: 3px solid #c7d2fe;
+  border-radius: 4px;
+}
+.event-outcome h4 {
+  margin-bottom: 0.25rem;
+  color: #4b5563;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.expectation {
+  margin-top: 0.5rem;
+}
+.expectation-label {
+  color: #3730a3;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.message-kind {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.message-info { background: #dbeafe; color: #1e40af; }
+.message-success { background: #dcfce7; color: #166534; }
+.message-warning { background: #fef3c7; color: #92400e; }
+.message-error { background: #fee2e2; color: #991b1b; }

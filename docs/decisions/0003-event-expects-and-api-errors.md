@@ -3,6 +3,7 @@
 - ステータス: **Accepted**
 - 日付: 2026-07-25
 - 関連: [ADR 0002](./0002-spec-coverage-retrospective.md) 優先度2
+- 実装: **完了**（JSON Schema、core analyzer、サンプル、Viewer、公開リファレンス）
 
 ## コンテキスト
 

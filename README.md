@@ -67,5 +67,6 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ M4: `apiBindings`（OpenAPI 参照＋項目マッピング）
 - ✅ M5: 複数画面対応・画面間遷移可視化
 - ✅ バリデーション語彙の形式化（既知ルール＋型付き値、未知ルールは warning）
-- ⬜ 次: event/transition の期待結果（`expects`）と API エラー挙動の形式化
-- ⬜ 今後: 権限マトリクス、フィールド既定値・`enabledWhen`、`compose`、複数画面の横断検証
+- ✅ event の期待結果（`expects`）と API エラー挙動の形式化・Viewer表示
+- ⬜ 次: 権限マトリクス（role×field×操作）の明示化
+- ⬜ 今後: フィールド既定値・`enabledWhen`、`compose`、複数画面の横断検証
