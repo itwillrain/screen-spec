@@ -7,6 +7,7 @@ import {
   testItemsToCsv,
   testItemsToMarkdown,
   type ProjectScreen,
+  type ProjectTestData,
 } from "@screen-spec/core";
 import { validateDocument, resolveDocument } from "@screen-spec/core/node";
 
@@ -109,18 +110,28 @@ async function runValidate(files: string[]): Promise<number> {
   // 複数ファイル指定時は画面間の参照を横断検査する
   if (files.length > 1) {
     const project: ProjectScreen[] = [];
+    const projectTestData: ProjectTestData[] = [];
     for (const file of files) {
       try {
-        const doc = (await resolveDocument(resolvePath(file))) as { screen?: { id?: unknown } };
+        const doc = (await resolveDocument(resolvePath(file))) as {
+          screen?: { id?: unknown };
+          testData?: unknown;
+        };
         const id = doc?.screen?.id;
         if (typeof id === "string") project.push({ id, screen: doc.screen });
+        if (doc.testData !== undefined) projectTestData.push({ testData: doc.testData, source: file });
       } catch {
         // 解決に失敗したファイルは横断検査から除外（個別検証で報告済み）
       }
     }
-    const crossDiagnostics = analyzeProject(project);
+    const crossDiagnostics = analyzeProject(project, projectTestData);
     for (const d of crossDiagnostics) {
-      console.warn(`    ⚠ [project] ${d.message}`);
+      if (d.severity === "error") {
+        hadError = true;
+        console.error(`    ✗ [project] ${d.message}`);
+      } else {
+        console.warn(`    ⚠ [project] ${d.message}`);
+      }
     }
   }
 

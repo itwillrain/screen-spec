@@ -21,6 +21,13 @@ npm install
 npm run validate examples/user-edit.screen.yaml
 ```
 
+複数のscreenとtestDataを同時に渡すと、画面遷移先、`testData.screen`、fixtureのparam・field、
+文書間のfixture ID重複も横断検証します。
+
+```bash
+npm run validate examples/user-edit.screen.yaml examples/user-list.screen.yaml examples/user-edit.fixtures.yaml
+```
+
 妥当な場合:
 
 ```

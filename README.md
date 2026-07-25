@@ -34,6 +34,7 @@ npm install
 
 ```bash
 npm run validate examples/user-edit.screen.yaml
+npm run validate examples/user-edit.screen.yaml examples/user-list.screen.yaml examples/user-edit.fixtures.yaml
 npm run testgen -- examples/user-edit.screen.yaml --test-data examples/user-edit.fixtures.yaml --format markdown
 npm run testgen -- examples/user-edit.screen.yaml --test-data examples/user-edit.fixtures.yaml --format csv --output user-edit-tests.csv
 npm test
@@ -74,4 +75,5 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ フィールド既定値・`enabledWhen`、テストデータ文書
 - ✅ 画面仕様・テストデータからのテスト項目候補生成・Viewer表示
 - ✅ テスト項目のMarkdown/CSV出力（core・CLI・Viewer）
-- ⬜ 今後: `compose`、複数画面の横断検証
+- ✅ `compose`（allOf相当の明示合成）
+- ✅ 複数画面・testDataの横断検証

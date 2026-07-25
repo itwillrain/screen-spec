@@ -49,5 +49,5 @@ testData:
 ## 診断
 
 - `fixtures[].id` の重複は **error**。
-- `testData.screen` の存在や `expected.fields` のフィールド整合は複数文書の横断が必要なため、
-  現状は単体検証では扱いません（将来対応）。
+- 複数文書を`analyzeProject`またはCLIへ同時に渡すと、`testData.screen`の存在、`params`、
+  `expected.fields`、同じ画面に対する文書間fixture ID重複を横断検証します。

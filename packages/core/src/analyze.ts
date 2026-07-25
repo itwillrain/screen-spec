@@ -582,6 +582,8 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
 interface ProjectScreenLike {
   transitions?: Record<string, { to?: unknown }>;
   events?: Record<string, { onSuccess?: { navigate?: unknown } }>;
+  fields?: Record<string, unknown>;
+  params?: { path?: Record<string, unknown>; query?: Record<string, unknown> };
 }
 
 /** プロジェクト（複数画面）の横断解析入力。 */
@@ -589,6 +591,13 @@ export interface ProjectScreen {
   id: string;
   /** 解決済み screen オブジェクト */
   screen: unknown;
+}
+
+/** プロジェクト横断解析へ渡す解決済みtestData文書。 */
+export interface ProjectTestData {
+  testData: unknown;
+  /** 診断位置に使う任意のファイル名・URI。 */
+  source?: string;
 }
 
 /**
@@ -618,8 +627,12 @@ export function analyzeTestData(testData: unknown): Diagnostic[] {
   return diagnostics;
 }
 
-export function analyzeProject(screens: ProjectScreen[]): Diagnostic[] {
+export function analyzeProject(
+  screens: ProjectScreen[],
+  testDataDocuments: ProjectTestData[] = [],
+): Diagnostic[] {
   const ids = new Set(screens.map((s) => s.id));
+  const screensById = new Map(screens.map((s) => [s.id, s.screen]));
   const diagnostics: Diagnostic[] = [];
   for (const { id, screen } of screens) {
     if (screen === null || typeof screen !== "object") continue;
@@ -644,6 +657,74 @@ export function analyzeProject(screens: ProjectScreen[]): Diagnostic[] {
           message: `画面 "${id}" の event "${key}" の navigate が未知の画面 "${nav}" を参照しています。`,
           where: id,
         });
+      }
+    }
+  }
+
+  const fixtureIds = new Map<string, number>();
+  for (const [documentIndex, { testData, source }] of testDataDocuments.entries()) {
+    if (testData === null || typeof testData !== "object") continue;
+    const document = testData as { screen?: unknown; fixtures?: unknown };
+    const target = asString(document.screen);
+    if (!target) continue;
+    const screen = screensById.get(target);
+    if (!screen || typeof screen !== "object") {
+      diagnostics.push({
+        severity: "warning",
+        code: "unknown-test-data-screen",
+        message: `testData が未知の画面 "${target}" を参照しています。`,
+        where: source ?? target,
+      });
+      continue;
+    }
+    const targetScreen = screen as ProjectScreenLike;
+    const fields = new Set(Object.keys(targetScreen.fields ?? {}));
+    const params = new Set([
+      ...Object.keys(targetScreen.params?.path ?? {}),
+      ...Object.keys(targetScreen.params?.query ?? {}),
+    ]);
+    const fixtures = Array.isArray(document.fixtures) ? document.fixtures : [];
+    for (const rawFixture of fixtures) {
+      if (rawFixture === null || typeof rawFixture !== "object") continue;
+      const fixture = rawFixture as {
+        id?: unknown;
+        params?: unknown;
+        expected?: { fields?: unknown };
+      };
+      const fixtureId = asString(fixture.id);
+      if (fixtureId) {
+        const qualifiedId = `${target}:${fixtureId}`;
+        const firstDocument = fixtureIds.get(qualifiedId);
+        if (firstDocument !== undefined && firstDocument !== documentIndex) {
+          diagnostics.push({
+            severity: "error",
+            code: "duplicate-project-fixture-id",
+            message: `画面 "${target}" の fixture id "${fixtureId}" がtestData文書間で重複しています。`,
+            where: source ?? target,
+          });
+        }
+        if (firstDocument === undefined) fixtureIds.set(qualifiedId, documentIndex);
+      }
+      if (fixture.params !== null && typeof fixture.params === "object" && !Array.isArray(fixture.params)) {
+        for (const key of Object.keys(fixture.params)) {
+          if (!params.has(key)) diagnostics.push({
+            severity: "warning",
+            code: "unknown-test-data-param",
+            message: `画面 "${target}" の fixture "${fixtureId ?? "?"}" が未知のparam "${key}" を指定しています。`,
+            where: source ?? target,
+          });
+        }
+      }
+      const expectedFields = fixture.expected?.fields;
+      if (expectedFields !== null && typeof expectedFields === "object" && !Array.isArray(expectedFields)) {
+        for (const key of Object.keys(expectedFields)) {
+          if (!fields.has(key)) diagnostics.push({
+            severity: "warning",
+            code: "unknown-test-data-field",
+            message: `画面 "${target}" の fixture "${fixtureId ?? "?"}" が未知のfield "${key}" を期待しています。`,
+            where: source ?? target,
+          });
+        }
       }
     }
   }

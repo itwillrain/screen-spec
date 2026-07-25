@@ -33,8 +33,8 @@ testData:
 
 ## 検証方針
 - スキーマで構造を検証。`fixtures[].id` の重複は **error**。
-- `testData.screen` の存在や `expected.fields` のフィールド整合は**複数文書横断**が要るため、
-  当面は screen-spec 単体では検査せず、将来 `analyzeProject` 相当で対応する（未実装）。
+- `analyzeProject`で`testData.screen`の存在、fixtureの`params`・`expected.fields`、
+  同じ画面に対する文書間fixture ID重複を横断検証する。CLIとViewerも同じ診断を利用する。
 
 ## 帰結
 - 画面仕様は純粋に保たれ、テストデータは差し替え／複数セットを持てる。

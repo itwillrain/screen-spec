@@ -483,6 +483,44 @@ describe("横断解析（analyzeProject）", () => {
     ]);
     expect(diags).toEqual([]);
   });
+
+  it("testDataの未知画面・field・paramを警告する", () => {
+    const screens = [{
+      id: "user-edit",
+      screen: {
+        fields: { name: {} },
+        params: { path: { userId: {} } },
+      },
+    }];
+    const diags = analyzeProject(screens, [
+      { testData: { screen: "missing", fixtures: [{ id: "x" }] }, source: "missing.yaml" },
+      {
+        testData: {
+          screen: "user-edit",
+          fixtures: [{ id: "existing", params: { ghost: 1 }, expected: { fields: { unknown: "x" } } }],
+        },
+        source: "user-edit.fixtures.yaml",
+      },
+    ]);
+    expect(diags.map((d) => d.code)).toEqual([
+      "unknown-test-data-screen",
+      "unknown-test-data-param",
+      "unknown-test-data-field",
+    ]);
+  });
+
+  it("同じ画面のtestData文書間でfixture idが重複するとerror", () => {
+    const screens = [{ id: "a", screen: { fields: {} } }];
+    const diags = analyzeProject(screens, [
+      { testData: { screen: "a", fixtures: [{ id: "same" }] }, source: "a-1.yaml" },
+      { testData: { screen: "a", fixtures: [{ id: "same" }] }, source: "a-2.yaml" },
+    ]);
+    expect(diags).toContainEqual(expect.objectContaining({
+      severity: "error",
+      code: "duplicate-project-fixture-id",
+      where: "a-2.yaml",
+    }));
+  });
 });
 
 describe("OpenAPI specRef 検証", () => {

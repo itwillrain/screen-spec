@@ -109,6 +109,7 @@ export function App() {
             {(() => {
               const crossWarnings = analyzeProject(
                 screens.map((s) => ({ id: s.id, screen: s.resolvedScreen })),
+                screens[0]?.projectTestData ?? [],
               )
               return crossWarnings.length > 0 ? (
                 <section>

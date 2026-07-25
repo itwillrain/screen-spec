@@ -9,6 +9,7 @@ import {
   type DocumentLoader,
   type OpenApiOperation,
   type TestItem,
+  type ProjectTestData,
 } from "@screen-spec/core";
 
 export interface FieldValidationView {
@@ -178,6 +179,8 @@ export interface ScreenView {
   rawText: string;
   /** 横断解析（analyzeProject）用の解決済み screen オブジェクト */
   resolvedScreen: unknown;
+  /** 概要画面の横断解析へ渡す、読み込み済みtestData文書群。 */
+  projectTestData: ProjectTestData[];
 }
 
 interface RawField {
@@ -468,7 +471,7 @@ function buildEvents(screen: SpecDoc["screen"]): EventView[] {
 export async function buildScreenView(
   entryUri: string,
   load: DocumentLoader,
-  testDataDocuments: SpecDoc[] = [],
+  testDataDocuments: Array<{ document: SpecDoc; source?: string }> = [],
 ): Promise<ScreenView> {
   const rawText = await load(entryUri);
   const raw = parseYaml(rawText) as SpecDoc;
@@ -523,9 +526,25 @@ export async function buildScreenView(
     };
   });
 
-  const matchingTestData = testDataDocuments.find((document) =>
-    document.testData?.screen === resolved.screen?.id
-  )?.testData;
+  const matchingTestData = testDataDocuments
+    .map(({ document }) => document.testData)
+    .filter((testData) => testData?.screen === resolved.screen?.id);
+  const fixtureIds = new Set<string>();
+  const combinedFixtures = matchingTestData
+    .flatMap((testData) => testData?.fixtures ?? [])
+    .filter((fixture) => {
+      const id = fixture !== null && typeof fixture === "object"
+        ? (fixture as { id?: unknown }).id
+        : undefined;
+      if (typeof id !== "string") return true;
+      if (fixtureIds.has(id)) return false;
+      fixtureIds.add(id);
+      return true;
+    });
+  const combinedTestData = matchingTestData.length > 0 ? {
+    screen: resolved.screen?.id,
+    fixtures: combinedFixtures,
+  } : undefined;
 
   return {
     id: String(resolved.screen?.id ?? ""),
@@ -545,13 +564,16 @@ export async function buildScreenView(
       to: String(t.to ?? ""),
       trigger: t.trigger,
     })),
-    testItems: generateTestItems(resolved.screen, matchingTestData),
+    testItems: generateTestItems(resolved.screen, combinedTestData),
     warnings: result.warnings.map((w) => w.message),
     valid: result.valid,
     issueCount: result.issues.length,
     sourceUri: entryUri,
     rawText,
     resolvedScreen: resolved.screen,
+    projectTestData: testDataDocuments
+      .filter(({ document }) => document.testData !== undefined)
+      .map(({ document, source }) => ({ testData: document.testData, source })),
   };
 }
 
@@ -565,12 +587,15 @@ export async function loadAllScreens(
 ): Promise<ScreenView[]> {
   const manifestText = await load(new URL("manifest.json", specsBaseUri).href);
   const files = JSON.parse(manifestText) as string[];
-  let testDataDocuments: SpecDoc[] = [];
+  let testDataDocuments: Array<{ document: SpecDoc; source?: string }> = [];
   try {
     const testDataManifestText = await load(new URL("test-data-manifest.json", specsBaseUri).href);
     const testDataFiles = JSON.parse(testDataManifestText) as string[];
     testDataDocuments = await Promise.all(
-      testDataFiles.map(async (file) => parseYaml(await load(new URL(file, specsBaseUri).href)) as SpecDoc),
+      testDataFiles.map(async (file) => ({
+        document: parseYaml(await load(new URL(file, specsBaseUri).href)) as SpecDoc,
+        source: file,
+      })),
     );
   } catch {
     // testData manifest は任意。存在しない既存配信でも画面表示を継続する。

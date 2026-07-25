@@ -15,6 +15,7 @@ export {
   type Diagnostic,
   type DiagnosticSeverity,
   type ProjectScreen,
+  type ProjectTestData,
 } from "./analyze.js";
 export {
   findOperation,
