@@ -66,4 +66,6 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ M3: `states` / `events` / `transitions`（状態機械解析・Mermaid 図）
 - ✅ M4: `apiBindings`（OpenAPI 参照＋項目マッピング）
 - ✅ M5: 複数画面対応・画面間遷移可視化
-- ⬜ 今後: `compose`（allOf 相当）、式エンジン、OpenAPI 解決、複数画面の横断検証
+- ✅ バリデーション語彙の形式化（既知ルール＋型付き値、未知ルールは warning）
+- ⬜ 次: event/transition の期待結果（`expects`）と API エラー挙動の形式化
+- ⬜ 今後: 権限マトリクス、フィールド既定値・`enabledWhen`、`compose`、複数画面の横断検証
