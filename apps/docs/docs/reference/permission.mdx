@@ -5,43 +5,49 @@ description: ロールベースの表示・編集可否。
 
 # Permission
 
-ロールベースのアクセス設計情報。画面レベル（`screen.permissions`）と項目レベル（`field.permission`）で使えます。
+ロールベースのアクセス設計情報。新規仕様では `screen.accessControl.roles` に集約します。
 
 :::note
 v0.1 の権限は **設計情報としての記述**です。実行時の認可制御は行いません。
 :::
 
-## フィールド
+## 権限マトリクス
 
-| キー | 型 | 説明 |
+| resource | operation | 説明 |
 |---|---|---|
-| `role` | string | 対象ロール |
-| `access` | enum | `full` / `readwrite` / `readonly` |
-| `fields` | string[] | 対象フィールドのキー一覧 |
-| `editRoles` | string[] | 編集を許可するロール一覧 |
+| `screen` | `view` | 画面を閲覧できるか |
+| `fields.<key>` | `view`, `edit` | 項目を閲覧・編集できるか |
+| `events.<key>` | `execute` | eventを実行できるか |
 
-## 例（画面レベル）
+未指定はdenyです。`"*"` はfield/eventの既定値で、個別指定がoperation単位で上書きします。
+
+## 例
 
 ```yaml
 screen:
   id: user-edit
   name: ユーザー編集画面
-  permissions:
-    - role: admin
-      access: full
-    - role: editor
-      access: readwrite
-      fields: [name, email]
-    - role: viewer
-      access: readonly
+  accessControl:
+    roles:
+      admin:
+        screen: { view: true }
+        fields:
+          "*": { view: true, edit: true }
+        events:
+          "*": { execute: true }
+      editor:
+        screen: { view: true }
+        fields:
+          "*": { view: true, edit: false }
+          name: { edit: true }
+          email: { edit: true }
+        events:
+          submit: { execute: true }
 ```
 
-## 例（項目レベル）
+`edit: true` には継承後の `view: true` が必要です。未定義のfield/event参照と矛盾はwarningになります。
 
-```yaml
-role:
-  label: ロール
-  type: select
-  permission:
-    editRoles: [admin]
-```
+## 旧形式
+
+`screen.permissions` と `field.permission` は後方互換のため引き続き有効ですが非推奨です。
+`accessControl`との併用はwarningになるため、新規記述では使わないでください。

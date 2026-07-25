@@ -55,9 +55,12 @@
         "route": { "type": "string" },
         "params": { "$ref": "#/$defs/Params" },
         "permissions": {
+          "deprecated": true,
+          "description": "旧形式。新規仕様は accessControl を使用する。",
           "type": "array",
           "items": { "$ref": "#/$defs/Permission" }
         },
+        "accessControl": { "$ref": "#/$defs/AccessControl" },
         "design": { "$ref": "#/$defs/Design" },
         "layout": { "$ref": "#/$defs/Layout" },
         "fields": { "$ref": "#/$defs/FieldMap" },
@@ -332,7 +335,11 @@
           "items": { "$ref": "#/$defs/ValidationOrRef" }
         },
         "options": { "$ref": "#/$defs/OptionsOrRef" },
-        "permission": { "$ref": "#/$defs/Permission" }
+        "permission": {
+          "deprecated": true,
+          "description": "旧形式。新規仕様は screen.accessControl を使用する。",
+          "$ref": "#/$defs/Permission"
+        }
       }
     },
 
@@ -520,6 +527,76 @@
           "type": "array",
           "items": { "type": "string" }
         }
+      }
+    },
+
+    "AccessControl": {
+      "type": "object",
+      "required": ["roles"],
+      "additionalProperties": false,
+      "properties": {
+        "roles": { "$ref": "#/$defs/RoleAccessMap" }
+      }
+    },
+
+    "RoleAccessMap": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/RoleAccess" }
+    },
+
+    "RoleAccess": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "screen": { "$ref": "#/$defs/ScreenAccess" },
+        "fields": { "$ref": "#/$defs/FieldAccessMap" },
+        "events": { "$ref": "#/$defs/EventAccessMap" }
+      }
+    },
+
+    "ScreenAccess": {
+      "type": "object",
+      "required": ["view"],
+      "additionalProperties": false,
+      "properties": {
+        "view": { "type": "boolean" }
+      }
+    },
+
+    "FieldAccessMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(\\*|[a-z][A-Za-z0-9]*)$" },
+      "additionalProperties": { "$ref": "#/$defs/FieldAccess" }
+    },
+
+    "FieldAccess": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "view": { "type": "boolean" },
+        "edit": { "type": "boolean" }
+      }
+    },
+
+    "EventAccessMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(\\*|[a-z][A-Za-z0-9]*)$" },
+      "additionalProperties": { "$ref": "#/$defs/EventAccess" }
+    },
+
+    "EventAccess": {
+      "type": "object",
+      "required": ["execute"],
+      "additionalProperties": false,
+      "properties": {
+        "execute": { "type": "boolean" }
       }
     },
 

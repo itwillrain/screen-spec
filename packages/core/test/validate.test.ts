@@ -345,6 +345,108 @@ screen:
   });
 });
 
+describe("権限マトリクス（ADR 0004）", () => {
+  const BASE = "https://ex.test/";
+  const loader: DocumentLoader = () => {
+    throw new Error("no external refs");
+  };
+
+  it("role×field×event の正しいマトリクスは診断なし", () => {
+    const screen = {
+      fields: { name: {}, role: {} },
+      events: { submit: { from: "a", to: "b" } },
+      states: { a: { initial: true }, b: {} },
+      accessControl: {
+        roles: {
+          editor: {
+            screen: { view: true },
+            fields: { "*": { view: true, edit: false }, name: { edit: true } },
+            events: { submit: { execute: true } },
+          },
+        },
+      },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("未定義field/event参照は warning", () => {
+    const screen = {
+      fields: { name: {} },
+      events: {},
+      accessControl: {
+        roles: {
+          admin: {
+            fields: { ghost: { view: true } },
+            events: { missing: { execute: true } },
+          },
+        },
+      },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-permission-field")).toBe(true);
+    expect(diags.some((d) => d.code === "unknown-permission-event")).toBe(true);
+  });
+
+  it("edit=true かつ継承後view=falseは warning", () => {
+    const screen = {
+      fields: { name: {} },
+      accessControl: {
+        roles: { editor: { fields: { "*": { view: false }, name: { edit: true } } } },
+      },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "edit-without-view" && d.where === "editor")).toBe(true);
+  });
+
+  it("新旧権限モデルの併用は warning", () => {
+    const screen = {
+      permissions: [{ role: "admin", access: "full" }],
+      fields: { name: { permission: { editRoles: ["admin"] } } },
+      accessControl: { roles: { admin: { screen: { view: true } } } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "mixed-permission-models")).toBe(true);
+  });
+
+  it("旧permissions形式は後方互換で引き続き妥当", async () => {
+    const result = await validateSpec(
+      `specVersion: "0.1"
+screen:
+  id: legacy
+  name: Legacy
+  permissions:
+    - { role: admin, access: full }
+  fields:
+    name:
+      label: Name
+      type: text
+      permission: { editRoles: [admin] }
+`,
+      `${BASE}legacy.yaml`,
+      loader,
+    );
+    expect(result.valid).toBe(true);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("roleキーはcamelCaseに限定する", async () => {
+    const result = await validateSpec(
+      `specVersion: "0.1"
+screen:
+  id: example
+  name: Example
+  accessControl:
+    roles:
+      Admin: { screen: { view: true } }
+`,
+      `${BASE}screen.yaml`,
+      loader,
+    );
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.stage === "raw")).toBe(true);
+  });
+});
+
 describe("横断解析（analyzeProject）", () => {
   it("既知の画面への遷移は診断なし", () => {
     const screens = [

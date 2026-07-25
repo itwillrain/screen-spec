@@ -18,6 +18,30 @@ screen:
         default: profile
         enum: [profile, security]
 
+  # 権限マトリクス（ADR 0004）。未指定は deny、"*" を個別指定で上書きする。
+  accessControl:
+    roles:
+      admin:
+        screen: { view: true }
+        fields:
+          "*": { view: true, edit: true }
+        events:
+          "*": { execute: true }
+      editor:
+        screen: { view: true }
+        fields:
+          "*": { view: true, edit: false }
+          name: { edit: true }
+          email: { edit: true }
+        events:
+          edit: { execute: true }
+          submit: { execute: true }
+          cancel: { execute: true }
+      viewer:
+        screen: { view: true }
+        fields:
+          "*": { view: true, edit: false }
+
   # デザイン参照（Figma・モックアップ画像・関連リンク）。UI 実装は伴わない。
   design:
     figma: https://www.figma.com/file/EXAMPLE/user-edit
@@ -63,8 +87,6 @@ screen:
       type: select
       options:
         $ref: "./common.yaml#/components/options/RoleOptions"
-      permission:
-        editRoles: [admin]
       # フィールド単位のデザイン参照。
       design:
         images:

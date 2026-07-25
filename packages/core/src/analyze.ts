@@ -62,6 +62,79 @@ interface ScreenLike {
   states?: Record<string, { initial?: unknown }>;
   events?: Record<string, EventLike>;
   apiBindings?: Record<string, ApiBindingLike>;
+  permissions?: unknown[];
+  accessControl?: {
+    roles?: Record<
+      string,
+      {
+        fields?: Record<string, { view?: unknown; edit?: unknown }>;
+        events?: Record<string, { execute?: unknown }>;
+      }
+    >;
+  };
+}
+
+/** accessControl の参照と継承後の権限整合性を検査する（ADR 0004）。 */
+function analyzeAccessControl(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const roles = s.accessControl?.roles;
+  if (!roles) return;
+  const fields = s.fields ?? {};
+  const events = s.events ?? {};
+  const hasLegacyFieldPermission = Object.values(fields).some(
+    (field) => field && typeof field === "object" && "permission" in field,
+  );
+  if ((s.permissions?.length ?? 0) > 0 || hasLegacyFieldPermission) {
+    diagnostics.push({
+      severity: "warning",
+      code: "mixed-permission-models",
+      message: "accessControl と旧 permissions / field.permission が併用されています。accessControl へ集約してください。",
+    });
+  }
+
+  for (const [role, access] of Object.entries(roles)) {
+    const fieldRules = access.fields ?? {};
+    const wildcard = fieldRules["*"] ?? {};
+    for (const [field, rule] of Object.entries(fieldRules)) {
+      if (field !== "*" && !(field in fields)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-permission-field",
+          message: `role "${role}" の権限が未定義のフィールド "${field}" を参照しています。`,
+          where: role,
+        });
+      }
+      if (field !== "*") {
+        const view = typeof rule.view === "boolean" ? rule.view : wildcard.view === true;
+        const edit = typeof rule.edit === "boolean" ? rule.edit : wildcard.edit === true;
+        if (edit && !view) {
+          diagnostics.push({
+            severity: "warning",
+            code: "edit-without-view",
+            message: `role "${role}" のフィールド "${field}" は edit=true ですが view=false です。`,
+            where: role,
+          });
+        }
+      }
+    }
+    if (wildcard.edit === true && wildcard.view !== true) {
+      diagnostics.push({
+        severity: "warning",
+        code: "edit-without-view",
+        message: `role "${role}" のフィールド "*" は edit=true ですが view=true ではありません。`,
+        where: role,
+      });
+    }
+    for (const event of Object.keys(access.events ?? {})) {
+      if (event !== "*" && !(event in events)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-permission-event",
+          message: `role "${role}" の権限が未定義のevent "${event}" を参照しています。`,
+          where: role,
+        });
+      }
+    }
+  }
 }
 
 function asString(v: unknown): string | undefined {
@@ -475,6 +548,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   analyzeValidations(s, diagnostics);
   analyzeVisibility(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
+  analyzeAccessControl(s, diagnostics);
   analyzeStateMachine(s, diagnostics);
   return diagnostics;
 }
