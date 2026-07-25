@@ -215,8 +215,10 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
             <th>ラベル</th>
             <th>型</th>
             <th>必須</th>
+            <th>既定</th>
             <th>バリデーション</th>
             <th>表示条件</th>
+            <th>編集可否</th>
             <th>由来</th>
           </tr>
         </thead>
@@ -227,6 +229,7 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
               <td>{field.label}</td>
               <td><code>{field.type}</code></td>
               <td>{field.required ? '✔' : ''}</td>
+              <td>{field.default !== undefined ? <code>{String(field.default)}</code> : <span className="muted">—</span>}</td>
               <td>
                 {field.validations.length === 0 ? (
                   <span className="muted">—</span>
@@ -242,6 +245,7 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
                 )}
               </td>
               <td>{field.visibleWhen ? <code>{field.visibleWhen}</code> : <span className="muted">—</span>}</td>
+              <td>{field.enabledWhen ? <code>{field.enabledWhen}</code> : <span className="muted">—</span>}</td>
               <td>
                 {field.origin ? (
                   <span className="badge badge-ref" title={field.origin}>$ref</span>

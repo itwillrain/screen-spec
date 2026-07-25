@@ -85,6 +85,9 @@ screen:
     role:
       label: ロール
       type: select
+      # 既定値（options の値に整合）と編集可否条件（式エンジン）。
+      default: viewer
+      enabledWhen: fields.name != ""
       options:
         $ref: "./common.yaml#/components/options/RoleOptions"
       # フィールド単位のデザイン参照。

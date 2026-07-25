@@ -640,6 +640,29 @@ describe("条件式（parseCondition / visibleWhen）", () => {
     const screen = { fields: { role: {}, x: { visibleWhen: 'fields.role == "admin"' } } };
     expect(analyzeScreen(screen)).toEqual([]);
   });
+
+  it("enabledWhen も条件式として検査される（未定義参照は warning）", () => {
+    const screen = { fields: { a: { enabledWhen: 'fields.ghost == "x"' } } };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-field-ref" && d.where === "a")).toBe(true);
+  });
+});
+
+describe("field.default と options の整合", () => {
+  it("default が options にあれば診断なし", () => {
+    const screen = {
+      fields: { role: { default: "viewer", options: [{ value: "admin" }, { value: "viewer" }] } },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("default が options に無ければ warning", () => {
+    const screen = {
+      fields: { role: { default: "ghost", options: [{ value: "admin" }, { value: "viewer" }] } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "default-not-in-options" && d.where === "role")).toBe(true);
+  });
 });
 
 describe("バリデーション語彙（ADR 0002）", () => {

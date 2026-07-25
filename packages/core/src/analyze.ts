@@ -281,18 +281,43 @@ function analyzeVisibility(s: ScreenLike, diagnostics: Diagnostic[]): void {
   const { pathParams, queryParams } = paramSets(s);
   const ctx: RefContext = { fieldKeys: new Set(Object.keys(fields)), pathParams, queryParams };
   for (const [key, f] of Object.entries(fields)) {
-    const vw = asString((f as { visibleWhen?: unknown }).visibleWhen);
-    if (!vw) continue;
-    const { errors, refs } = parseCondition(vw);
-    for (const err of errors) {
+    // visibleWhen / enabledWhen は同じ条件式（決定: 式エンジン）
+    for (const prop of ["visibleWhen", "enabledWhen"] as const) {
+      const cond = asString((f as Record<string, unknown>)[prop]);
+      if (!cond) continue;
+      const { errors, refs } = parseCondition(cond);
+      for (const err of errors) {
+        diagnostics.push({
+          severity: "warning",
+          code: "condition-syntax",
+          message: `field "${key}" の ${prop} 構文エラー: ${err}`,
+          where: key,
+        });
+      }
+      for (const ref of refs) checkRefPart(ref, ctx, key, diagnostics);
+    }
+  }
+}
+
+/** field.default が options（選択肢）にある値かを検査する。 */
+function analyzeFieldDefaults(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const fields = s.fields;
+  if (!fields) return;
+  for (const [key, f] of Object.entries(fields)) {
+    const field = f as { default?: unknown; options?: unknown };
+    if (!("default" in field) || field.default === undefined) continue;
+    if (!Array.isArray(field.options)) continue;
+    const values = field.options
+      .map((o) => (o && typeof o === "object" ? (o as { value?: unknown }).value : undefined))
+      .filter((v) => v !== undefined);
+    if (values.length > 0 && !values.some((v) => v === field.default)) {
       diagnostics.push({
         severity: "warning",
-        code: "condition-syntax",
-        message: `field "${key}" の visibleWhen 構文エラー: ${err}`,
+        code: "default-not-in-options",
+        message: `field "${key}" の default "${String(field.default)}" は options にありません。`,
         where: key,
       });
     }
-    for (const ref of refs) checkRefPart(ref, ctx, key, diagnostics);
   }
 }
 
@@ -547,6 +572,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   analyzeLayout(s, diagnostics);
   analyzeValidations(s, diagnostics);
   analyzeVisibility(s, diagnostics);
+  analyzeFieldDefaults(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
   analyzeAccessControl(s, diagnostics);
   analyzeStateMachine(s, diagnostics);

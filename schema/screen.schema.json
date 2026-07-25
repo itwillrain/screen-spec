@@ -329,6 +329,13 @@
           "type": "string",
           "description": "表示条件式（例: fields.role == \"admin\"）。UI 非依存の宣言。"
         },
+        "enabledWhen": {
+          "type": "string",
+          "description": "編集可否の条件式（true で編集可）。UI 非依存の宣言。"
+        },
+        "default": {
+          "description": "既定値（type/options に整合させる）。"
+        },
         "design": { "$ref": "#/$defs/Design" },
         "validations": {
           "type": "array",

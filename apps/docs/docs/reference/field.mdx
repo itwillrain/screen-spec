@@ -14,8 +14,10 @@ description: 画面上の項目定義。
 | `label` | string | ✔ | 表示ラベル |
 | `type` | enum | ✔ | 項目型（下記） |
 | `required` | boolean | | 必須かどうか |
+| `default` | any | | 既定値（`type` / `options` に整合。不一致は warning） |
 | `width` | enum | | 表示幅ヒント `full` / `half` / `third` |
 | `visibleWhen` | string | | 表示条件式（例 `fields.role == "admin"`） |
+| `enabledWhen` | string | | 編集可否の条件式（`true` で編集可） |
 | `validations` | ([Validation](/reference/validation) \| $ref)[] | | 検証ルール |
 | `options` | [Option](/reference/options)[] \| $ref | | 選択肢（`select` などで使用） |
 | `permission` | [Permission](/reference/permission) | | 項目レベルの権限 |

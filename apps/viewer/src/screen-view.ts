@@ -21,6 +21,8 @@ export interface FieldView {
   required: boolean;
   width?: string;
   visibleWhen?: string;
+  enabledWhen?: string;
+  default?: unknown;
   design?: DesignView;
   validations: FieldValidationView[];
   /** フィールド自体が $ref 由来なら、その参照文字列 */
@@ -182,6 +184,8 @@ interface RawField {
   required?: boolean;
   width?: string;
   visibleWhen?: string;
+  enabledWhen?: string;
+  default?: unknown;
   design?: RawDesign;
   validations?: Array<{ rule?: string; message?: string }>;
 }
@@ -500,6 +504,8 @@ export async function buildScreenView(entryUri: string, load: DocumentLoader): P
       required: Boolean(rf.required),
       width: typeof rf.width === "string" ? rf.width : undefined,
       visibleWhen: typeof rf.visibleWhen === "string" ? rf.visibleWhen : undefined,
+      enabledWhen: typeof rf.enabledWhen === "string" ? rf.enabledWhen : undefined,
+      default: rf.default,
       design: buildDesign(rf.design),
       validations,
       origin,
