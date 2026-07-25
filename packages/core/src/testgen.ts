@@ -24,6 +24,51 @@ export interface TestItem {
   expectedFields?: Record<string, unknown>;
 }
 
+const TEST_ITEM_COLUMNS = [
+  "id", "category", "target", "title", "fixtureId", "params", "given", "expected", "expectedFields",
+] as const;
+
+function stableValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!isObject(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value).sort().map((key) => [key, stableValue(value[key])]),
+  );
+}
+
+function cellValue(item: TestItem, column: typeof TEST_ITEM_COLUMNS[number]): string {
+  const value = item[column];
+  if (value === undefined) return "";
+  return typeof value === "object" ? JSON.stringify(stableValue(value)) : String(value);
+}
+
+function markdownCell(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
+}
+
+function csvCell(value: string): string {
+  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/** テスト項目をGitHub Flavored Markdownの表へ変換する。 */
+export function testItemsToMarkdown(items: readonly TestItem[]): string {
+  const header = `| ${TEST_ITEM_COLUMNS.join(" | ")} |`;
+  const separator = `| ${TEST_ITEM_COLUMNS.map(() => "---").join(" | ")} |`;
+  const rows = items.map((item) =>
+    `| ${TEST_ITEM_COLUMNS.map((column) => markdownCell(cellValue(item, column))).join(" | ")} |`
+  );
+  return [header, separator, ...rows].join("\n") + "\n";
+}
+
+/** テスト項目をRFC 4180互換のCSVへ変換する。 */
+export function testItemsToCsv(items: readonly TestItem[]): string {
+  const rows = [
+    TEST_ITEM_COLUMNS.join(","),
+    ...items.map((item) => TEST_ITEM_COLUMNS.map((column) => csvCell(cellValue(item, column))).join(",")),
+  ];
+  return rows.join("\r\n") + "\r\n";
+}
+
 function isObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }

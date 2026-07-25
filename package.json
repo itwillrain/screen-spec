@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "validate": "tsx packages/cli/src/index.ts validate",
+    "testgen": "tsx packages/cli/src/index.ts testgen",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

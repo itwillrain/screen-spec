@@ -33,6 +33,32 @@ for (const item of items) {
 }
 ```
 
+## Markdown / CSV出力
+
+coreの変換関数はNodeとブラウザの両方で利用できます。列順とJSONのキー順は決定的です。
+
+```ts
+import { testItemsToMarkdown, testItemsToCsv } from "@screen-spec/core";
+
+const markdown = testItemsToMarkdown(items);
+const csv = testItemsToCsv(items);
+```
+
+CLIでは標準出力またはファイルへ出力できます。
+
+```bash
+npm run testgen -- examples/user-edit.screen.yaml \
+  --test-data examples/user-edit.fixtures.yaml \
+  --format markdown
+
+npm run testgen -- examples/user-edit.screen.yaml \
+  --test-data examples/user-edit.fixtures.yaml \
+  --format csv \
+  --output user-edit-tests.csv
+```
+
+Viewerの「テスト項目」タブにはMarkdown・CSVのダウンロードボタンがあります。
+
 各項目は次の形です。
 
 ```ts
@@ -52,5 +78,3 @@ interface TestItem {
 
 第2引数は省略可能で、既存のscreen単体生成と互換です。`testData.screen`がscreenのidと異なる場合は
 フィクスチャ項目を生成しません。Viewerは配信された`*.fixtures.yaml`を対象画面へ自動的に関連付けます。
-
-CSV/Markdown出力は今後の拡張です。

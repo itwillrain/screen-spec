@@ -13,6 +13,8 @@ import {
   templateRefs,
   parseCondition,
   generateTestItems,
+  testItemsToMarkdown,
+  testItemsToCsv,
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
@@ -799,6 +801,33 @@ describe("テスト項目自動生成", () => {
       { screen: "user-list", fixtures: [{ id: "list" }] },
     );
     expect(items).toEqual([]);
+  });
+
+  it("Markdownでパイプ・改行をエスケープしJSONキー順を安定化する", () => {
+    const markdown = testItemsToMarkdown([{
+      id: "fixture.a.initial",
+      category: "fixture",
+      target: "a",
+      title: "日本語 | 条件\n続き",
+      expected: "表示",
+      params: { z: 1, a: "値" },
+    }]);
+    expect(markdown).toContain("日本語 \\| 条件<br>続き");
+    expect(markdown).toContain('{"a":"値","z":1}');
+    expect(markdown.endsWith("\n")).toBe(true);
+  });
+
+  it("CSVでカンマ・引用符・改行をエスケープする", () => {
+    const csv = testItemsToCsv([{
+      id: "field.name.required",
+      category: "required",
+      target: "name",
+      title: '姓, "名"\n入力',
+      expected: "必須エラー",
+    }]);
+    expect(csv).toContain('"姓, ""名""\n入力"');
+    expect(csv.split("\r\n")[0]).toBe("id,category,target,title,fixtureId,params,given,expected,expectedFields");
+    expect(csv.endsWith("\r\n")).toBe(true);
   });
 });
 

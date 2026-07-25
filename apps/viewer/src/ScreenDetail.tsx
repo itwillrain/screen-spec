@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
 import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
 
@@ -106,9 +107,24 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
   const items = category === 'all'
     ? screen.testItems
     : screen.testItems.filter((item) => item.category === category)
+  const download = (format: 'markdown' | 'csv') => {
+    const content = format === 'csv' ? testItemsToCsv(screen.testItems) : testItemsToMarkdown(screen.testItems)
+    const mime = format === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8'
+    const extension = format === 'csv' ? 'csv' : 'md'
+    const url = URL.createObjectURL(new Blob([content], { type: mime }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${screen.id}-test-items.${extension}`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
   return (
     <section>
       <p className="muted">形式化された仕様から機械的に導出したテスト候補です。</p>
+      <div className="test-export">
+        <button className="test-export-button" onClick={() => download('markdown')}>Markdownをダウンロード</button>
+        <button className="test-export-button" onClick={() => download('csv')}>CSVをダウンロード</button>
+      </div>
       <div className="test-filters" role="group" aria-label="テストカテゴリ">
         {['all', ...categories].map((value) => (
           <button

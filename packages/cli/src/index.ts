@@ -1,10 +1,87 @@
 #!/usr/bin/env node
 import { resolve as resolvePath } from "node:path";
-import { analyzeProject, type ProjectScreen } from "@screen-spec/core";
+import { writeFileSync } from "node:fs";
+import {
+  analyzeProject,
+  generateTestItems,
+  testItemsToCsv,
+  testItemsToMarkdown,
+  type ProjectScreen,
+} from "@screen-spec/core";
 import { validateDocument, resolveDocument } from "@screen-spec/core/node";
 
 function printUsage(): void {
-  console.error("Usage: screen-spec validate <file.yaml> [<file.yaml> ...]");
+  console.error(`Usage:
+  screen-spec validate <file.yaml> [<file.yaml> ...]
+  screen-spec testgen <screen.yaml> [--test-data <fixtures.yaml>] [--format markdown|csv] [--output <file>]`);
+}
+
+interface TestgenOptions {
+  screen?: string;
+  testData?: string;
+  format: "markdown" | "csv";
+  output?: string;
+}
+
+function parseTestgenOptions(args: string[]): TestgenOptions | undefined {
+  const options: TestgenOptions = { format: "markdown" };
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg === "--test-data" || arg === "--format" || arg === "--output") {
+      const value = args[i + 1];
+      if (!value) return undefined;
+      if (arg === "--test-data") options.testData = value;
+      if (arg === "--output") options.output = value;
+      if (arg === "--format") {
+        if (value !== "markdown" && value !== "csv") return undefined;
+        options.format = value;
+      }
+      i += 1;
+    } else if (arg.startsWith("-")) {
+      return undefined;
+    } else if (!options.screen) {
+      options.screen = arg;
+    } else {
+      return undefined;
+    }
+  }
+  return options.screen ? options : undefined;
+}
+
+async function runTestgen(args: string[]): Promise<number> {
+  const options = parseTestgenOptions(args);
+  if (!options?.screen) {
+    printUsage();
+    return 2;
+  }
+  try {
+    const screenDocument = await resolveDocument(resolvePath(options.screen)) as { screen?: unknown };
+    if (!screenDocument.screen) {
+      console.error(`✗ ${options.screen} does not contain a screen document`);
+      return 1;
+    }
+    let testData: unknown;
+    if (options.testData) {
+      const testDataDocument = await resolveDocument(resolvePath(options.testData)) as { testData?: unknown };
+      if (!testDataDocument.testData) {
+        console.error(`✗ ${options.testData} does not contain a testData document`);
+        return 1;
+      }
+      testData = testDataDocument.testData;
+    }
+    const items = generateTestItems(screenDocument.screen, testData);
+    const content = options.format === "csv" ? testItemsToCsv(items) : testItemsToMarkdown(items);
+    if (options.output) {
+      writeFileSync(resolvePath(options.output), content, "utf8");
+      console.error(`✓ wrote ${items.length} test items to ${options.output}`);
+    } else {
+      process.stdout.write(content);
+    }
+    return 0;
+  } catch (error) {
+    console.error(`✗ ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
 }
 
 async function runValidate(files: string[]): Promise<number> {
@@ -55,6 +132,8 @@ async function main(): Promise<number> {
   switch (command) {
     case "validate":
       return runValidate(rest);
+    case "testgen":
+      return runTestgen(rest);
     case undefined:
     case "-h":
     case "--help":

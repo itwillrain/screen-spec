@@ -42,6 +42,16 @@ npm test        # vitest
 npm run typecheck
 ```
 
+## テスト項目を出力する
+
+```bash
+npm run testgen -- examples/user-edit.screen.yaml \
+  --test-data examples/user-edit.fixtures.yaml \
+  --format markdown
+```
+
+`--format csv`でCSV、`--output <file>`でファイルへ保存できます。`--test-data`は省略可能です。
+
 ## ドキュメントサイト（このサイト）
 
 ```bash

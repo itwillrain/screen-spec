@@ -29,6 +29,8 @@ export {
 } from "./validation-rules.js";
 export {
   generateTestItems,
+  testItemsToMarkdown,
+  testItemsToCsv,
   type TestItem,
   type TestCategory,
 } from "./testgen.js";
