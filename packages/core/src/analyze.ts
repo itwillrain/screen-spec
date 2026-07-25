@@ -4,6 +4,7 @@
 // JSON Schema では表現できないクロス参照・到達性を補完する（決定 #10 / #11）。
 
 import { parseTemplate, parseCondition, type RefExpr } from "./expr.js";
+import { isKnownRule } from "./validation-rules.js";
 
 export type DiagnosticSeverity = "error" | "warning";
 
@@ -158,6 +159,27 @@ function analyzeParams(s: ScreenLike, diagnostics: Diagnostic[]): void {
         message: `route のプレースホルダ "{${key}}" が params.path に宣言されていません。`,
         where: key,
       });
+    }
+  }
+}
+
+/** フィールドのバリデーションが既知語彙かを検査する（ADR 0002）。 */
+function analyzeValidations(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const fields = s.fields;
+  if (!fields) return;
+  for (const [key, f] of Object.entries(fields)) {
+    const vals = (f as { validations?: unknown }).validations;
+    if (!Array.isArray(vals)) continue;
+    for (const v of vals) {
+      const rule = asString((v as { rule?: unknown })?.rule);
+      if (rule && !isKnownRule(rule)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-validation-rule",
+          message: `field "${key}" のバリデーション "${rule}" は既知の語彙ではありません（テスト自動導出の対象外）。`,
+          where: key,
+        });
+      }
     }
   }
 }
@@ -366,6 +388,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   analyzeParams(s, diagnostics);
   analyzeLayout(s, diagnostics);
+  analyzeValidations(s, diagnostics);
   analyzeVisibility(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
   analyzeStateMachine(s, diagnostics);

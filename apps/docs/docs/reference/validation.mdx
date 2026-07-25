@@ -38,7 +38,28 @@ validations:
     message: 50文字以内で入力してください
 ```
 
-:::note
-v0.1 では `rule` は自由文字列です。ルール名の語彙（許可される値の列挙）は後続バージョンで
-整備する予定です。
-:::
+## ルール語彙（形式化）
+
+テスト項目（境界値・同値分割）の自動導出と実装の意味論のため、既知ルールを語彙として定義しています
+（[ADR 0002](https://github.com/itwillrain/screen-spec/blob/main/docs/decisions/0002-spec-coverage-retrospective.md)）。
+既知ルールは `value` の型がスキーマで強制されます。**未知のルールも書けますが**、検証で **warning**
+となり（テスト自動導出の対象外）ます。
+
+| rule | value | 対象 | 意味 |
+|---|---|---|---|
+| `required` | なし | any | 必須（空でない） |
+| `minLength` / `maxLength` | integer | string | 文字数 |
+| `pattern` | string | string | 正規表現に一致 |
+| `email` / `url` | なし | string | 形式 |
+| `enum` | array | any | 許可値のいずれか |
+| `min` / `max` / `step` | number | number | 数値制約 |
+| `minDate` / `maxDate` | string | date | 日付制約 |
+
+```yaml
+validations:
+  - rule: required
+  - rule: maxLength
+    value: 50
+  - rule: min
+    value: 0
+```

@@ -271,7 +271,32 @@
         "rule": { "type": "string" },
         "value": true,
         "message": { "type": "string" }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "rule": { "enum": ["required", "email", "url"] } } },
+          "then": { "not": { "required": ["value"] } }
+        },
+        {
+          "if": { "properties": { "rule": { "enum": ["minLength", "maxLength"] } } },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        {
+          "if": { "properties": { "rule": { "enum": ["min", "max", "step"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "number" } } }
+        },
+        {
+          "if": { "properties": { "rule": { "enum": ["pattern", "minDate", "maxDate"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "string" } } }
+        },
+        {
+          "if": { "properties": { "rule": { "const": "enum" } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "array" } } }
+        }
+      ]
     },
 
     "OptionsOrRef": {

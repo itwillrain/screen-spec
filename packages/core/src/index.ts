@@ -21,6 +21,12 @@ export {
   type OpenApiParameter,
 } from "./openapi.js";
 export {
+  VALIDATION_RULES,
+  isKnownRule,
+  type ValidationRuleSpec,
+  type RuleValueKind,
+} from "./validation-rules.js";
+export {
   parseTemplate,
   templateRefs,
   parseCondition,

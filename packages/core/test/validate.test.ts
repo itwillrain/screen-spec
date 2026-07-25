@@ -386,6 +386,38 @@ describe("条件式（parseCondition / visibleWhen）", () => {
   });
 });
 
+describe("バリデーション語彙（ADR 0002）", () => {
+  const BASE = "https://ex.test/";
+  const loader: DocumentLoader = () => {
+    throw new Error("no external refs");
+  };
+  const validateInline = (validations: string) =>
+    validateSpec(
+      `specVersion: "0.1"\nscreen:\n  id: s\n  name: S\n  fields:\n    a:\n      label: A\n      type: text\n${validations}`,
+      `${BASE}s.yaml`,
+      loader,
+    );
+
+  it("既知ルールが正しい型なら妥当・警告なし", async () => {
+    const r = await validateInline(
+      "      validations:\n        - { rule: required }\n        - { rule: maxLength, value: 50 }",
+    );
+    expect(r.valid).toBe(true);
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("既知ルールで value 型が誤りだとスキーマエラー", async () => {
+    const r = await validateInline("      validations:\n        - { rule: maxLength, value: fifty }");
+    expect(r.valid).toBe(false);
+  });
+
+  it("未知ルールは warning（テスト導出対象外）", async () => {
+    const r = await validateInline("      validations:\n        - { rule: customBiz }");
+    expect(r.valid).toBe(true);
+    expect(r.warnings.some((w) => w.message.includes("customBiz"))).toBe(true);
+  });
+});
+
 describe("findOperation（OpenAPI 解決）", () => {
   it("サンプル OpenAPI から operation を解決する", () => {
     const doc = parseYaml(readFileSync(example("openapi/users.yaml"), "utf8"));
