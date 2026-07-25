@@ -18,6 +18,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（優先度2 実装済み）
 - [0004 — 権限マトリクス（role×resource×operation）](./0004-access-control-matrix.md)
   — ステータス: **Accepted**（優先度3 実装済み・ビューア表示含む）
+- [0005 — テストデータ（前提データ／フィクスチャ）](./0005-test-data-document.md)
+  — ステータス: **Accepted**（優先度5・別ドキュメント種別 `testData` を実装）
 
 ## v0.1 決定の一覧
 

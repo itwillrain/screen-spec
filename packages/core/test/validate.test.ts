@@ -8,6 +8,7 @@ import {
   validateSpec,
   analyzeScreen,
   analyzeProject,
+  analyzeTestData,
   parseTemplate,
   templateRefs,
   parseCondition,
@@ -694,6 +695,19 @@ describe("バリデーション語彙（ADR 0002）", () => {
     const r = await validateInline("      validations:\n        - { rule: customBiz }");
     expect(r.valid).toBe(true);
     expect(r.warnings.some((w) => w.message.includes("customBiz"))).toBe(true);
+  });
+});
+
+describe("testData ドキュメント（ADR 0005）", () => {
+  it("フィクスチャ文書が妥当", async () => {
+    const result = await validateDocument(example("user-edit.fixtures.yaml"));
+    expect(result.issues).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it("fixture id 重複は error", () => {
+    const diags = analyzeTestData({ fixtures: [{ id: "a" }, { id: "a" }] });
+    expect(diags.some((d) => d.severity === "error" && d.code === "duplicate-fixture-id")).toBe(true);
   });
 });
 

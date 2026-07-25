@@ -6,7 +6,7 @@ import * as ajvFormats from "ajv-formats";
 import schema from "../../../schema/screen.schema.json" with { type: "json" };
 import { parseYaml } from "./parse.js";
 import { findResidualRefs, resolveRefs, RefError, type DocumentLoader } from "./resolve.js";
-import { analyzeScreen } from "./analyze.js";
+import { analyzeScreen, analyzeTestData } from "./analyze.js";
 
 // ESM/CJS 相互運用: 実行環境差を吸収して呼び出し可能な関数を得る。
 type AddFormatsFn = (ajv: unknown, opts?: unknown) => unknown;
@@ -173,13 +173,20 @@ export async function validateSpec(
     return { valid: false, warnings: [], issues: toIssues(validate.errors, "resolved") };
   }
 
-  // 段4: 意味解析（状態機械・式・案C）
+  // 段4: 意味解析（状態機械・式・案C／testData）
   const screen = (resolved as { screen?: unknown } | null)?.screen;
-  const diagnostics = screen === undefined ? [] : analyzeScreen(screen);
+  const testData = (resolved as { testData?: unknown } | null)?.testData;
+  const diagnostics =
+    screen !== undefined
+      ? analyzeScreen(screen)
+      : testData !== undefined
+        ? analyzeTestData(testData)
+        : [];
   const issues: ValidationIssue[] = [];
   const warnings: ValidationIssue[] = [];
+  const scope = screen !== undefined ? "/screen" : "/testData";
   for (const d of diagnostics) {
-    const item: ValidationIssue = { stage: "analyze", path: d.where ? `/screen/${d.where}` : "/screen", message: d.message };
+    const item: ValidationIssue = { stage: "analyze", path: d.where ? `${scope}/${d.where}` : scope, message: d.message };
     if (d.severity === "error") issues.push(item);
     else warnings.push(item);
   }

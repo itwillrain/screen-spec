@@ -9,11 +9,13 @@
   "properties": {
     "specVersion": { "const": "0.1" },
     "screen": { "$ref": "#/$defs/Screen" },
-    "components": { "$ref": "#/$defs/Components" }
+    "components": { "$ref": "#/$defs/Components" },
+    "testData": { "$ref": "#/$defs/TestData" }
   },
   "anyOf": [
     { "required": ["screen"] },
-    { "required": ["components"] }
+    { "required": ["components"] },
+    { "required": ["testData"] }
   ],
   "$defs": {
     "refObject": {
@@ -604,6 +606,57 @@
       "additionalProperties": false,
       "properties": {
         "execute": { "type": "boolean" }
+      }
+    },
+
+    "TestData": {
+      "title": "テストデータ（画面の前提データ／フィクスチャ）",
+      "description": "画面を参照する別ドキュメント種別（ADR 0005）。テスト項目書の前提・期待の元。",
+      "type": "object",
+      "required": ["screen", "fixtures"],
+      "additionalProperties": false,
+      "properties": {
+        "screen": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "description": "対象画面の id（kebab-case）"
+        },
+        "fixtures": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/Fixture" }
+        }
+      }
+    },
+
+    "Fixture": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
+        "description": { "type": "string" },
+        "params": {
+          "type": "object",
+          "description": "画面パラメータ（path/query）の前提値",
+          "additionalProperties": true
+        },
+        "given": {
+          "type": "object",
+          "description": "前提データ（API/DB 等の状態）。自由構造。",
+          "additionalProperties": true
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fields": {
+              "type": "object",
+              "description": "初期表示で期待するフィールド値（field キー → 値）",
+              "additionalProperties": true
+            }
+          }
+        }
       }
     },
 

@@ -595,6 +595,29 @@ export interface ProjectScreen {
  * 複数画面をまたいだ参照を検査する。
  * transition.to / event.onSuccess.navigate が未知の画面 id を指す場合は warning。
  */
+/** testData 文書（フィクスチャ）を解析する（ADR 0005）。 */
+export function analyzeTestData(testData: unknown): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  if (testData === null || typeof testData !== "object") return diagnostics;
+  const fixtures = (testData as { fixtures?: unknown }).fixtures;
+  if (!Array.isArray(fixtures)) return diagnostics;
+  const seen = new Set<string>();
+  for (const f of fixtures) {
+    const id = asString((f as { id?: unknown } | null)?.id);
+    if (!id) continue;
+    if (seen.has(id)) {
+      diagnostics.push({
+        severity: "error",
+        code: "duplicate-fixture-id",
+        message: `fixture id "${id}" が重複しています。`,
+        where: id,
+      });
+    }
+    seen.add(id);
+  }
+  return diagnostics;
+}
+
 export function analyzeProject(screens: ProjectScreen[]): Diagnostic[] {
   const ids = new Set(screens.map((s) => s.id));
   const diagnostics: Diagnostic[] = [];

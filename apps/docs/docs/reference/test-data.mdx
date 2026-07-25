@@ -1,0 +1,51 @@
+---
+title: TestData（フィクスチャ）
+description: 画面を参照する別ドキュメント種別。テストの前提データ・期待の元。
+---
+
+# TestData（テストデータ / フィクスチャ）
+
+テスト項目書の「前提データ」「期待される初期表示」を、画面仕様とは**別のドキュメント**に分離します
+（[ADR 0005](https://github.com/itwillrain/screen-spec/blob/main/docs/decisions/0005-test-data-document.md)）。
+これにより画面仕様（`screen`）は純粋に保たれ、テストデータは差し替え・複数セットが持てます。
+
+ルート文書は `screen` / `components` / **`testData`** のいずれかです。
+
+## フィールド
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `screen` | string (kebab-case) | ✔ | 対象画面の id |
+| `fixtures` | Fixture[] | ✔ | 前提データのセット（1 件以上） |
+
+### Fixture
+
+| キー | 型 | 必須 | 説明 |
+|---|---|---|---|
+| `id` | string (camelCase) | ✔ | フィクスチャ識別子（一意） |
+| `description` | string | | 説明 |
+| `params` | object | | 画面パラメータ（path/query）の前提値 |
+| `given` | object | | 前提データ（API/DB 等の状態・自由構造） |
+| `expected.fields` | object | | 初期表示で期待するフィールド値 |
+
+## 例
+
+```yaml
+specVersion: "0.1"
+testData:
+  screen: user-edit
+  fixtures:
+    - id: existingEditor
+      description: 編集対象の既存ユーザー（editor）
+      params: { userId: u-001 }
+      given:
+        user: { id: u-001, name: 田中太郎, role: editor }
+      expected:
+        fields: { name: 田中太郎, role: editor }
+```
+
+## 診断
+
+- `fixtures[].id` の重複は **error**。
+- `testData.screen` の存在や `expected.fields` のフィールド整合は複数文書の横断が必要なため、
+  現状は単体検証では扱いません（将来対応）。

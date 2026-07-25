@@ -1,0 +1,33 @@
+# テストデータ（別ドキュメント種別・ADR 0005）。user-edit 画面の前提・期待の元。
+specVersion: "0.1"
+testData:
+  screen: user-edit
+  fixtures:
+    - id: existingEditor
+      description: 編集対象の既存ユーザー（editor）
+      params:
+        userId: u-001
+      given:
+        user:
+          id: u-001
+          name: 田中太郎
+          email: taro@example.com
+          role: editor
+      expected:
+        fields:
+          name: 田中太郎
+          email: taro@example.com
+          role: editor
+    - id: adminUser
+      description: 管理者ユーザー（altEmail の表示条件 role==admin を満たす）
+      params:
+        userId: u-002
+      given:
+        user:
+          id: u-002
+          name: 佐藤花子
+          email: hanako@example.com
+          role: admin
+      expected:
+        fields:
+          role: admin

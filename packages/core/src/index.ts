@@ -11,6 +11,7 @@ export {
 export {
   analyzeScreen,
   analyzeProject,
+  analyzeTestData,
   type Diagnostic,
   type DiagnosticSeverity,
   type ProjectScreen,
