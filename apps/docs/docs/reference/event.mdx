@@ -13,11 +13,12 @@ description: 状態間の遷移。
 |---|---|---|---|
 | `from` | string | ✔ | 遷移元の状態キー |
 | `to` | string | ✔ | 遷移先の状態キー（即時遷移先） |
+| `expects` | object | | 即時遷移の期待結果 |
 | `trigger` | string | | 契機。例 `click`, `screenLoad` |
 | `target` | string | | 対象 UI 要素 |
 | `action` | object | | `{ apiCall: <apiBinding キー> }`（v0.1 では未検証） |
-| `onSuccess` | object | | `{ to: <状態キー>, navigate: <画面 id> }` |
-| `onError` | object | | `{ to: <状態キー> }` |
+| `onSuccess` | object | | `{ to, navigate, expects }` |
+| `onError` | object | | `{ to, expects, cases }` |
 
 `from` / `to` / `onSuccess.to` / `onError.to` は `states` に存在するキーである必要があります
 （未定義ならエラー）。
@@ -37,4 +38,24 @@ events:
 ```
 
 `action` を伴う場合、`to`（例: `submitting`）を起点に `onSuccess.to` / `onError.to` へ分岐します。
-`apiCall` は [ApiBinding](/concepts/state-machine)（M4）への参照で、v0.1 では文字列として保持のみ。
+`apiCall` は [ApiBinding](/concepts/state-machine)への参照です。
+
+## 期待結果とAPIエラー
+
+`expects` は `state`、`navigate`、`message`、フィールドごとの `value` / `expression` / `visible` /
+`enabled` を表現します。`onError.cases` はHTTP `status` と業務エラー `code` で分岐し、
+一致しない場合は `onError` 直下を既定結果として使います。
+
+```yaml
+onError:
+  to: error
+  cases:
+    - when: { status: 409 }
+      to: conflict
+      expects:
+        state: conflict
+        message: { kind: warning, text: 他のユーザーにより更新されています }
+  expects:
+    state: error
+    message: { kind: error, key: update.failed }
+```

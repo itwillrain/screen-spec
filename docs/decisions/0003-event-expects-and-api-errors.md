@@ -1,6 +1,6 @@
 # ADR 0003 — event の期待結果と API エラー挙動
 
-- ステータス: **Proposed**
+- ステータス: **Accepted**
 - 日付: 2026-07-25
 - 関連: [ADR 0002](./0002-spec-coverage-retrospective.md) 優先度2
 
@@ -50,7 +50,8 @@ events:
 | `fields` | map | フィールドごとの期待値または状態 |
 
 フィールド期待値は初期段階では `value`、`visible`、`enabled` のみを扱う。
-動的な値は既存の式構文を再利用し、任意コードやスクリプトは許可しない。
+リテラルは `value`、動的な値は `expression` として区別し、同時指定は許可しない。
+`expression` は既存の式構文を再利用し、任意コードやスクリプトは許可しない。
 
 ### 2. API エラー条件は `onError.cases` に置く
 
@@ -115,17 +116,16 @@ onError:
 
 実装依存・実行環境依存になり、安全な静的解析と安定したテスト生成が難しいため採用しない。
 
-## 未決事項
+## 確定した詳細
 
-1. `expects.fields.*.value` でリテラルと式をどう区別するか。
-2. メッセージを直書きするか、将来のi18n向けに `key` も許可するか。
-3. `when.code` の参照先をOpenAPI拡張で形式化するか。
-4. `cases` の優先順位と重複条件をwarningまたはerrorのどちらにするか。
+1. `expects.fields.*` はリテラルの `value` と動的な `expression` を別キーにし、同時指定を禁止する。
+2. `message` は `text` または将来のi18n向け `key` を最低1つ必須とし、フォールバック用途の併記を許可する。
+3. `when.code` は当面opaqueな文字列とし、OpenAPI拡張との照合は将来課題とする。
+4. `cases` は記述順を優先し、同一の `status` / `code` 条件はcore analyzerでwarningにする。
 
 ## 実装順
 
-1. 本ADRの未決事項を確定し、ステータスをAcceptedへ変更する。
-2. JSON Schemaと型相当の構造を追加する。
-3. core analyzerに参照・整合性チェックを追加する。
-4. サンプルとテストを追加する。
-5. Viewerと公開ドキュメントへ表示を追加する。
+1. JSON Schemaと型相当の構造を追加する。
+2. core analyzerに参照・整合性チェックを追加する。
+3. サンプルとテストを追加する。
+4. Viewerと公開ドキュメントへ表示を追加する。

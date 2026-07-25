@@ -15,7 +15,7 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
 - [0002 — 仕様カバレッジの振り返り（テスト生成・実装の観点）](./0002-spec-coverage-retrospective.md)
   — ステータス: **Accepted**（ロードマップ／優先度1 完了）
 - [0003 — event の期待結果と API エラー挙動](./0003-event-expects-and-api-errors.md)
-  — ステータス: **Proposed**（優先度2の設計案）
+  — ステータス: **Accepted**（優先度2 実装中）
 
 ## v0.1 決定の一覧
 

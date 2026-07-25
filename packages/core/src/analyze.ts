@@ -16,12 +16,29 @@ export interface Diagnostic {
   where?: string;
 }
 
+interface ExpectationLike {
+  state?: unknown;
+  navigate?: unknown;
+  fields?: Record<string, { expression?: unknown }>;
+}
+
+interface EventOutcomeLike {
+  to?: unknown;
+  navigate?: unknown;
+  expects?: ExpectationLike;
+}
+
+interface ErrorCaseLike extends EventOutcomeLike {
+  when?: { status?: unknown; code?: unknown };
+}
+
 interface EventLike {
   from?: unknown;
   to?: unknown;
   action?: { apiCall?: unknown };
-  onSuccess?: { to?: unknown };
-  onError?: { to?: unknown };
+  expects?: ExpectationLike;
+  onSuccess?: EventOutcomeLike;
+  onError?: EventOutcomeLike & { cases?: ErrorCaseLike[] };
 }
 
 interface ApiBindingLike {
@@ -293,6 +310,9 @@ function analyzeStateMachine(s: ScreenLike, diagnostics: Diagnostic[]): void {
 
   const stateKeys = new Set(Object.keys(states));
   const bindingKeys = new Set(Object.keys(s.apiBindings ?? {}));
+  const fieldKeys = new Set(Object.keys(s.fields ?? {}));
+  const { pathParams, queryParams } = paramSets(s);
+  const exprContext: RefContext = { fieldKeys, pathParams, queryParams };
 
   const initials = Object.entries(states)
     .filter(([, v]) => v && typeof v === "object" && v.initial === true)
@@ -327,6 +347,48 @@ function analyzeStateMachine(s: ScreenLike, diagnostics: Diagnostic[]): void {
     return name;
   };
 
+  const checkExpects = (
+    key: string,
+    field: string,
+    expects: ExpectationLike | undefined,
+    outcomeTo: string | undefined,
+    outcomeNavigate?: string,
+  ): void => {
+    if (!expects) return;
+    const expectedState = asString(expects.state);
+    if (expectedState !== undefined) {
+      checkRef(key, `${field}.state`, expectedState);
+      if (outcomeTo !== undefined && expectedState !== outcomeTo) {
+        diagnostics.push({
+          severity: "error",
+          code: "expectation-state-mismatch",
+          message: `event "${key}" の ${field}.state "${expectedState}" が遷移先 "${outcomeTo}" と一致しません。`,
+          where: key,
+        });
+      }
+    }
+    const expectedNavigate = asString(expects.navigate);
+    if (expectedNavigate !== undefined && outcomeNavigate !== undefined && expectedNavigate !== outcomeNavigate) {
+      diagnostics.push({
+        severity: "error",
+        code: "expectation-navigate-mismatch",
+        message: `event "${key}" の ${field}.navigate "${expectedNavigate}" が遷移先 "${outcomeNavigate}" と一致しません。`,
+        where: key,
+      });
+    }
+    for (const [fieldKey, expected] of Object.entries(expects.fields ?? {})) {
+      if (!fieldKeys.has(fieldKey)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unknown-expected-field",
+          message: `event "${key}" の ${field}.fields が未定義のフィールド "${fieldKey}" を参照しています。`,
+          where: key,
+        });
+      }
+      checkExpression(expected.expression, exprContext, `${key}.${field}.fields.${fieldKey}`, diagnostics);
+    }
+  };
+
   for (const [key, ev] of Object.entries(events)) {
     const from = checkRef(key, "from", ev.from);
     const to = checkRef(key, "to", ev.to);
@@ -335,6 +397,28 @@ function analyzeStateMachine(s: ScreenLike, diagnostics: Diagnostic[]): void {
     if (from && to) edges.push([from, to]);
     if (to && onSuccess) edges.push([to, onSuccess]);
     if (to && onError) edges.push([to, onError]);
+    checkExpects(key, "expects", ev.expects, to);
+    checkExpects(key, "onSuccess.expects", ev.onSuccess?.expects, onSuccess, asString(ev.onSuccess?.navigate));
+    checkExpects(key, "onError.expects", ev.onError?.expects, onError);
+
+    const seenErrorCases = new Set<string>();
+    for (const [index, errorCase] of (ev.onError?.cases ?? []).entries()) {
+      const caseTo = checkRef(key, `onError.cases[${index}].to`, errorCase.to);
+      if (to && caseTo) edges.push([to, caseTo]);
+      checkExpects(key, `onError.cases[${index}].expects`, errorCase.expects, caseTo);
+      const status = typeof errorCase.when?.status === "number" ? errorCase.when.status : "*";
+      const code = asString(errorCase.when?.code) ?? "*";
+      const signature = `${status}:${code}`;
+      if (seenErrorCases.has(signature)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "duplicate-error-case",
+          message: `event "${key}" の onError.cases に重複条件 status=${status}, code=${code} があります。`,
+          where: key,
+        });
+      }
+      seenErrorCases.add(signature);
+    }
 
     const apiCall = asString(ev.action?.apiCall);
     if (apiCall !== undefined && !bindingKeys.has(apiCall)) {

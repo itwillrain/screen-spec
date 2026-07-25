@@ -103,13 +103,36 @@ screen:
       target: submitButton
       from: editing
       to: submitting
+      expects:
+        state: submitting
       action:
         apiCall: updateUser
       onSuccess:
         to: viewing
         navigate: user-list
+        expects:
+          state: viewing
+          navigate: user-list
+          message:
+            kind: success
+            text: 更新しました
       onError:
         to: error
+        cases:
+          - when:
+              status: 400
+              code: VALIDATION_ERROR
+            to: editing
+            expects:
+              state: editing
+              message:
+                kind: error
+                text: 入力内容を確認してください
+        expects:
+          state: error
+          message:
+            kind: error
+            text: 更新に失敗しました
     cancel:
       trigger: click
       target: cancelButton

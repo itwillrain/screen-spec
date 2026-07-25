@@ -152,6 +152,63 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
     expect(analyzeScreen(screen)).toEqual([]);
   });
 
+  it("expects.state が遷移先と不一致なら error", () => {
+    const screen = {
+      states: { a: { initial: true }, b: {}, c: {} },
+      events: { go: { from: "a", to: "b", expects: { state: "c" } } },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "expectation-state-mismatch" && d.severity === "error")).toBe(true);
+  });
+
+  it("onSuccess.expects.navigate が遷移先画面と不一致なら error", () => {
+    const screen = {
+      states: { a: { initial: true }, b: {} },
+      events: {
+        go: {
+          from: "a",
+          to: "b",
+          onSuccess: { navigate: "screen-a", expects: { navigate: "screen-b" } },
+        },
+      },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "expectation-navigate-mismatch" && d.severity === "error")).toBe(true);
+  });
+
+  it("expects.fields が未定義フィールドを参照すると warning", () => {
+    const screen = {
+      fields: { name: {} },
+      states: { a: { initial: true }, b: {} },
+      events: {
+        go: { from: "a", to: "b", expects: { fields: { ghost: { value: "x" } } } },
+      },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "unknown-expected-field" && d.where === "go")).toBe(true);
+  });
+
+  it("同じAPIエラー条件が重複すると warning", () => {
+    const screen = {
+      states: { a: { initial: true }, pending: {}, failed: {} },
+      events: {
+        go: {
+          from: "a",
+          to: "pending",
+          onError: {
+            to: "failed",
+            cases: [
+              { when: { status: 409, code: "CONFLICT" }, to: "failed" },
+              { when: { status: 409, code: "CONFLICT" }, to: "failed" },
+            ],
+          },
+        },
+      },
+    };
+    const diags = analyzeScreen(screen);
+    expect(diags.some((d) => d.code === "duplicate-error-case" && d.severity === "warning")).toBe(true);
+  });
+
   it("式が未定義フィールド/route パラメータを参照すると warning", () => {
     const screen = {
       route: "/users/{userId}",
@@ -188,6 +245,103 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
       },
     };
     expect(analyzeScreen(screen)).toEqual([]);
+  });
+});
+
+describe("期待結果とAPIエラー構文（ADR 0003）", () => {
+  const BASE = "https://ex.test/";
+  const loader: DocumentLoader = () => {
+    throw new Error("no external refs");
+  };
+
+  it("expects と onError.cases の最小構文が妥当", async () => {
+    const result = await validateSpec(
+      `specVersion: "0.1"
+screen:
+  id: example
+  name: Example
+  fields:
+    name: { label: Name, type: text }
+  states:
+    editing: { initial: true }
+    submitting: {}
+    conflict: {}
+    error: {}
+  events:
+    submit:
+      from: editing
+      to: submitting
+      expects:
+        state: submitting
+        fields:
+          name: { expression: "{fields.name}" }
+      onError:
+        to: error
+        cases:
+          - when: { status: 409, code: CONFLICT }
+            to: conflict
+            expects:
+              message: { kind: warning, key: update.conflict }
+        expects:
+          state: error
+          message: { kind: error, text: 更新に失敗しました }
+`,
+      `${BASE}screen.yaml`,
+      loader,
+    );
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("不正なHTTP status はスキーマエラー", async () => {
+    const result = await validateSpec(
+      `specVersion: "0.1"
+screen:
+  id: example
+  name: Example
+  states:
+    a: { initial: true }
+    b: {}
+  events:
+    go:
+      from: a
+      to: b
+      onError:
+        cases:
+          - when: { status: 42 }
+            to: a
+`,
+      `${BASE}screen.yaml`,
+      loader,
+    );
+    expect(result.valid).toBe(false);
+    expect(result.issues.some((issue) => issue.stage === "raw")).toBe(true);
+  });
+
+  it("フィールド期待値の value と expression は同時指定不可", async () => {
+    const result = await validateSpec(
+      `specVersion: "0.1"
+screen:
+  id: example
+  name: Example
+  fields:
+    name: { label: Name, type: text }
+  states:
+    a: { initial: true }
+    b: {}
+  events:
+    go:
+      from: a
+      to: b
+      expects:
+        fields:
+          name: { value: x, expression: "{fields.name}" }
+`,
+      `${BASE}screen.yaml`,
+      loader,
+    );
+    expect(result.valid).toBe(false);
   });
 });
 

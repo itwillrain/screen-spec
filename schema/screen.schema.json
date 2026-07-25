@@ -154,6 +154,7 @@
         "target": { "type": "string" },
         "from": { "type": "string", "description": "遷移元の状態キー" },
         "to": { "type": "string", "description": "遷移先の状態キー" },
+        "expects": { "$ref": "#/$defs/Expectation" },
         "action": {
           "type": "object",
           "additionalProperties": false,
@@ -161,22 +162,102 @@
             "apiCall": { "type": "string", "description": "apiBinding のキー（v0.1 では未検証）" }
           }
         },
-        "onSuccess": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "to": { "type": "string", "description": "成功時の遷移先状態キー" },
-            "navigate": { "type": "string", "description": "遷移先の画面 id" }
-          }
-        },
-        "onError": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "to": { "type": "string", "description": "失敗時の遷移先状態キー" }
-          }
+        "onSuccess": { "$ref": "#/$defs/EventOutcome" },
+        "onError": { "$ref": "#/$defs/ErrorOutcome" }
+      }
+    },
+
+    "EventOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "to": { "type": "string", "description": "結果時の遷移先状態キー" },
+        "navigate": { "type": "string", "description": "遷移先の画面 id" },
+        "expects": { "$ref": "#/$defs/Expectation" }
+      }
+    },
+
+    "ErrorOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "to": { "type": "string", "description": "既定の失敗時遷移先状態キー" },
+        "expects": { "$ref": "#/$defs/Expectation" },
+        "cases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ErrorCase" }
         }
       }
+    },
+
+    "ErrorCase": {
+      "type": "object",
+      "required": ["when", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "when": { "$ref": "#/$defs/ErrorCondition" },
+        "to": { "type": "string", "description": "条件一致時の遷移先状態キー" },
+        "expects": { "$ref": "#/$defs/Expectation" }
+      }
+    },
+
+    "ErrorCondition": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "code": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Expectation": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "state": { "type": "string" },
+        "navigate": { "type": "string" },
+        "message": { "$ref": "#/$defs/ExpectedMessage" },
+        "fields": { "$ref": "#/$defs/FieldExpectationMap" }
+      }
+    },
+
+    "ExpectedMessage": {
+      "type": "object",
+      "required": ["kind"],
+      "anyOf": [
+        { "required": ["text"] },
+        { "required": ["key"] }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["info", "success", "warning", "error"] },
+        "text": { "type": "string", "minLength": 1 },
+        "key": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "FieldExpectationMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/FieldExpectation" }
+    },
+
+    "FieldExpectation": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "value": true,
+        "expression": { "type": "string", "minLength": 1 },
+        "visible": { "type": "boolean" },
+        "enabled": { "type": "boolean" }
+      },
+      "not": { "required": ["value", "expression"] }
     },
 
     "TransitionMap": {
