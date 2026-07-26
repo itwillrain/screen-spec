@@ -13,7 +13,6 @@ interface Props {
 export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
   const tabs = [
     { id: 'fields', label: '項目', show: true },
-    { id: 'layout', label: 'レイアウト', show: !!screen.layout },
     { id: 'params', label: 'パラメータ', show: !!screen.params },
     { id: 'access', label: '権限', show: !!screen.accessControl },
     { id: 'states', label: '状態遷移', show: !!screen.stateMachine },
@@ -80,7 +79,6 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       </nav>
 
       {active === 'fields' ? <FieldsTab screen={screen} /> : null}
-      {active === 'layout' && screen.layout ? <LayoutTab screen={screen} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'access' && screen.accessControl ? (
         <AccessTab screen={screen} accessControl={screen.accessControl} />
@@ -264,6 +262,13 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
   const fields = q
     ? screen.fields.filter((f) => f.key.toLowerCase().includes(q) || f.label.toLowerCase().includes(q))
     : screen.fields
+
+  const sectionByFieldKey = new Map<string, string>()
+  screen.layout?.sections.forEach((sec, i) => {
+    const label = sec.title ?? sec.id ?? `section ${i + 1}`
+    sec.fieldKeys.forEach((key) => sectionByFieldKey.set(key, label))
+  })
+
   return (
     <section>
       <p className="muted">
@@ -288,6 +293,8 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
             <th>表示条件</th>
             <th>編集可否</th>
             <th>由来</th>
+            {screen.layout ? <th>セクション</th> : null}
+            <th>幅</th>
           </tr>
         </thead>
         <tbody>
@@ -321,47 +328,14 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
                   <span className="muted">inline</span>
                 )}
               </td>
+              {screen.layout ? (
+                <td>{sectionByFieldKey.get(field.key) ?? <span className="muted">—</span>}</td>
+              ) : null}
+              <td>{field.width ? <code>{field.width}</code> : <span className="muted">—</span>}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </section>
-  )
-}
-
-function LayoutTab({ screen }: { screen: ScreenView }) {
-  const fieldByKey = new Map(screen.fields.map((f) => [f.key, f]))
-  return (
-    <section>
-      <p className="muted">言語レベルの構造（セクション・列・幅ヒント）。</p>
-      {screen.layout!.sections.map((sec, i) => (
-        <div key={sec.id ?? i} className="layout-section">
-          <h3>
-            {sec.title ?? sec.id ?? `section ${i + 1}`}
-            {sec.region ? <span className="badge badge-region">{sec.region}</span> : null}
-          </h3>
-          <div className="layout-grid" style={{ gridTemplateColumns: `repeat(${sec.columns}, 1fr)` }}>
-            {sec.fieldKeys.map((key) => {
-              const f = fieldByKey.get(key)
-              const span = f?.width === 'full' ? sec.columns : 1
-              const designUrl = f?.design?.figma ?? f?.design?.images[0]?.url
-              return (
-                <div key={key} className="layout-cell" style={{ gridColumn: `span ${span}` }}>
-                  <span className="cell-label">{f?.label ?? key}</span>
-                  <code className="cell-key">{key}</code>
-                  <span className="cell-tags">
-                    {f?.width ? <span className="cell-width">{f.width}</span> : null}
-                    {f?.visibleWhen ? <span className="cell-cond" title={f.visibleWhen}>条件</span> : null}
-                    {designUrl ? (
-                      <a className="cell-design" href={designUrl} target="_blank" rel="noreferrer">🎨</a>
-                    ) : null}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
     </section>
   )
 }

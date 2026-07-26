@@ -333,55 +333,6 @@ ul.warnings {
   margin-top: 0.3rem;
   font-size: 0.8rem;
 }
-.layout-section {
-  margin-bottom: 1rem;
-}
-.layout-section h3 {
-  margin: 0.5rem 0;
-  font-size: 0.95rem;
-}
-.layout-grid {
-  display: grid;
-  gap: 0.6rem;
-}
-.layout-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.6rem 0.75rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-.cell-label {
-  font-weight: 600;
-}
-.cell-key {
-  color: #6b7280;
-  font-size: 0.8em;
-}
-.cell-tags {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.15rem;
-}
-.cell-width,
-.cell-cond {
-  font-size: 0.7rem;
-  color: #3730a3;
-  background: #e0e7ff;
-  border-radius: 999px;
-  padding: 0 0.4rem;
-}
-.cell-cond {
-  color: #92400e;
-  background: #fef3c7;
-  cursor: help;
-}
-.cell-design {
-  text-decoration: none;
-}
 .badge-region {
   margin-left: 0.5rem;
   background: #f3f4f6;
@@ -618,12 +569,6 @@ ul.warnings {
     width: auto;
     min-width: 38rem;
     max-width: none;
-  }
-  .layout-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .layout-cell {
-    grid-column: 1 / -1 !important;
   }
   .mockup {
     max-width: 100%;
