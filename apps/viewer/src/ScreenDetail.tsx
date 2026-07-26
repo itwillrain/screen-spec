@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useState, type KeyboardEvent } from 'react'
 import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
 import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
@@ -26,6 +26,19 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
   const [tab, setTab] = useState('fields')
   const active = tabs.some((t) => t.id === tab) ? tab : 'fields'
 
+  const moveTab = (index: number) => {
+    const next = tabs[(index + tabs.length) % tabs.length]
+    setTab(next.id)
+    requestAnimationFrame(() => document.getElementById(`tab-${next.id}`)?.focus())
+  }
+  const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (event.key === "ArrowRight") moveTab(index + 1)
+    else if (event.key === "ArrowLeft") moveTab(index - 1)
+    else if (event.key === "Home") moveTab(0)
+    else if (event.key === "End") moveTab(tabs.length - 1)
+    else return
+    event.preventDefault()
+  }
   return (
     <>
       <header className="page-head">
@@ -67,10 +80,13 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       <nav className="tabs" role="tablist" aria-label="画面仕様の詳細">
         {tabs.map((t) => (
           <button
-            key={t.id}
+            id={`tab-${t.id}`}
+            aria-controls={`panel-${t.id}`}
+            tabIndex={active === t.id ? 0 : -1}
             className={active === t.id ? 'tab active' : 'tab'}
             role="tab"
             aria-selected={active === t.id}
+            onKeyDown={(event) => onTabKeyDown(event, tabs.indexOf(t))}
             onClick={() => setTab(t.id)}
           >
             {t.label}
@@ -78,6 +94,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
         ))}
       </nav>
 
+      <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
       {active === 'fields' ? <FieldsTab screen={screen} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'access' && screen.accessControl ? (
@@ -97,6 +114,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
           <pre className="raw">{screen.rawText}</pre>
         </section>
       ) : null}
+      </div>
     </>
   )
 }
@@ -303,7 +321,7 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
               <td><code>{field.key}</code></td>
               <td>{field.label}</td>
               <td><code>{field.type}</code></td>
-              <td>{field.required ? '✔' : ''}</td>
+              <td>{field.required ? '必須' : <span className="muted">任意</span>}</td>
               <td>{field.default !== undefined ? <code>{String(field.default)}</code> : <span className="muted">—</span>}</td>
               <td>
                 {field.validations.length === 0 ? (
@@ -363,7 +381,7 @@ function ParamsTab({ screen }: { screen: ScreenView }) {
                   <tr key={p.name}>
                     <td><code>{p.name}</code></td>
                     <td>{p.type ? <code>{p.type}</code> : <span className="muted">—</span>}</td>
-                    <td>{p.required ? '✔' : ''}</td>
+                    <td>{p.required ? '必須' : <span className="muted">任意</span>}</td>
                     <td>{p.default !== undefined ? <code>{String(p.default)}</code> : <span className="muted">—</span>}</td>
                     <td>{p.enum ? <code>{p.enum.map(String).join(', ')}</code> : <span className="muted">—</span>}</td>
                     <td>{p.description ?? <span className="muted">—</span>}</td>
@@ -391,9 +409,9 @@ function effectiveAccess(
 }
 
 function AccessCell({ value }: { value?: boolean }) {
-  if (value === true) return <span className="ac-yes">✓</span>
-  if (value === false) return <span className="ac-no">✗</span>
-  return <span className="muted">—</span>
+  if (value === true) return <span className="ac-yes">許可</span>
+  if (value === false) return <span className="ac-no">拒否</span>
+  return <span className="muted">未定義</span>
 }
 
 function AccessTab({
@@ -572,7 +590,7 @@ function ApiTab({ screen }: { screen: ScreenView }) {
                       return (
                         <li key={i}>
                           <code>{m.scope}.{m.key}</code>
-                          {!known ? <span className="badge badge-ng mini" title="OpenAPI に無い項目">?</span> : null}
+                          {!known ? <span className="mapping-error">OpenAPIに存在しない項目</span> : null}
                           {' '}← <code>{m.expr}</code>
                         </li>
                       )
@@ -595,7 +613,7 @@ function ApiTab({ screen }: { screen: ScreenView }) {
                       return (
                         <li key={i}>
                           <code>{m.field}</code> ← <code>{m.expr}</code>
-                          {op && !known ? <span className="badge badge-ng mini" title="OpenAPI レスポンスに無い項目">?</span> : null}
+                          {op && !known ? <span className="mapping-error">OpenAPIレスポンスに存在しない項目</span> : null}
                         </li>
                       )
                     })}

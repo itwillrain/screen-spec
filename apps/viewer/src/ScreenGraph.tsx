@@ -55,6 +55,17 @@ export function ScreenGraph({ screens }: { screens: ScreenView[] }) {
     }
   }, [screens, id])
 
-  if (error) return <p className="badge badge-ng">画面遷移図の描画に失敗しました: {error}</p>
-  return <div className="diagram" dangerouslySetInnerHTML={{ __html: svg }} />
+  return (
+    <>
+      {error ? <p className="badge badge-ng">画面遷移図の描画に失敗しました: {error}</p> : null}
+      {!error && !svg ? <p className="muted" role="status">画面遷移図を読み込み中…</p> : null}
+      {svg ? <div className="diagram" role="img" aria-label="画面間遷移図" dangerouslySetInnerHTML={{ __html: svg }} /> : null}
+      <details className="diagram-alternative">
+        <summary>画面遷移をリストで表示</summary>
+        <ul>{screens.flatMap((screen) => screen.transitions.filter((transition) => transition.to).map((transition, index) => (
+          <li key={`${screen.id}:${transition.to}:${index}`}><code>{screen.id}</code> → <code>{transition.to}</code>{transition.trigger ? `（${transition.trigger}）` : ""}</li>
+        )))}</ul>
+      </details>
+    </>
+  )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { analyzeProject } from '@screen-spec/core'
 import { loadAllScreens, fetchLoader, type ScreenView } from './screen-view'
 import { ScreenDetail } from './ScreenDetail'
@@ -12,15 +12,38 @@ type State =
 // 'overview' か画面 id
 type Selection = 'overview' | string
 
+type Theme = 'system' | 'light' | 'dark'
+
+function ThemeControl() {
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('screen-spec-theme') as Theme | null) ?? 'system')
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme
+    localStorage.setItem('screen-spec-theme', theme)
+  }, [theme])
+  return (
+    <label className="theme-control">
+      <span>テーマ</span>
+      <select value={theme} onChange={(event) => setTheme(event.target.value as Theme)}>
+        <option value="system">システム</option>
+        <option value="light">ライト</option>
+        <option value="dark">ダーク</option>
+      </select>
+    </label>
+  )
+}
+
 export function App() {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [selected, setSelected] = useState<Selection>('overview')
   const [navFilter, setNavFilter] = useState('')
   const [navOpen, setNavOpen] = useState(false)
+  const mainRef = useRef<HTMLElement>(null)
 
   const selectScreen = (selection: Selection) => {
     setSelected(selection)
     setNavOpen(false)
+    requestAnimationFrame(() => mainRef.current?.focus())
   }
 
   useEffect(() => {
@@ -63,8 +86,10 @@ export function App() {
     : screens
 
   return (
-    <div className="layout">
-      <nav className="sidebar">
+    <>
+      <a className="skip-link" href="#main-content">本文へ移動</a>
+      <div className="layout">
+      <nav className="sidebar" aria-label="画面ナビゲーション">
         <div className="sidebar-head">
           <p className="eyebrow">screen-spec viewer</p>
           <button
@@ -77,6 +102,7 @@ export function App() {
             {navOpen ? '閉じる' : '画面を選ぶ'}
           </button>
         </div>
+        <ThemeControl />
         <div id="screen-navigation" className={navOpen ? 'sidebar-content open' : 'sidebar-content'}>
           <input
             className="filter"
@@ -104,15 +130,16 @@ export function App() {
                   onClick={() => selectScreen(s.id)}
                 >
                   {s.name || s.id}
-                  {!s.valid ? <span className="badge badge-ng nav-badge">!</span> : null}
+                  {!s.valid ? <span className="badge badge-ng nav-badge">エラー {s.issueCount}</span> : null}
                 </button>
               </li>
             ))}
           </ul>
+          {navScreens.length === 0 ? <p className="empty" role="status">該当する画面はありません。</p> : null}
         </div>
       </nav>
 
-      <main className="page">
+      <main id="main-content" className="page" ref={mainRef} tabIndex={-1}>
         {current ? (
           <ScreenDetail
             key={current.id}
@@ -187,6 +214,7 @@ export function App() {
           </>
         )}
       </main>
-    </div>
+      </div>
+    </>
   )
 }

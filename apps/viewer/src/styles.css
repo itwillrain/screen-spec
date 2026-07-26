@@ -12,7 +12,7 @@ code {
   font-size: 0.9em;
 }
 .page {
-  width: min(56rem, calc(100% - 2rem));
+  width: min(80rem, calc(100% - 4rem));
   margin: 3rem auto;
 }
 .layout {
@@ -61,6 +61,7 @@ ul.nav {
   gap: 0.15rem;
 }
 .nav-item {
+  position: relative;
   width: 100%;
   text-align: left;
   padding: 0.4rem 0.6rem;
@@ -75,6 +76,7 @@ ul.nav {
   background: #f3f4f6;
 }
 .nav-item.active {
+  box-shadow: inset 3px 0 #4f46e5;
   background: #e0e7ff;
   color: #3730a3;
   font-weight: 600;
@@ -597,4 +599,90 @@ ul.warnings {
   .sidebar-content {
     display: block;
   }
+}
+
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  background: #171a21;
+  color: #fff;
+  transform: translateY(-150%);
+}
+.skip-link:focus { transform: translateY(0); }
+:where(button, a, input, select, [tabindex]):focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
+}
+#main-content:focus { outline: none; }
+.theme-control {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  color: #5e6573;
+  font-size: 0.75rem;
+}
+.theme-control select {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #dde1e8;
+  border-radius: 6px;
+  background: #fff;
+  color: #171a21;
+  font: inherit;
+}
+.empty { color: #5e6573; font-size: 0.85rem; }
+.mapping-error {
+  display: inline-block;
+  margin-left: 0.35rem;
+  color: #991b1b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.diagram-alternative { margin-top: 0.5rem; }
+.diagram-alternative summary { cursor: pointer; color: #3730a3; }
+html { scroll-padding-top: 5rem; }
+
+@media (max-width: 1024px) and (min-width: 761px) {
+  .page { width: min(80rem, calc(100% - 3rem)); }
+  .binding-cols { grid-template-columns: 1fr; }
+}
+
+html[data-theme="dark"] body { color: #f2f5f8; background: #0d1117; }
+html[data-theme="dark"] :where(.sidebar, .binding, .meta, table.fields, .diagram, .event-card, .test-filter, .mockup img) { background: #141a23; border-color: #2b3441; }
+html[data-theme="dark"] .sidebar { background: #0a0e14; }
+html[data-theme="dark"] :where(.nav-item, .tab) { color: #b6bec9; }
+html[data-theme="dark"] :where(.nav-item:hover, .tab:hover) { color: #f2f5f8; background: #202a36; }
+html[data-theme="dark"] :where(.nav-item.active, .tab.active, a, .link, .diagram-alternative summary) { color: #a5abff; }
+html[data-theme="dark"] .nav-item.active { background: #202a36; box-shadow: inset 3px 0 #a5abff; }
+html[data-theme="dark"] :where(.muted, .eyebrow, .meta dt) { color: #b6bec9; }
+html[data-theme="dark"] :where(.filter, .theme-control select) { color: #f2f5f8; background: #19212c; border-color: #3a4656; }
+html[data-theme="dark"] table.fields thead th { color: #b6bec9; background: #19212c; }
+html[data-theme="dark"] table.fields td { border-color: #2b3441; }
+html[data-theme="dark"] :where(.event-outcome, .badge-region) { background: #202a36; }
+html[data-theme="dark"] .badge-region { color: #b6bec9; }
+html[data-theme="dark"] .mapping-error { color: #fb7185; }
+html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; border-color: #71620c; }
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] body { color: #f2f5f8; background: #0d1117; }
+  html[data-theme="system"] :where(.sidebar, .binding, .meta, table.fields, .diagram, .event-card, .test-filter, .mockup img) { background: #141a23; border-color: #2b3441; }
+  html[data-theme="system"] .sidebar { background: #0a0e14; }
+  html[data-theme="system"] :where(.nav-item, .tab, .muted, .eyebrow, .meta dt) { color: #b6bec9; }
+  html[data-theme="system"] :where(.nav-item.active, .tab.active, a, .link, .diagram-alternative summary) { color: #a5abff; }
+  html[data-theme="system"] :where(.filter, .theme-control select) { color: #f2f5f8; background: #19212c; border-color: #3a4656; }
+  html[data-theme="system"] table.fields thead th { color: #b6bec9; background: #19212c; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+@media (forced-colors: active) {
+  .nav-item.active, .tab.active { border-color: Highlight; }
+  :where(button, a, input, select, [tabindex]):focus-visible { outline-color: Highlight; }
 }

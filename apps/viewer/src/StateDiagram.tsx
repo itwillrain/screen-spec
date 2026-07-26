@@ -45,8 +45,17 @@ export function StateDiagram({ sm }: { sm: StateMachineView }) {
     }
   }, [sm, id])
 
-  if (error) {
-    return <p className="badge badge-ng">状態遷移図の描画に失敗しました: {error}</p>
-  }
-  return <div className="diagram" ref={ref} dangerouslySetInnerHTML={{ __html: svg }} />
+  return (
+    <>
+      {error ? <p className="badge badge-ng">状態遷移図の描画に失敗しました: {error}</p> : null}
+      {!error && !svg ? <p className="muted" role="status">状態遷移図を読み込み中…</p> : null}
+      {svg ? <div className="diagram" role="img" aria-label="状態遷移図" ref={ref} dangerouslySetInnerHTML={{ __html: svg }} /> : null}
+      <details className="diagram-alternative">
+        <summary>状態遷移をリストで表示</summary>
+        <ul>{sm.edges.map((edge, index) => (
+          <li key={`${edge.from}:${edge.to}:${index}`}><code>{edge.from}</code> → <code>{edge.to}</code>{edge.label ? `（${edge.label}）` : ""}</li>
+        ))}</ul>
+      </details>
+    </>
+  )
 }
