@@ -16,6 +16,12 @@ export function App() {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [selected, setSelected] = useState<Selection>('overview')
   const [navFilter, setNavFilter] = useState('')
+  const [navOpen, setNavOpen] = useState(false)
+
+  const selectScreen = (selection: Selection) => {
+    setSelected(selection)
+    setNavOpen(false)
+  }
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL
@@ -59,35 +65,51 @@ export function App() {
   return (
     <div className="layout">
       <nav className="sidebar">
-        <p className="eyebrow">screen-spec viewer</p>
-        <input
-          className="filter"
-          type="search"
-          placeholder="画面を検索"
-          value={navFilter}
-          onChange={(e) => setNavFilter(e.target.value)}
-        />
-        <ul className="nav">
-          <li>
-            <button
-              className={selected === 'overview' ? 'nav-item active' : 'nav-item'}
-              onClick={() => setSelected('overview')}
-            >
-              概要
-            </button>
-          </li>
-          {navScreens.map((s) => (
-            <li key={s.id}>
+        <div className="sidebar-head">
+          <p className="eyebrow">screen-spec viewer</p>
+          <button
+            className="nav-toggle"
+            type="button"
+            aria-expanded={navOpen}
+            aria-controls="screen-navigation"
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            {navOpen ? '閉じる' : '画面を選ぶ'}
+          </button>
+        </div>
+        <div id="screen-navigation" className={navOpen ? 'sidebar-content open' : 'sidebar-content'}>
+          <input
+            className="filter"
+            type="search"
+            placeholder="画面を検索"
+            aria-label="画面を検索"
+            value={navFilter}
+            onChange={(e) => setNavFilter(e.target.value)}
+          />
+          <ul className="nav">
+            <li>
               <button
-                className={selected === s.id ? 'nav-item active' : 'nav-item'}
-                onClick={() => setSelected(s.id)}
+                className={selected === 'overview' ? 'nav-item active' : 'nav-item'}
+                aria-current={selected === 'overview' ? 'page' : undefined}
+                onClick={() => selectScreen('overview')}
               >
-                {s.name || s.id}
-                {!s.valid ? <span className="badge badge-ng nav-badge">!</span> : null}
+                概要
               </button>
             </li>
-          ))}
-        </ul>
+            {navScreens.map((s) => (
+              <li key={s.id}>
+                <button
+                  className={selected === s.id ? 'nav-item active' : 'nav-item'}
+                  aria-current={selected === s.id ? 'page' : undefined}
+                  onClick={() => selectScreen(s.id)}
+                >
+                  {s.name || s.id}
+                  {!s.valid ? <span className="badge badge-ng nav-badge">!</span> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
 
       <main className="page">
@@ -96,14 +118,14 @@ export function App() {
             key={current.id}
             screen={current}
             screenIds={screens.map((s) => s.id)}
-            onNavigate={(id) => setSelected(id)}
+            onNavigate={(id) => selectScreen(id)}
           />
         ) : (
           <>
             <header className="page-head">
               <p className="eyebrow">overview</p>
               <h1>画面一覧</h1>
-              <p className="muted">{screens.length} 画面。左のナビから各画面の詳細を開けます。</p>
+              <p className="muted">{screens.length} 画面。ナビから各画面の詳細を開けます。</p>
             </header>
 
             {(() => {
@@ -144,7 +166,7 @@ export function App() {
                   {screens.map((s) => (
                     <tr key={s.id}>
                       <td>
-                        <button className="link" onClick={() => setSelected(s.id)}>
+                        <button className="link" onClick={() => selectScreen(s.id)}>
                           <code>{s.id}</code>
                         </button>
                       </td>

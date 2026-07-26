@@ -30,6 +30,24 @@ code {
   border-right: 1px solid #e5e7eb;
   flex: 0 0 auto;
 }
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.nav-toggle {
+  display: none;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #3730a3;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
 .layout .page {
   flex: 1 1 auto;
   margin: 2rem auto;
@@ -489,4 +507,149 @@ ul.warnings {
 .test-context dd {
   margin: 0 0 0.35rem;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  body {
+    overflow-x: hidden;
+  }
+  .layout {
+    display: block;
+  }
+  .sidebar {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+    width: 100%;
+    min-height: 0;
+    padding: 0.7rem 1rem;
+    border-right: 0;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.06);
+  }
+  .nav-toggle {
+    display: inline-block;
+  }
+  .sidebar-content {
+    display: none;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    padding-bottom: 0.4rem;
+  }
+  .sidebar-content.open {
+    display: block;
+  }
+  ul.nav {
+    margin-top: 0.35rem;
+  }
+  .nav-item,
+  .filter,
+  .tab,
+  .test-filter,
+  .test-export-button {
+    min-height: 2.75rem;
+  }
+  .layout .page,
+  .page {
+    width: calc(100% - 1.25rem);
+    margin: 1.25rem auto 2rem;
+  }
+  .page-head h1 {
+    font-size: clamp(1.5rem, 8vw, 2rem);
+    overflow-wrap: anywhere;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    padding: 0.7rem;
+  }
+  .meta dd,
+  .event-route,
+  .event-outcome,
+  .binding {
+    overflow-wrap: anywhere;
+  }
+  .tabs {
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+  .tab {
+    flex: 0 0 auto;
+    padding-inline: 0.75rem;
+    white-space: nowrap;
+  }
+  table.fields {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table.fields th,
+  table.fields td {
+    min-width: 5rem;
+  }
+  table.fields code {
+    overflow-wrap: anywhere;
+  }
+  table.matrix th:first-child,
+  table.matrix td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+  }
+  table.matrix thead th:first-child {
+    background: #f9fafb;
+  }
+  .binding-cols {
+    grid-template-columns: 1fr;
+  }
+  .binding,
+  .event-card,
+  .diagram,
+  pre.raw {
+    padding: 0.75rem;
+  }
+  .diagram svg {
+    width: auto;
+    min-width: 38rem;
+    max-width: none;
+  }
+  .layout-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .layout-cell {
+    grid-column: 1 / -1 !important;
+  }
+  .mockup {
+    max-width: 100%;
+  }
+  .test-export {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .test-export-button {
+    width: 100%;
+  }
+  .test-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+  .test-filter {
+    flex: 0 0 auto;
+  }
+  .test-context {
+    min-width: 10rem;
+  }
+}
+
+@media (min-width: 761px) {
+  .sidebar-content {
+    display: block;
+  }
 }

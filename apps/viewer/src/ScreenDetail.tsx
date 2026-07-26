@@ -65,11 +65,13 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
         </ul>
       ) : null}
 
-      <nav className="tabs">
+      <nav className="tabs" role="tablist" aria-label="画面仕様の詳細">
         {tabs.map((t) => (
           <button
             key={t.id}
             className={active === t.id ? 'tab active' : 'tab'}
+            role="tab"
+            aria-selected={active === t.id}
             onClick={() => setTab(t.id)}
           >
             {t.label}
