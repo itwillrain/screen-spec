@@ -286,8 +286,8 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, drawerWidt
     </dl>
     {INPUT_FIELD_TYPES.has(field.type) ? <DetailList title="Validation" empty="なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ""}</span>)} /> : null}
     {OPTION_FIELD_TYPES.has(field.type) ? <DetailList title="Options" empty="なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} /> : null}
-    <section><h3>診断</h3>{diagnostics.length ? <ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul> : <p className="muted">このFieldに関連する診断はありません。</p>}</section>
-    <section><div className="detail-section-head"><h3>関連Event</h3>{events.length ? <button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button> : null}</div>{events.length ? events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />) : <p className="muted">直接関連するEventはありません。</p>}</section>
+    {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
+    {events.length ? <section><div className="detail-section-head"><h3>関連Event</h3><button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button></div>{events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />)}</section> : null}
   </section>
 }
 
