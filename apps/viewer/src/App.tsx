@@ -16,15 +16,6 @@ type Theme = 'system' | 'light' | 'dark'
 
 function ThemeControl() {
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('screen-spec-theme') as Theme | null) ?? 'system')
-  const navigateField = (screenId: string, fieldId: string) => {
-    setSelected(screenId)
-    const url = new URL(window.location.href)
-    url.searchParams.set("screen", screenId)
-    url.searchParams.set("tab", "fields")
-    url.searchParams.set("field", fieldId)
-    url.searchParams.delete("component")
-    window.history.replaceState(null, "", url)
-  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -70,6 +61,16 @@ export function App() {
     requestAnimationFrame(() => mainRef.current?.focus())
   }
 
+  const navigateField = (screenId: string, fieldId: string) => {
+    setSelected(screenId)
+    const url = new URL(window.location.href)
+    url.searchParams.set("screen", screenId)
+    url.searchParams.set("tab", "fields")
+    url.searchParams.set("field", fieldId)
+    url.searchParams.delete("component")
+    window.history.replaceState(null, "", url)
+  }
+
   useEffect(() => {
     const base = import.meta.env.BASE_URL
     const specsBase = new URL(`${base}specs/`, window.location.origin).href
@@ -78,6 +79,7 @@ export function App() {
       .then((screens) => {
         if (!cancelled) setState({ status: 'ready', screens })
       })
+
       .catch((e: unknown) => {
         if (!cancelled) setState({ status: 'error', message: e instanceof Error ? e.message : String(e) })
       })
