@@ -16,6 +16,16 @@ type Theme = 'system' | 'light' | 'dark'
 
 function ThemeControl() {
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('screen-spec-theme') as Theme | null) ?? 'system')
+  const navigateField = (screenId: string, fieldId: string) => {
+    setSelected(screenId)
+    const url = new URL(window.location.href)
+    url.searchParams.set("screen", screenId)
+    url.searchParams.set("tab", "fields")
+    url.searchParams.set("field", fieldId)
+    url.searchParams.delete("component")
+    window.history.replaceState(null, "", url)
+  }
+
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme
@@ -53,6 +63,7 @@ export function App() {
     if (selection === "overview") url.searchParams.delete("screen")
     else url.searchParams.set("screen", selection)
     url.searchParams.delete("field")
+    url.searchParams.delete("component")
     url.searchParams.delete("design")
     window.history.replaceState(null, "", url)
     setNavOpen(false)
@@ -167,6 +178,7 @@ export function App() {
             screen={current}
             screenIds={screens.map((s) => s.id)}
             onNavigate={(id) => selectScreen(id)}
+            onNavigateField={navigateField}
           />
         ) : (
           <>
@@ -177,10 +189,10 @@ export function App() {
             </header>
 
             {(() => {
-              const crossWarnings = analyzeProject(
+              const crossWarnings = [...analyzeProject(
                 screens.map((s) => ({ id: s.id, screen: s.resolvedScreen })),
                 screens[0]?.projectTestData ?? [],
-              )
+              ), ...(screens[0]?.componentGraph.diagnostics ?? [])]
               return crossWarnings.length > 0 ? (
                 <section>
                   <h2>横断警告</h2>

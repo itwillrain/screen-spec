@@ -37,7 +37,7 @@ function relatedEvents(screen: ScreenView, field: FieldView): EventView[] {
   return screen.events.filter((event) => event.key === field.eventId || event.target === field.key)
 }
 
-export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView; onOpenTab: (tab: string) => void }) {
+export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { screen: ScreenView; onOpenTab: (tab: string) => void; onNavigateField: (screenId: string, fieldId: string) => void }) {
   const [filter, setFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [eventFilter, setEventFilter] = useState('all')
@@ -49,6 +49,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
   })
   const initialField = queryValue('field')
   const [selectedKey, setSelectedKey] = useState(() => screen.fields.some((field) => field.key === initialField) ? initialField : undefined)
+  const [componentId, setComponentId] = useState(() => queryValue("component"))
   const detailHeading = useRef<HTMLHeadingElement>(null)
   const [panePercent, setPanePercent] = useState(() => Number(localStorage.getItem(PANE_KEY)) || 40)
   const [designCollapsed, setDesignCollapsed] = useState(() => {
@@ -86,12 +87,14 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
   const selected = enriched.find(({ field }) => field.key === selectedKey)
   const selectField = (key: string) => {
     setSelectedKey(key)
-    setQuery({ field: key })
+    setComponentId(undefined)
+    setQuery({ field: key, component: undefined })
     requestAnimationFrame(() => detailHeading.current?.focus())
   }
   const closeDetail = () => {
     setSelectedKey(undefined)
-    setQuery({ field: undefined })
+    setComponentId(undefined)
+    setQuery({ field: undefined, component: undefined })
   }
   const onRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, key: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -204,7 +207,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
             </table>
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致するFieldはありません。</p> : null}
-          {selected ? <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
+          {selected ? componentId ? <ComponentDetail componentId={componentId} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={() => { setComponentId(undefined); setQuery({ component: undefined }) }} onClose={closeDetail} onOpenComponent={(id) => { setComponentId(id); setQuery({ component: id }); requestAnimationFrame(() => detailHeading.current?.focus()) }} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={(id) => { setComponentId(id); setQuery({ component: id }); requestAnimationFrame(() => detailHeading.current?.focus()) }} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -268,9 +271,10 @@ function DesignReference({ screen }: { screen: ScreenView }) {
   </aside>
 }
 
-function FieldDetail({ item, section, headingRef, onClose, onOpenTab, drawerWidth, onResizeStart, onResizeKeyDown }: {
+function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenComponent, componentUsages, drawerWidth, onResizeStart, onResizeKeyDown }: {
   item: { field: FieldView; events: EventView[]; diagnostics: DiagnosticView[] }; section?: string
   headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenTab: (tab: string) => void
+  onOpenComponent: (id: string) => void; componentUsages: ScreenView["componentGraph"]["usages"]
   drawerWidth: number; onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
   const { field, events, diagnostics } = item
@@ -288,12 +292,34 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, drawerWidt
       {section ? <Detail label="セクション" value={section} /> : null}
       {field.width ? <Detail label="幅" value={field.width} code /> : null}
     </dl>
-    {field.origin ? <section><h3>Component</h3><p><code>{field.origin}</code></p></section> : null}
+    {componentUsages.length ? <section><h3>Component</h3><div className="component-links">{componentUsages.map((usage) => { return <button key={`:`} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>{usage.location === "field-origin" ? "Field" : usage.location === "validation" ? "Validation" : "Options"}</span><code>{usage.componentId.split("/").pop()}</code></button> })}</div></section> : null}
     {INPUT_FIELD_TYPES.has(field.type) && field.validations.length ? <DetailList title="Validation" empty="なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ""}</span>)} /> : null}
     {OPTION_FIELD_TYPES.has(field.type) && field.options.length ? <DetailList title="Options" empty="なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} /> : null}
     {field.binding ? <section><h3>データ入力</h3>{field.binding.options ? <div className="data-route"><p>{field.binding.options.apiBinding ? <><code>api.{field.binding.options.apiBinding}</code><span aria-hidden="true"> → </span></> : null}<code>{field.binding.options.source}</code><span aria-hidden="true"> → </span><code>{field.key}.options</code></p>{field.binding.options.responsePath ? <p className="muted">response <code>{field.binding.options.responsePath}</code>{" "}{field.binding.options.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}{field.binding.options.pathStatus === "invalid" ? <span className="badge badge-ng">path不正</span> : null}{field.binding.options.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}</p> : null}<p className="muted">value: <code>{field.binding.options.valuePath}</code> / label: <code>{field.binding.options.labelPath}</code></p></div> : null}{field.binding.loading ? <p>loading: <code>{field.binding.loading.source}</code>（読込中は無効化、既存Optionsを保持）</p> : null}</section> : null}
     {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
     {events.length ? <section><div className="detail-section-head"><h3>関連Event</h3><button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button></div>{events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />)}</section> : null}
+  </section>
+}
+
+function ComponentDetail({ componentId, screen, fieldId, headingRef, onBack, onClose, onOpenComponent, onNavigateField, drawerWidth, onResizeStart, onResizeKeyDown }: {
+  componentId: string; screen: ScreenView; fieldId: string; headingRef: React.RefObject<HTMLHeadingElement | null>; onBack: () => void; onClose: () => void;
+  onOpenComponent: (id: string) => void; onNavigateField: (screenId: string, fieldId: string) => void; drawerWidth: number;
+  onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+}) {
+  const component = screen.componentGraph.components.find((item) => item.id === componentId)
+  if (!component) return <section className="field-detail" role="complementary" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}><header><div><p className="eyebrow">component</p><h2 ref={headingRef} tabIndex={-1}>Componentが見つかりません</h2></div><button type="button" onClick={onClose}>閉じる</button></header><p><code>{componentId}</code></p></section>
+  const dependencies = screen.componentGraph.usages.filter((usage) => usage.referrerComponentId === componentId)
+  const impacts = screen.componentGraph.impacts.filter((impact) => impact.componentId === componentId)
+  const current = impacts.filter((impact) => impact.screenId === screen.id)
+  const others = impacts.filter((impact) => impact.screenId !== screen.id)
+  return <section className="field-detail" role="complementary" aria-labelledby="component-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
+    <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
+    <header><div><nav aria-label="詳細のパンくず"><button type="button" className="link" onClick={onBack}><code>{fieldId}</code></button><span aria-hidden="true"> / </span><span>Component</span></nav><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2></div><button type="button" onClick={onClose}>閉じる</button></header>
+    <dl className="field-detail-grid"><Detail label="種別" value={component.kind} code /><Detail label="文書" value={component.uri.split("/").pop()} code /><Detail label="Pointer" value={component.pointer} code /><Detail label="影響Field" value={String(impacts.length)} /></dl>
+    <section><h3>Contract</h3><pre className="component-contract"><code>{JSON.stringify(component.contract, null, 2)}</code></pre></section>
+    {dependencies.length ? <section><h3>依存Component</h3><div className="component-links">{dependencies.map((usage) => <button key={`:`} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>{usage.location}</span><code>{usage.componentId.split("/").pop()}</code></button>)}</div></section> : null}
+    <section><h3>この画面での利用</h3>{current.length ? <ul>{current.map((impact) => <li key={impact.fieldId}><button className="link" type="button" onClick={() => impact.fieldId === fieldId ? onBack() : onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.fieldId}</code></button></li>)}</ul> : <p className="muted">なし</p>}</section>
+    {others.length ? <section><h3>他の画面での利用</h3><ul>{others.map((impact) => <li key={`:`}><button className="link" type="button" onClick={() => onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.screenId}</code> / <code>{impact.fieldId}</code></button></li>)}</ul></section> : null}
   </section>
 }
 

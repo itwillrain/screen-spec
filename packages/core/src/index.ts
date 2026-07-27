@@ -24,6 +24,16 @@ export {
   type OpenApiParameter,
 } from "./openapi.js";
 export {
+  buildComponentUsageGraph,
+  type ComponentDefinition,
+  type ComponentImpact,
+  type ComponentKind,
+  type ComponentUsage,
+  type ComponentUsageGraph,
+  type ComponentUsageLocation,
+  type ProjectSpecDocument,
+} from "./component-usage.js";
+export {
   VALIDATION_RULES,
   isKnownRule,
   type ValidationRuleSpec,

@@ -1,6 +1,6 @@
 // ブラウザが fetch できるよう、リポジトリの examples/*.yaml を public/specs/ へコピーする。
 // examples/ を正本とし、viewer 側はビルド成果物に取り込むだけ（重複管理を避ける）。
-import { cpSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,4 +34,9 @@ const testData = readdirSync(examplesDir)
   .sort();
 writeFileSync(resolve(outDir, "test-data-manifest.json"), JSON.stringify(testData, null, 2));
 
-console.log(`[copy-specs] copied specs and wrote manifests (${screens.length} screens, ${testData.length} testData)`);
+const components = readdirSync(examplesDir)
+  .filter((n) => /\.ya?ml$/.test(n) && !n.includes("invalid") && /^components:\s*$/m.test(readFileSync(resolve(examplesDir, n), "utf8")))
+  .sort();
+writeFileSync(resolve(outDir, "component-manifest.json"), JSON.stringify(components, null, 2));
+
+console.log(`[copy-specs] copied specs and wrote manifests (${screens.length} screens, ${testData.length} testData, ${components.length} component documents)`);

@@ -9,9 +9,10 @@ interface Props {
   /** 読み込み済みの画面 id（遷移先がジャンプ可能か判定） */
   screenIds: string[]
   onNavigate: (screenId: string) => void
+  onNavigateField: (screenId: string, fieldId: string) => void
 }
 
-export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
+export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }: Props) {
   const tabs = [
     { id: 'fields', label: '項目', show: true },
     { id: 'params', label: 'パラメータ', show: !!screen.params },
@@ -101,7 +102,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       </nav>
 
       <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
-      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} /> : null}
+      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} onNavigateField={onNavigateField} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'access' && screen.accessControl ? (
         <AccessTab screen={screen} accessControl={screen.accessControl} />

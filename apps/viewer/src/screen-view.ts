@@ -11,6 +11,8 @@ import {
   type OpenApiOperation,
   type TestItem,
   type ProjectTestData,
+  type ComponentUsageGraph,
+  buildComponentUsageGraph,
 } from "@screen-spec/core";
 
 export interface FieldValidationView {
@@ -220,6 +222,7 @@ export interface ScreenView {
   resolvedScreen: unknown;
   /** 概要画面の横断解析へ渡す、読み込み済みtestData文書群。 */
   projectTestData: ProjectTestData[];
+  componentGraph: ComponentUsageGraph;
 }
 
 interface RawField {
@@ -693,6 +696,7 @@ export async function buildScreenView(
     projectTestData: testDataDocuments
       .filter(({ document }) => document.testData !== undefined)
       .map(({ document, source }) => ({ testData: document.testData, source })),
+    componentGraph: { components: [], usages: [], impacts: [], diagnostics: [] },
   };
 }
 
@@ -719,10 +723,17 @@ export async function loadAllScreens(
   } catch {
     // testData manifest は任意。存在しない既存配信でも画面表示を継続する。
   }
-  const screens = await Promise.all(
-    files.map((file) => buildScreenView(new URL(file, specsBaseUri).href, load, testDataDocuments)),
-  );
-  // 記述順を保ちつつ id で安定させる
+  let componentFiles: string[] = [];
+  try {
+    componentFiles = JSON.parse(await load(new URL("component-manifest.json", specsBaseUri).href)) as string[];
+  } catch {
+    // component manifest は後方互換のため任意。
+  }
+  const screenDocuments = await Promise.all(files.map(async (file) => ({ uri: new URL(file, specsBaseUri).href, document: parseYaml(await load(new URL(file, specsBaseUri).href)) })));
+  const componentDocuments = await Promise.all(componentFiles.map(async (file) => ({ uri: new URL(file, specsBaseUri).href, document: parseYaml(await load(new URL(file, specsBaseUri).href)) })));
+  const componentGraph = buildComponentUsageGraph([...screenDocuments, ...componentDocuments]);
+  const screens = await Promise.all(files.map((file) => buildScreenView(new URL(file, specsBaseUri).href, load, testDataDocuments)));
+  screens.forEach((screen) => { screen.componentGraph = componentGraph; });
   return screens;
 }
 

@@ -1,6 +1,6 @@
 # ADR 0010 — Component Usage GraphとViewer追跡
 
-- ステータス: **Accepted**（実装待ち）
+- ステータス: **Implemented**
 - 決定日: 2026-07-28
 
 Componentの利用関係は、解決後の文書URIとJSON Pointerから成るComponent Identityを基準に、Authored Specificationの`$ref`からComponent Usage Graphとして導出する。UsageはYAMLへ保存せず、Direct Usage、Component Dependency、Impacted Fieldを区別する。同名でもIdentityが異なれば別Componentであり、独自契約を持たないComponent Aliasは集計を分断するため禁止する。

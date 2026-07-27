@@ -15,6 +15,7 @@ import {
   generateTestItems,
   testItemsToMarkdown,
   testItemsToCsv,
+  buildComponentUsageGraph,
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
@@ -1028,5 +1029,29 @@ describe("params（path / query）", () => {
       apiBindings: { b: { request: { query: { tab: "{screen.query.missing}" } } } },
     };
     expect(analyzeScreen(bad).some((d) => d.code === "unknown-query-param")).toBe(true);
+  });
+});
+
+
+describe("Component Usage Graph", () => {
+  const commonUri = "https://example.test/specs/common.yaml";
+  const screenUri = "https://example.test/specs/user.screen.yaml";
+  const common = { components: { validations: { Required: { rule: "required" } }, fields: { Email: { type: "email", validations: [{ ["$" + "ref"]: "#/components/validations/Required" }] } } } };
+  const screen = { screen: { id: "user", fields: { email: { ["$" + "ref"]: "./common.yaml#/components/fields/Email" }, name: { type: "text", validations: [{ ["$" + "ref"]: "./common.yaml#/components/validations/Required" }] } } } };
+
+  it("直接利用、依存、波及Fieldを区別する", () => {
+    const graph = buildComponentUsageGraph([{ uri: screenUri, document: screen }, { uri: commonUri, document: common }]);
+    const email = commonUri + "#/components/fields/Email";
+    const required = commonUri + "#/components/validations/Required";
+    expect(graph.usages.some((usage) => usage.componentId === email && usage.screenId === "user" && usage.fieldId === "email")).toBe(true);
+    expect(graph.usages.some((usage) => usage.componentId === required && usage.referrerComponentId === email)).toBe(true);
+    expect(graph.impacts.filter((impact) => impact.componentId === required).map((impact) => impact.fieldId).sort()).toEqual(["email", "name"]);
+    expect(graph.diagnostics).toEqual([]);
+  });
+
+  it("aliasをerror、未使用をwarningにする", () => {
+    const graph = buildComponentUsageGraph([{ uri: commonUri, document: { components: { fields: { Alias: { ["$" + "ref"]: "#/components/fields/Real" }, Real: { type: "text" } } } } }]);
+    expect(graph.diagnostics.some((item) => item.code === "component-alias" && item.severity === "error")).toBe(true);
+    expect(graph.diagnostics.some((item) => item.code === "unused-component" && item.severity === "warning")).toBe(true);
   });
 });

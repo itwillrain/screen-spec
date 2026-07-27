@@ -8,6 +8,7 @@ import { parseYaml } from "./parse.js";
 import { findResidualRefs, resolveRefs, RefError, type DocumentLoader } from "./resolve.js";
 import { analyzeScreen, analyzeTestData } from "./analyze.js";
 import { hasResponsePath } from "./openapi.js";
+import { buildComponentUsageGraph } from "./component-usage.js";
 
 // ESM/CJS 相互運用: 実行環境差を吸収して呼び出し可能な関数を得る。
 type AddFormatsFn = (ajv: unknown, opts?: unknown) => unknown;
@@ -160,6 +161,9 @@ export async function validateSpec(
   if (!validate(raw)) {
     return { valid: false, warnings: [], issues: toIssues(validate.errors, "raw") };
   }
+
+  const componentAliases = buildComponentUsageGraph([{ uri: entryUri, document: raw }]).diagnostics.filter((diagnostic) => diagnostic.code === "component-alias");
+  if (componentAliases.length) return { valid: false, warnings: [], issues: componentAliases.map((diagnostic) => ({ stage: "analyze" as const, path: diagnostic.where ?? "/components", message: diagnostic.message })) };
 
   // 段2: 解決
   let resolved: unknown;

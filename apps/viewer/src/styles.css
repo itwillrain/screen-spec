@@ -947,3 +947,11 @@ html[data-theme="dark"] .field-detail > header {
     padding-inline: .75rem;
   }
 }
+
+
+.component-links { display: grid; gap: .5rem; }
+.component-link { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding: .65rem .75rem; text-align: left; border: 1px solid var(--border); border-radius: .5rem; background: transparent; color: inherit; }
+.component-link:hover, .component-link:focus-visible { border-color: #4f46e5; }
+.component-link > span { color: var(--muted); font-size: .8rem; text-transform: capitalize; }
+.component-contract { max-height: 22rem; overflow: auto; padding: .75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface, rgb(127 127 127 / .06)); white-space: pre-wrap; overflow-wrap: anywhere; }
+.field-detail nav[aria-label="詳細のパンくず"] { margin-bottom: .4rem; color: var(--muted); font-size: .85rem; }
