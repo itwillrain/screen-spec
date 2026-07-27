@@ -282,14 +282,16 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, drawerWidt
       {field.text !== undefined || field.type === "button" || field.type === "label" ? <Detail label="文言" value={field.text} /> : null}
       {INPUT_FIELD_TYPES.has(field.type) ? <Detail label="必須" value={field.required ? "必須" : "任意"} /> : null}
       {INPUT_FIELD_TYPES.has(field.type) && field.default !== undefined ? <Detail label="既定値" value={displayValue(field.default)} code /> : null}
+      {INPUT_FIELD_TYPES.has(field.type) && field.placeholder ? <Detail label="プレースホルダー" value={field.placeholder} /> : null}
       {field.visibleWhen ? <Detail label="表示条件" value={field.visibleWhen} code /> : null}
       {field.enabledWhen ? <Detail label="有効条件" value={field.enabledWhen} code /> : null}
-      <Detail label="$ref由来" value={field.origin ?? "inline"} code />
       {section ? <Detail label="セクション" value={section} /> : null}
       {field.width ? <Detail label="幅" value={field.width} code /> : null}
     </dl>
-    {INPUT_FIELD_TYPES.has(field.type) ? <DetailList title="Validation" empty="なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ""}</span>)} /> : null}
-    {OPTION_FIELD_TYPES.has(field.type) ? <DetailList title="Options" empty="なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} /> : null}
+    {field.origin ? <section><h3>Component</h3><p><code>{field.origin}</code></p></section> : null}
+    {INPUT_FIELD_TYPES.has(field.type) && field.validations.length ? <DetailList title="Validation" empty="なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ""}</span>)} /> : null}
+    {OPTION_FIELD_TYPES.has(field.type) && field.options.length ? <DetailList title="Options" empty="なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} /> : null}
+    {field.binding ? <section><h3>データ入力</h3>{field.binding.options ? <div className="data-route"><p>{field.binding.options.apiBinding ? <><code>api.{field.binding.options.apiBinding}</code><span aria-hidden="true"> → </span></> : null}<code>{field.binding.options.source}</code><span aria-hidden="true"> → </span><code>{field.key}.options</code></p>{field.binding.options.responsePath ? <p className="muted">response <code>{field.binding.options.responsePath}</code></p> : null}<p className="muted">value: <code>{field.binding.options.valuePath}</code> / label: <code>{field.binding.options.labelPath}</code></p></div> : null}{field.binding.loading ? <p>loading: <code>{field.binding.loading.source}</code>（読込中は無効化、既存Optionsを保持）</p> : null}</section> : null}
     {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
     {events.length ? <section><div className="detail-section-head"><h3>関連Event</h3><button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button></div>{events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />)}</section> : null}
   </section>

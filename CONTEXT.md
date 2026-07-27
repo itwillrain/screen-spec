@@ -12,6 +12,18 @@ _Avoid_: Screen definition, UI config
 入力欄、ボタン、ラベルを含む、画面を構成する識別可能なUI要素。
 _Avoid_: Input（入力要素だけを指す場合を除く）
 
+**Component**:
+`components`配下に名前付きで登録された、取得元に依存しない再利用可能な完全な仕様契約。実際の参照回数ではなく、登録された再利用意図によってComponentとなる。
+_Avoid_: Template, Base Component, React Component
+
+**Screen Data**:
+APIレスポンスから作られ、Fieldへ読み取り用データを供給する、画面に必要な最小Projection。
+_Avoid_: Domain Model, View Model, Store
+
+**Field Binding**:
+Screen DataまたはAPIの実行状態を、Field型が定める追加Inputへ明示的に接続する画面固有の契約。
+_Avoid_: Component Binding, Prop Binding
+
 **Event**:
 画面上の契機と、それによる状態変化・処理・期待結果をまとめた振る舞いの単位。
 _Avoid_: Action（event内の副作用定義と区別する）

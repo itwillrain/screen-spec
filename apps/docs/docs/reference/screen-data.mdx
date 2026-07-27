@@ -1,0 +1,32 @@
+---
+title: Screen Data
+description: APIレスポンスから作る画面固有の読み取り用Projection。
+---
+
+# Screen Data
+
+`screen.data`は、APIレスポンスから作られ、Fieldへ読み取り用データを供給する画面固有のProjectionです。APIモデル全体を複製せず、画面が実際に利用する最小構造だけをJSON Schemaのサブセットで宣言します。
+
+```yaml
+data:
+  memberCandidates:
+    description: 担当者候補
+    schema:
+      type: array
+      items:
+        type: object
+        required: [id, displayName]
+        properties:
+          id: { type: string }
+          displayName: { type: string }
+```
+
+初期対応では、単一APIレスポンスから作られる読み取り用Projectionだけを扱います。Fieldからの書き戻し、複数sourceの合成、computed値、キャッシュ、ページングは扱いません。
+
+API response mappingの格納先は`data.<dataId>`で明示します。
+
+```yaml
+response:
+  mapping:
+    data.memberCandidates: data.members
+```

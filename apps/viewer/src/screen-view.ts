@@ -40,6 +40,11 @@ export interface FieldView {
   visibleWhen?: string;
   enabledWhen?: string;
   default?: unknown;
+  placeholder?: string;
+  binding?: {
+    options?: { source: string; valuePath: string; labelPath: string; apiBinding?: string; responsePath?: string };
+    loading?: { source: string };
+  };
   design?: DesignView;
   validations: FieldValidationView[];
   options: FieldOptionView[];
@@ -220,6 +225,7 @@ interface RawField {
   visibleWhen?: string;
   enabledWhen?: string;
   default?: unknown;
+  placeholder?: string;
   design?: RawDesign;
   validations?: Array<{ rule?: string; message?: string }>;
   options?: Array<{ value?: unknown; label?: string }>;
@@ -297,6 +303,11 @@ interface RawApiBinding {
   response?: { mapping?: Record<string, string> };
 }
 
+interface RawFieldBinding {
+  options?: { source?: string; item?: { value?: string; label?: string } };
+  loading?: { source?: string };
+}
+
 interface RawTransition {
   to?: string;
   trigger?: string;
@@ -358,6 +369,7 @@ interface SpecDoc {
       >;
     };
     fields?: Record<string, RawField>;
+    fieldBindings?: Record<string, RawFieldBinding>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
     apiBindings?: Record<string, RawApiBinding>;
@@ -567,6 +579,20 @@ export async function buildScreenView(
     const rf = resolvedFields[key] as RawField;
     const rawField = rawFields[key] as RawField | undefined;
     const origin = rawField && typeof rawField.$ref === "string" ? rawField.$ref : undefined;
+    const fieldBinding = resolved.screen?.fieldBindings?.[key];
+    const optionsSource = fieldBinding?.options?.source;
+    const dataTarget = optionsSource?.startsWith("data.") ? optionsSource : undefined;
+    const producer = dataTarget ? apiBindings.flatMap((api) => api.responseMappings.map((mapping) => ({ api, mapping }))).find(({ mapping }) => mapping.field === dataTarget) : undefined;
+    const binding = fieldBinding ? {
+      options: fieldBinding.options && optionsSource ? {
+        source: optionsSource,
+        valuePath: String(fieldBinding.options.item?.value ?? ""),
+        labelPath: String(fieldBinding.options.item?.label ?? ""),
+        apiBinding: producer?.api.key,
+        responsePath: producer?.mapping.expr,
+      } : undefined,
+      loading: fieldBinding.loading?.source ? { source: fieldBinding.loading.source } : undefined,
+    } : undefined;
     const validations: FieldValidationView[] = (rf.validations ?? []).map((v) => ({
       rule: String(v.rule ?? ""),
       message: v.message,
@@ -582,6 +608,8 @@ export async function buildScreenView(
       visibleWhen: typeof rf.visibleWhen === "string" ? rf.visibleWhen : undefined,
       enabledWhen: typeof rf.enabledWhen === "string" ? rf.enabledWhen : undefined,
       default: rf.default,
+      placeholder: typeof rf.placeholder === "string" ? rf.placeholder : undefined,
+      binding,
       design: buildDesign(rf.design),
       validations,
       options: (rf.options ?? []).map((option) => ({ value: option.value, label: String(option.label ?? option.value ?? "") })),

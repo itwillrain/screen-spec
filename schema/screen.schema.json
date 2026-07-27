@@ -28,20 +28,6 @@
       }
     },
 
-    "composeObject": {
-      "title": "compose（allOf 相当の明示合成）",
-      "description": "compose の各要素を順にマージ（後勝ち）＋兄弟キーを最優先。解決後に本来の型で再検証される。",
-      "type": "object",
-      "required": ["compose"],
-      "properties": {
-        "compose": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "object" }
-        }
-      }
-    },
-
     "Screen": {
       "type": "object",
       "required": ["id", "name"],
@@ -66,11 +52,92 @@
         "design": { "$ref": "#/$defs/Design" },
         "layout": { "$ref": "#/$defs/Layout" },
         "fields": { "$ref": "#/$defs/FieldMap" },
+        "data": { "$ref": "#/$defs/ScreenDataMap" },
+        "fieldBindings": { "$ref": "#/$defs/FieldBindingMap" },
         "states": { "$ref": "#/$defs/StateMap" },
         "events": { "$ref": "#/$defs/EventMap" },
         "transitions": { "$ref": "#/$defs/TransitionMap" },
         "apiBindings": { "$ref": "#/$defs/ApiBindingMap" }
       }
+    },
+
+    "ScreenDataMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
+      "additionalProperties": { "$ref": "#/$defs/ScreenData" }
+    },
+
+    "ScreenData": {
+      "type": "object",
+      "required": ["schema"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "schema": { "$ref": "#/$defs/DataSchema" }
+      }
+    },
+
+    "DataSchema": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["null", "boolean", "object", "array", "number", "integer", "string"] },
+        "description": { "type": "string" },
+        "format": { "type": "string" },
+        "enum": { "type": "array" },
+        "required": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "properties": { "type": "object", "additionalProperties": { "$ref": "#/$defs/DataSchema" } },
+        "items": { "$ref": "#/$defs/DataSchema" }
+      }
+    },
+
+    "FieldBindingMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$", "description": "field ID" },
+      "additionalProperties": { "$ref": "#/$defs/FieldBinding" }
+    },
+
+    "FieldBinding": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "options": { "$ref": "#/$defs/OptionsBinding" },
+        "loading": { "$ref": "#/$defs/LoadingBinding" }
+      }
+    },
+
+    "OptionsBinding": {
+      "type": "object",
+      "required": ["source", "item"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "pattern": "^data\\.[a-z][A-Za-z0-9]*$" },
+        "item": {
+          "type": "object",
+          "required": ["value", "label"],
+          "additionalProperties": false,
+          "properties": {
+            "value": { "$ref": "#/$defs/PropertyPath" },
+            "label": { "$ref": "#/$defs/PropertyPath" }
+          }
+        }
+      }
+    },
+
+    "LoadingBinding": {
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "pattern": "^api\\.[a-z][A-Za-z0-9]*\\.loading$" }
+      }
+    },
+
+    "PropertyPath": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"
     },
 
     "ApiBindingMap": {
@@ -110,7 +177,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mapping": { "$ref": "#/$defs/ExpressionMap" }
+            "mapping": { "$ref": "#/$defs/ResponseMapping" }
           }
         }
       }
@@ -119,6 +186,14 @@
     "ExpressionMap": {
       "type": "object",
       "description": "画面項目 ⇔ API フィールドの対応。値は式文字列（例 {fields.name} / data.name）。v0.1 では未パース。",
+      "additionalProperties": { "type": "string" }
+    },
+    "ResponseMapping": {
+      "type": "object",
+      "description": "APIレスポンスからfields.<fieldId>またはdata.<dataId>への対応。裸のfieldIdは互換形式。",
+      "propertyNames": {
+        "pattern": "^((fields|data)\\.[a-z][A-Za-z0-9]*|[a-z][A-Za-z0-9]*)$"
+      },
       "additionalProperties": { "type": "string" }
     },
 
@@ -339,7 +414,6 @@
     "FieldOrRef": {
       "oneOf": [
         { "$ref": "#/$defs/refObject" },
-        { "$ref": "#/$defs/composeObject" },
         { "$ref": "#/$defs/Field" }
       ]
     },
@@ -368,6 +442,7 @@
           ]
         },
         "required": { "type": "boolean" },
+        "placeholder": { "type": "string", "minLength": 1 },
         "width": {
           "type": "string",
           "enum": ["full", "half", "third"],
@@ -401,7 +476,6 @@
     "ValidationOrRef": {
       "oneOf": [
         { "$ref": "#/$defs/refObject" },
-        { "$ref": "#/$defs/composeObject" },
         { "$ref": "#/$defs/Validation" }
       ]
     },

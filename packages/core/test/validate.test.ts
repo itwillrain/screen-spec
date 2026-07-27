@@ -58,14 +58,15 @@ describe("resolveRefs", () => {
     expect(email.validations[0].rule).toBe("required");
   });
 
-  it("role.options の $ref が配列へ解決される", async () => {
+  it("動的OptionsのScreen DataとField Bindingを保持する", async () => {
     const path = example("user-edit.screen.yaml");
     const raw = parseYaml(readFileSync(path, "utf8"));
     const resolved = (await resolveRefs(raw, fileUri(path), nodeFileLoader)) as any;
-    const options = resolved.screen.fields.role.options;
-    expect(Array.isArray(options)).toBe(true);
-    expect(options).toHaveLength(3);
-    expect(options[0]).toEqual({ value: "admin", label: "管理者" });
+    expect(resolved.screen.data.roleOptions.schema.type).toBe("array");
+    expect(resolved.screen.fieldBindings.role.options).toEqual({
+      source: "data.roleOptions",
+      item: { value: "id", label: "name" },
+    });
   });
 });
 
@@ -228,7 +229,7 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
     expect(diags.some((d) => d.code === "unknown-route-param")).toBe(true);
   });
 
-  it("response.mapping のキーが未定義フィールドなら warning", () => {
+  it("response.mapping のキーが未定義フィールドなら error", () => {
     const screen = {
       fields: { name: {} },
       apiBindings: { get: { response: { mapping: { ghost: "data.x" } } } },
@@ -244,11 +245,40 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
       apiBindings: {
         get: {
           request: { path: { userId: "{screen.route.userId}" } },
-          response: { mapping: { name: "data.name", email: "data.email" } },
+          response: { mapping: { "fields.name": "data.name", "fields.email": "data.email" } },
         },
       },
     };
     expect(analyzeScreen(screen)).toEqual([]);
+  });
+});
+
+describe("Field Binding解析（ADR 0009）", () => {
+  const data = {
+    roles: {
+      schema: {
+        type: "array",
+        items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" } } },
+      },
+    },
+  };
+
+  it("動的Optionsとloadingの正しい契約は診断なし", () => {
+    const screen = {
+      fields: { role: { type: "select" } }, data,
+      apiBindings: { getRoles: {} },
+      fieldBindings: { role: { options: { source: "data.roles", item: { value: "id", label: "name" } }, loading: { source: "api.getRoles.loading" } } },
+    };
+    expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("静的・動的Options競合と不正な参照はerror", () => {
+    const screen = {
+      fields: { role: { type: "select", options: [] } }, data,
+      fieldBindings: { role: { options: { source: "data.missing", item: { value: "id", label: "title" } }, loading: { source: "api.missing.loading" } } },
+    };
+    const errors = analyzeScreen(screen).filter((diagnostic) => diagnostic.severity === "error");
+    expect(errors.map((diagnostic) => diagnostic.code)).toEqual(expect.arrayContaining(["static-and-dynamic-options", "unknown-options-data-source", "unknown-loading-source"]));
   });
 });
 
@@ -559,48 +589,24 @@ screen:
   });
 });
 
-describe("compose（明示合成）", () => {
-  const BASE = "https://ex.test/";
-  const common = `specVersion: "0.1"
+describe("compose廃止", () => {
+  it("composeを含むFieldはschema error", async () => {
+    const result = await validateSpec(`specVersion: "0.1"
+screen:
+  id: s
+  name: S
+  fields:
+    f:
+      compose:
+        - {}
+      label: F
+      type: text
 components:
   fields:
     Base:
-      label: ベース
-      type: text
-      required: true`;
-  const loader: DocumentLoader = (uri) => {
-    const name = uri.slice(BASE.length).split("#")[0];
-    if (name === "common.yaml") return common;
-    throw new Error(`404 ${uri}`);
-  };
-
-  it("compose がマージし、兄弟キーが最優先で上書きする", async () => {
-    const screenText = `specVersion: "0.1"
-screen:
-  id: s
-  name: S
-  fields:
-    f:
-      compose:
-        - $ref: "./common.yaml#/components/fields/Base"
-      required: false`;
-    const raw = parseYaml(screenText);
-    const resolved = (await resolveRefs(raw, `${BASE}s.yaml`, loader)) as any;
-    expect(resolved.screen.fields.f).toEqual({ label: "ベース", type: "text", required: false });
-  });
-
-  it("compose を使った画面が検証を通る", async () => {
-    const screenText = `specVersion: "0.1"
-screen:
-  id: s
-  name: S
-  fields:
-    f:
-      compose:
-        - $ref: "./common.yaml#/components/fields/Base"
-      label: 上書きラベル`;
-    const result = await validateSpec(screenText, `${BASE}s.yaml`, loader);
-    expect(result.valid).toBe(true);
+      label: Base
+      type: text`, "https://example.test/screen.yaml", async () => { throw new Error("unexpected load"); });
+    expect(result.valid).toBe(false);
   });
 });
 
@@ -910,8 +916,8 @@ describe("findOperation（OpenAPI 解決）", () => {
     expect(update?.parameters.map((p) => `${p.in}:${p.name}`)).toContain("path:userId");
     // requestBody は $ref(UserInput) を解決して項目を得る
     expect(update?.requestFields).toEqual(["name", "email", "role"]);
-    // response は $ref(UserResponse) → { data }
-    expect(update?.responseFields).toEqual(["data"]);
+    // response は $ref(UserResponse) → { data, roleOptions }
+    expect(update?.responseFields).toEqual(["data", "roleOptions"]);
 
     const list = findOperation(doc, "listUsers");
     expect(list?.method).toBe("GET");

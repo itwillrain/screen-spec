@@ -57,7 +57,7 @@ email:
 - `branch`: `id`、`when` または `otherwise`、`to`、アクション、期待結果、成功/エラー結果
 - `apiBindings`: OpenAPI operation と request/response mapping
 - `testData`: 前提データ、パラメータ、初期表示期待値
-- `components` と `compose`: 仕様要素の再利用と明示合成
+- `components` と `$ref`: 完全な仕様契約の登録と純粋参照
 
 分岐イベントは first-match で評価する。fallback は末尾の `otherwise: true` 1件まで。fallback がなく一致しない場合は No Match とし、状態遷移・API呼び出し・副作用を行わない。詳細は ADR 0007 と Event リファレンスを参照。
 

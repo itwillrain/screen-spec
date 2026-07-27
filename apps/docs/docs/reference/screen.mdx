@@ -17,6 +17,8 @@ description: 画面のトップレベル定義。
 | `route` | string | | 画面のルート。例 `/users/{userId}/edit` |
 | `permissions` | [Permission](/reference/permission)[] | | 画面レベルの権限 |
 | `fields` | map&lt;camelCase, [Field](/reference/field) \| $ref&gt; | | 項目のマップ（記述順＝表示順） |
+| `data` | map&lt;camelCase, [Screen Data](/reference/screen-data)&gt; | | 読み取り用Projection |
+| `fieldBindings` | map&lt;fieldId, [Field Binding](/reference/field-bindings)&gt; | | Fieldへの追加Input接続 |
 
 ## 例
 

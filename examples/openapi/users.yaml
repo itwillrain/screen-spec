@@ -113,6 +113,14 @@ components:
       type: object
       properties:
         data: { $ref: "#/components/schemas/User" }
+        roleOptions:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { $ref: "#/components/schemas/Role" }
+              name: { type: string }
     UserListResponse:
       type: object
       properties:

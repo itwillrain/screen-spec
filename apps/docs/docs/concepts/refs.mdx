@@ -49,20 +49,3 @@ components:
 
 v0.1 では **ローカル相対パスのみ**をサポートします。`http(s)://` などのリモート参照や
 絶対パスは許可されません。循環参照は検出されエラーになります。
-
-## 合成（compose）
-
-`$ref` はマージしませんが、「共通定義＋少し違う版」を上書きで表現したい場合のために
-**`compose`**（`allOf` 相当の**明示的な合成宣言**）があります。`$ref` 単体の純粋性は保ったままです。
-
-```yaml
-altEmail:
-  compose:
-    - $ref: "./common.yaml#/components/fields/EmailField"
-  label: 予備メールアドレス   # 兄弟キーはローカルな上書き（最優先）
-  required: false
-```
-
-- `compose` の各要素を順にマージ（後勝ち）し、さらに兄弟キー（`compose` 以外）を最優先でマージ。
-- マージ結果は本来の型（Field など）として再検証されます。
-- 使える位置: Field / Validation（v0.1）。

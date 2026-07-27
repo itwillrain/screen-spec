@@ -39,22 +39,6 @@ function isRefObject(node: unknown): node is Record<string, unknown> {
   return isPlainObject(node) && Object.prototype.hasOwnProperty.call(node, "$ref");
 }
 
-function isComposeObject(node: unknown): node is Record<string, unknown> {
-  return isPlainObject(node) && Object.prototype.hasOwnProperty.call(node, "compose");
-}
-
-/** allOf 相当の深いマージ。後（b）が前（a）を上書きする。 */
-function deepMerge(a: unknown, b: unknown): unknown {
-  if (isPlainObject(a) && isPlainObject(b)) {
-    const out: Record<string, unknown> = { ...a };
-    for (const [k, v] of Object.entries(b)) {
-      out[k] = k in out ? deepMerge(out[k], v) : v;
-    }
-    return out;
-  }
-  return b;
-}
-
 function parseRef(ref: string): { file: string; pointer: string } {
   const hashIndex = ref.indexOf("#");
   if (hashIndex === -1) return { file: ref, pointer: "" };
@@ -119,9 +103,6 @@ async function resolveNode(node: unknown, ctx: ResolveContext): Promise<unknown>
     if (isRefObject(node)) {
       return resolveRefObject(node, ctx);
     }
-    if (isComposeObject(node)) {
-      return resolveComposeObject(node, ctx);
-    }
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(node)) {
       out[k] = await resolveNode(v, ctx);
@@ -129,33 +110,6 @@ async function resolveNode(node: unknown, ctx: ResolveContext): Promise<unknown>
     return out;
   }
   return node;
-}
-
-/**
- * compose（allOf 相当の明示合成）を解決する。決定 #12 の具体化。
- * `compose: [entry, ...]` の各要素を解決して順にマージ（後勝ち）、
- * さらに兄弟キー（compose 以外）を最後に最優先でマージする。
- * `$ref` 単体の純粋性は保たれる（compose は別キーによる明示宣言）。
- */
-async function resolveComposeObject(node: Record<string, unknown>, ctx: ResolveContext): Promise<unknown> {
-  const { compose, ...rest } = node;
-  if (!Array.isArray(compose)) {
-    throw new RefError("compose must be an array");
-  }
-  let merged: unknown = {};
-  for (const entry of compose) {
-    const resolvedEntry = await resolveNode(entry, ctx);
-    if (!isPlainObject(resolvedEntry)) {
-      throw new RefError("each compose entry must resolve to an object");
-    }
-    merged = deepMerge(merged, resolvedEntry);
-  }
-  // 兄弟キー（ローカルな追加/上書き）を最優先でマージ
-  if (Object.keys(rest).length > 0) {
-    const resolvedRest = await resolveNode(rest, ctx);
-    merged = deepMerge(merged, resolvedRest);
-  }
-  return merged;
 }
 
 async function resolveRefObject(node: Record<string, unknown>, ctx: ResolveContext): Promise<unknown> {

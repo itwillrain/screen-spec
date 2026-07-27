@@ -77,5 +77,4 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ フィールド既定値・`enabledWhen`、テストデータ文書
 - ✅ 画面仕様・テストデータからのテスト項目候補生成・Viewer表示
 - ✅ テスト項目のMarkdown/CSV出力（core・CLI・Viewer）
-- ✅ `compose`（allOf相当の明示合成）
 - ✅ 複数画面・testDataの横断検証

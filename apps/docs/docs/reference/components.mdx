@@ -5,8 +5,10 @@ description: 再利用可能な部品の定義セクション。
 
 # Components
 
-`components` は、複数箇所から `$ref` で再利用できる部品を定義するセクションです。
+Componentは、`components`配下に名前付きで登録された、取得元に依存しない再利用可能な完全な仕様契約です。実際の参照回数ではなく、登録された再利用意図によってComponentとなります。
 OpenAPI の `components` に相当します。定義名は **PascalCase**（[命名規則](/concepts/naming)）。
+
+同じ意味とUI契約を持つComponentは取得元が異なっても再利用できます。意味または確定仕様が異なる場合は、見た目が同じでも別Componentとして定義します。継承・差分合成は行いません。
 
 ## サブセクション（v0.1）
 

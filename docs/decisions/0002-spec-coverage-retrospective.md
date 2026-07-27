@@ -10,7 +10,7 @@
 
 画面 / 項目（type・required・validations・options・visibleWhen・width・permission）/
 状態遷移（states・events・transitions）/ API 連携（apiBindings＋実 OpenAPI 解決）/
-params（path・query）/ layout / design / `$ref` / compose / 式・条件式エンジン。
+params（path・query）/ layout / design / `$ref` / 式・条件式エンジン。
 
 → **「何を・どの構造で・どの API と・どの状態遷移で」は SSOT として強い。**
 

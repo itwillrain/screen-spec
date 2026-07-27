@@ -17,6 +17,7 @@ description: 画面上の項目定義。
 | `type` | enum | ✔ | 項目型（下記） |
 | `required` | boolean | | 必須かどうか |
 | `default` | any | | 既定値（`type` / `options` に整合。不一致は warning） |
+| `placeholder` | string | | 未入力・未選択状態で表示する案内文 |
 | `width` | enum | | 表示幅ヒント `full` / `half` / `third` |
 | `visibleWhen` | string | | 表示条件式（例 `fields.role == "admin"`） |
 | `enabledWhen` | string | | 編集可否の条件式（`true` で編集可） |
@@ -38,6 +39,10 @@ altEmail:
 - 比較演算子 `==` `!=` `>` `<` `>=` `<=`、論理 `&&` `||`（括弧なし・左結合）
 - 参照は `fields.X` / `screen.route.Y`、リテラルは文字列/数値/`true`/`false`/`null`
 - 構文エラー・未定義参照は **warning**
+
+## 標準Input Contract
+
+FieldのvalueはField自身の標準状態です。`select`と`radio`は追加Inputとして動的`options`と`loading`を受け取れます。取得元との接続は[Field Bindings](/reference/field-bindings)で記述します。Componentごとの`inputs`宣言はありません。
 
 ## `type` の値
 

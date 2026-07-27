@@ -26,6 +26,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（`branches` / Branch ID / No Match）
 - [0008 — 読み取り専用Field Review Workspace](./0008-field-review-workspace.md)
   — ステータス: **Accepted**（M6・デザイン併置／Field関係追跡）
+- [0009 — ComponentとScreen Dataの境界](./0009-component-and-screen-data-boundaries.md)
+  — ステータス: **Accepted**（実装済み・`compose`廃止／動的Options Binding）
 
 ## v0.1 決定の一覧
 
@@ -42,4 +44,4 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
 | 9 | キー命名規則 | 用途別 3 規則（定義=Pascal / 実体=camel / 画面ID=kebab） |
 | 10 | 状態遷移の厳密さ | 案C（中間）。`from`/`to` 必須、網羅性は警告 |
 | 11 | OpenAPI 連携の深さ | 案B（参照＋項目マッピングのみ） |
-| 12 | `compose`（allOf 相当） | 実装済み（明示合成・後勝ち＋兄弟キー優先） |
+| 12 | `compose`（allOf 相当） | ADR 0009で廃止済み |

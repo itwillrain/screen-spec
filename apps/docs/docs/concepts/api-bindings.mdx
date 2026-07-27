@@ -24,8 +24,9 @@ apiBindings:
         userId: "{screen.route.userId}"
     response:
       mapping:
-        name: data.name
-        email: data.email
+        fields.name: data.name
+        fields.email: data.email
+        data.memberCandidates: data.members
   updateUser:
     openapi:
       operationId: updateUserById
@@ -55,6 +56,7 @@ events:
 - `{screen.route.userId}` … ルートパラメータ
 - `{fields.name}` … 画面項目の値
 - `/users/{screen.route.userId}` … リテラル＋補間の混在
+- `response.mapping` のキーは格納先（`fields.<fieldId>` または `data.<dataId>`）
 - `response.mapping` の値（`data.name` 等）は API レスポンス内のパス
 
 テンプレートはパースされ、参照が検証されます（`fields.X` が実在フィールドか、
@@ -80,5 +82,6 @@ OpenAPI 側に存在しない場合は印（`?`）で示します。
 - `event.action.apiCall` が未定義の `apiBindings` を参照 → **warning**
 - 式 `{fields.X}` が未定義フィールドを参照 → **warning**
 - 式 `{screen.route.Y}` が route に無いパラメータを参照 → **warning**
-- `response.mapping` のキーが未定義フィールド → **warning**
+- `response.mapping` の格納先が未定義のFieldまたはScreen Data → **error**
+- 既存の裸のField IDは互換形式として受理し、**warning**
 - （複数画面時）`transition.to` / `onSuccess.navigate` が未知の画面 id を参照 → **warning**

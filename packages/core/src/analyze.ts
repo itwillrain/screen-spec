@@ -64,10 +64,27 @@ interface LayoutLike {
   sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown }>;
 }
 
+interface DataSchemaLike {
+  type?: unknown;
+  properties?: Record<string, DataSchemaLike>;
+  items?: DataSchemaLike;
+}
+
+interface ScreenDataLike {
+  schema?: DataSchemaLike;
+}
+
+interface FieldBindingLike {
+  options?: { source?: unknown; item?: { value?: unknown; label?: unknown } };
+  loading?: { source?: unknown };
+}
+
 interface ScreenLike {
   route?: unknown;
   params?: { path?: Record<string, unknown>; query?: Record<string, unknown> };
   fields?: Record<string, unknown>;
+  data?: Record<string, ScreenDataLike>;
+  fieldBindings?: Record<string, FieldBindingLike>;
   layout?: LayoutLike;
   states?: Record<string, { initial?: unknown }>;
   events?: Record<string, EventLike>;
@@ -377,18 +394,80 @@ function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
         }
       }
     }
-    // response.mapping のキーは画面フィールド。存在しなければ warning。
-    for (const field of Object.keys(b.response?.mapping ?? {})) {
-      if (!fieldKeys.has(field)) {
+    for (const target of Object.keys(b.response?.mapping ?? {})) {
+      if (target.startsWith("fields.")) {
+        const field = target.slice("fields.".length);
+        if (!fieldKeys.has(field)) diagnostics.push({
+          severity: "error", code: "unknown-field-in-mapping",
+          message: `apiBinding "${key}" の response.mapping が未定義のフィールド "${field}" を指しています。`, where: field,
+        });
+      } else if (target.startsWith("data.")) {
+        const dataId = target.slice("data.".length);
+        if (!(dataId in (s.data ?? {}))) diagnostics.push({
+          severity: "error", code: "unknown-data-in-mapping",
+          message: `apiBinding "${key}" の response.mapping が未定義のScreen Data "${dataId}" を指しています。`, where: dataId,
+        });
+      } else if (!fieldKeys.has(target)) {
         diagnostics.push({
-          severity: "warning",
-          code: "unknown-field-in-mapping",
-          message: `apiBinding "${key}" の response.mapping が未定義のフィールド "${field}" を指しています。`,
-          where: key,
+          severity: "error", code: "unknown-field-in-mapping",
+          message: `apiBinding "${key}" の response.mapping が未定義のフィールド "${target}" を指しています。`, where: target,
+        });
+      } else {
+        diagnostics.push({
+          severity: "warning", code: "legacy-response-mapping-target",
+          message: `apiBinding "${key}" の response.mapping "${target}" は互換形式です。"fields.${target}" を使用してください。`, where: target,
         });
       }
     }
   }
+}
+
+function schemaAtPath(schema: DataSchemaLike | undefined, path: string): DataSchemaLike | undefined {
+  let current = schema;
+  for (const part of path.split(".")) current = current?.properties?.[part];
+  return current;
+}
+
+/** Screen DataからFieldの追加Inputへの接続契約を検査する（ADR 0009）。 */
+function analyzeFieldBindings(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const fields = s.fields ?? {};
+  const data = s.data ?? {};
+  const apiBindings = s.apiBindings ?? {};
+  const usedData = new Set<string>();
+
+  for (const [fieldId, binding] of Object.entries(s.fieldBindings ?? {})) {
+    const field = fields[fieldId] as { type?: unknown; options?: unknown } | undefined;
+    if (!field) {
+      diagnostics.push({ severity: "error", code: "unknown-field-binding-target", message: `fieldBindingsが未定義のフィールド "${fieldId}" を指しています。`, where: fieldId });
+      continue;
+    }
+    if (binding.options) {
+      const type = asString(field.type);
+      if (type !== "select" && type !== "radio") diagnostics.push({ severity: "error", code: "options-binding-type-mismatch", message: `field "${fieldId}" の型 "${type ?? "unknown"}" はOptions Inputを受け取りません。`, where: fieldId });
+      if (field.options !== undefined) diagnostics.push({ severity: "error", code: "static-and-dynamic-options", message: `field "${fieldId}" に静的optionsと動的options bindingを同時指定できません。`, where: fieldId });
+      const source = asString(binding.options.source);
+      const dataId = source?.startsWith("data.") ? source.slice(5) : undefined;
+      const dataSchema = dataId ? data[dataId]?.schema : undefined;
+      if (!dataId || !dataSchema) diagnostics.push({ severity: "error", code: "unknown-options-data-source", message: `field "${fieldId}" のOptions source "${source ?? ""}" は未定義のScreen Dataです。`, where: fieldId });
+      else {
+        usedData.add(dataId);
+        if (dataSchema.type !== "array" || !dataSchema.items) diagnostics.push({ severity: "error", code: "options-source-not-array", message: `Screen Data "${dataId}" はitemsを持つarrayである必要があります。`, where: fieldId });
+        else for (const key of ["value", "label"] as const) {
+          const path = asString(binding.options.item?.[key]);
+          const target = path ? schemaAtPath(dataSchema.items, path) : undefined;
+          if (!target) diagnostics.push({ severity: "error", code: "unknown-options-item-path", message: `field "${fieldId}" のitem.${key} "${path ?? ""}" はScreen Data "${dataId}" に存在しません。`, where: fieldId });
+          else if (key === "label" && target.type !== "string") diagnostics.push({ severity: "error", code: "options-label-not-string", message: `field "${fieldId}" のitem.labelはstringを指す必要があります。`, where: fieldId });
+          else if (key === "value" && !["string", "number", "integer", "boolean"].includes(String(target.type))) diagnostics.push({ severity: "error", code: "options-value-not-scalar", message: `field "${fieldId}" のitem.valueはscalarを指す必要があります。`, where: fieldId });
+        }
+      }
+    }
+    if (binding.loading) {
+      const source = asString(binding.loading.source);
+      const match = source?.match(/^api\.([a-z][A-Za-z0-9]*)\.loading$/);
+      if (!match || !(match[1] in apiBindings)) diagnostics.push({ severity: "error", code: "unknown-loading-source", message: `field "${fieldId}" のloading source "${source ?? ""}" は未定義のAPI Bindingです。`, where: fieldId });
+    }
+  }
+  for (const dataId of Object.keys(data)) if (!usedData.has(dataId)) diagnostics.push({ severity: "warning", code: "unused-screen-data", message: `Screen Data "${dataId}" はField Bindingから参照されていません。`, where: dataId });
 }
 
 /** layout.sections のフィールド参照を検査する。 */
@@ -677,6 +756,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   analyzeFieldDefaults(s, diagnostics);
   analyzeUiEventLinks(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
+  analyzeFieldBindings(s, diagnostics);
   analyzeAccessControl(s, diagnostics);
   analyzeStateMachine(s, diagnostics);
   return diagnostics;

@@ -1,0 +1,30 @@
+---
+title: Field Bindings
+description: Screen DataとAPI実行状態をFieldの追加Inputへ接続する契約。
+---
+
+# Field Bindings
+
+`screen.fieldBindings`は、Screen DataまたはAPIの実行状態を、Field型が定める追加Inputへ接続します。FieldのvalueはField自身の標準状態なのでBindingを記述しません。
+
+```yaml
+fieldBindings:
+  assignee:
+    options:
+      source: data.memberCandidates
+      item:
+        value: id
+        label: displayName
+    loading:
+      source: api.getProjectMembers.loading
+```
+
+`select`と`radio`の動的Optionsでは、配列要素から`value`と`label`へのプロパティパスを明示します。初期対応ではドット区切りのパスだけを許可し、式、文字列結合、条件変換は扱いません。
+
+Field単位の`loading`は`api.<bindingId>.loading`から供給します。loading中はFieldを無効化し、既存Optionsを保持します。
+
+## 静的Optionsとの関係
+
+`components.options`と`field.options`は仕様作成時に確定する静的Optionsです。動的OptionsはScreen Dataであり、Componentではありません。静的Optionsと動的Optionsを同じFieldへ同時に指定するとerrorです。
+
+未選択状態の案内はOptionsへ混ぜず、Fieldの`placeholder`で表します。空状態が有効かどうかは`required`が決めます。
