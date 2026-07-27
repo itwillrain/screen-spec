@@ -180,14 +180,18 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
           />
           <div className="table-scroll">
             <table className="fields review-fields">
-              <thead><tr><th>Field ID</th><th>ラベル／文言</th><th>型</th><th>必須</th><th>Event ID</th><th>診断</th></tr></thead>
+              <thead><tr><th>Field ID</th><th>セクション</th><th>ラベル／文言</th><th>型</th><th>必須</th><th>Event ID</th><th>診断</th></tr></thead>
               <tbody>
-                {rows.map(({ field, events, diagnostics }) => {
+                {rows.map(({ field, events, diagnostics }, index) => {
                   const errors = diagnostics.filter((item) => item.severity === 'error').length
                   const warnings = diagnostics.length - errors
+                  const section = sections.get(field.key)
+                  const previousSection = index > 0 ? sections.get(rows[index - 1].field.key) : undefined
+                  const showSection = index === 0 || section !== previousSection
                   return (
                     <tr key={field.key} tabIndex={0} aria-selected={selectedKey === field.key} className={selectedKey === field.key ? 'selected' : ''} onClick={() => selectField(field.key)} onKeyDown={(event) => onRowKeyDown(event, field.key)}>
                       <td><code>{field.key}</code></td>
+                      <td className="field-section">{showSection ? section ? <span className="section-label">{section}</span> : <span className="badge badge-warning">未配置</span> : null}</td>
                       <td><strong>{field.label}</strong>{field.text ? <span className="field-copy">{field.text}</span> : null}</td>
                       <td><code>{field.type}</code></td>
                       <td>{INPUT_FIELD_TYPES.has(field.type) ? field.required ? '必須' : <span className="muted">任意</span> : <span className="muted">—</span>}</td>

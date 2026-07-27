@@ -728,12 +728,14 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .field-filters .filter { flex: 1 1 16rem; margin: 0; }
 .field-filters select { min-height: 2.55rem; padding: .45rem; border: 1px solid #c7d2fe; border-radius: 6px; background: #fff; font: inherit; }
 .field-filters label { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
-.review-fields { min-width: 45rem; }
+.review-fields { min-width: 52rem; }
 .review-fields tbody tr { cursor: pointer; }
 .review-fields tbody tr:hover { background: #eef2ff; }
 .review-fields tbody tr.selected { background: #e0e7ff; box-shadow: inset 4px 0 #4f46e5; }
 .review-fields td:last-child .badge + .badge { margin-left: .3rem; }
 .review-fields .event-id + .event-id { margin-left: .35rem; }
+.review-fields .field-section { width: 9rem; vertical-align: top; }
+.section-label { color: #475569; font-size: .8rem; font-weight: 700; }
 .field-copy { display: block; margin-top: .2rem; color: #6b7280; font-size: .85rem; }
 .badge-warning { background: #fef3c7; color: #854d0e; }
 .field-detail { margin-top: 1rem; padding: 1rem; border: 1px solid #c7d2fe; border-radius: 8px; background: #fff; box-shadow: 0 -4px 16px rgb(15 23 42 / .06); }
@@ -755,6 +757,7 @@ html[data-theme="dark"] :where(.field-detail, .design-tools button, .design-thum
 html[data-theme="dark"] :where(.field-detail-grid div, .branch-list li, .related-event) { background: #202a36; border-color: #3a4656; }
 html[data-theme="dark"] .design-viewport { background: #0f141c; border-color: #3a4656; }
 html[data-theme="dark"] .review-fields tbody tr.selected { background: #27324a; }
+html[data-theme="dark"] .section-label { color: #cbd5e1; }
 
 @media (max-width: 1024px) {
   .field-review-workspace { grid-template-columns: minmax(18rem, 35%) .55rem minmax(28rem, 1fr); }
@@ -768,7 +771,7 @@ html[data-theme="dark"] .review-fields tbody tr.selected { background: #27324a; 
   .field-detail-grid { grid-template-columns: 1fr; }
   .field-filters { align-items: stretch; }
   .field-filters > * { flex: 1 1 100%; }
-  .review-fields { min-width: 38rem; }
+  .review-fields { min-width: 45rem; }
 }
 @media (forced-colors: active) {
   .review-fields tbody tr.selected, .design-thumbnails button.active { outline: 3px solid Highlight; }
