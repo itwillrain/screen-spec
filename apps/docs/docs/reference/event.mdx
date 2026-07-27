@@ -1,29 +1,33 @@
 ---
 title: Event
-description: 状態間の遷移。
+description: 線形イベントと条件分岐イベント。
 ---
 
 # Event
 
-状態間の遷移。`screen.events` マップの値として定義します（キーがイベント識別子・camelCase）。
+`screen.events` は状態間の遷移を定義します。イベントキーと Branch の `id` は camelCase です。
+
+共通項目は `from`（必須）、`trigger`、`target` です。結果は、単一の結果を持つ **Linear Event** と、条件付き結果を持つ **Branched Event** のどちらかで記述します。
 
 ## フィールド
 
 | キー | 型 | 必須 | 説明 |
 |---|---|---|---|
 | `from` | string | ✔ | 遷移元の状態キー |
-| `to` | string | ✔ | 遷移先の状態キー（即時遷移先） |
-| `expects` | object | | 即時遷移の期待結果 |
-| `trigger` | string | | 契機。例 `click`, `screenLoad` |
-| `target` | string | | 対象 UI 要素 |
-| `action` | object | | `{ apiCall: <apiBinding キー> }`（v0.1 では未検証） |
+| `trigger` | string | | 契機。例: `click`, `screenLoad` |
+| `target` | string | | 対象Fieldキー |
+| `to` | string | Linear | 即時遷移先 |
+| `branches` | Branch[] | Branched | 先頭から評価する1件以上のBranch |
+| `action` | object | | `{ apiCall: <apiBindingキー> }` |
+| `expects` | object | | 即時結果の期待値 |
 | `onSuccess` | object | | `{ to, navigate, expects }` |
 | `onError` | object | | `{ to, expects, cases }` |
 
-`from` / `to` / `onSuccess.to` / `onError.to` は `states` に存在するキーである必要があります
-（未定義ならエラー）。
+`from` とすべての結果の `to` は `states` に存在するキーである必要があります。`target`、条件式、`apiCall` も意味解析で参照先を確認します。
 
-## 例
+## Linear Event
+
+`to` は必須です。`action`、`expects`、`onSuccess`、`onError` を指定できます。
 
 ```yaml
 events:
@@ -37,25 +41,35 @@ events:
     onError: { to: error }
 ```
 
-`action` を伴う場合、`to`（例: `submitting`）を起点に `onSuccess.to` / `onError.to` へ分岐します。
-`apiCall` は [ApiBinding](/concepts/state-machine)への参照です。
+## Branched Event
+
+`branches` を宣言し、配列の先頭から `when` を評価します。最初に一致した Branch だけを実行します。各 Branch は `id` と `to`、さらに `when` または `otherwise: true` のどちらか一方が必須です。
+
+```yaml
+events:
+  edit:
+    trigger: click
+    target: editButton
+    from: viewing
+    branches:
+      - id: editable
+        when: fields.role != "viewer"
+        to: editing
+      - id: readOnly
+        otherwise: true
+        to: viewing
+        expects:
+          message: { kind: warning, text: 編集権限がありません }
+```
+
+- `otherwise` は最大1件、必ず末尾です。
+- `branches` とトップレベルの `to` / `action` / `expects` / `onSuccess` / `onError` は併用できません。
+- Branch ごとに `action`、`expects`、`onSuccess`、`onError` を指定できます。
+- 状態を変えない結果も、現在状態を `to` に指定する自己遷移として明示します。
+- fallback がなく全条件が偽なら **No Match** です。状態遷移、API呼び出し、副作用は発生しません。
+
+`when` はイベント実行前の `fields.*`、`screen.route.*`、`screen.query.*` を参照する条件式です。APIレスポンスによる分岐は `onSuccess` / `onError.cases` で表します。
 
 ## 期待結果とAPIエラー
 
-`expects` は `state`、`navigate`、`message`、フィールドごとの `value` / `expression` / `visible` /
-`enabled` を表現します。`onError.cases` はHTTP `status` と業務エラー `code` で分岐し、
-一致しない場合は `onError` 直下を既定結果として使います。
-
-```yaml
-onError:
-  to: error
-  cases:
-    - when: { status: 409 }
-      to: conflict
-      expects:
-        state: conflict
-        message: { kind: warning, text: 他のユーザーにより更新されています }
-  expects:
-    state: error
-    message: { kind: error, key: update.failed }
-```
+`expects` は `state`、`navigate`、`message`、フィールドごとの `value` / `expression` / `visible` / `enabled` を表現します。`onError.cases` は HTTP `status` と業務エラー `code` で分岐し、一致しない場合は `onError` 直下を既定結果として使います。

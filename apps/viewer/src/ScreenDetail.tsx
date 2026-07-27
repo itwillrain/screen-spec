@@ -198,9 +198,25 @@ function StatesTab({ screen }: { screen: ScreenView }) {
                 {event.target ? <span className="muted">target: <code>{event.target}</code></span> : null}
               </header>
               <p className="event-route">
-                <code>{event.from ?? '?'}</code> → <code>{event.to ?? '?'}</code>
+                <code>{event.from ?? '?'}</code> → {event.branches.length > 0 ? <span>{event.branches.length} branches</span> : <code>{event.to ?? '?'}</code>}
                 {event.apiCall ? <> · API <code>{event.apiCall}</code></> : null}
               </p>
+              {event.branches.length > 0 ? (
+                <div className="event-branches">
+                  {event.branches.map((branch) => (
+                    <section key={branch.id} className="event-branch">
+                      <h4><code>{branch.id}</code> · {branch.otherwise ? "otherwise" : <code>{branch.when}</code>}</h4>
+                      <OutcomeBlock label="分岐結果" outcome={branch} />
+                      {branch.apiCall ? <p className="muted">API <code>{branch.apiCall}</code></p> : null}
+                      {branch.onSuccess ? <OutcomeBlock label="成功" outcome={branch.onSuccess} /> : null}
+                      {branch.onError ? <OutcomeBlock label="既定エラー" outcome={branch.onError} /> : null}
+                      {branch.onError?.cases.map((errorCase, index) => (
+                        <OutcomeBlock key={`${branch.id}:error:${index}`} label={`エラー条件 ${errorCase.status ?? "*"} / ${errorCase.code ?? "*"}`} outcome={errorCase} />
+                      ))}
+                    </section>
+                  ))}
+                </div>
+              ) : null}
               <OutcomeBlock label="即時" outcome={{ to: event.to, expects: event.expects }} />
               {event.onSuccess ? <OutcomeBlock label="成功" outcome={event.onSuccess} /> : null}
               {event.onError ? (

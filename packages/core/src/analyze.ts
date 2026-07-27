@@ -32,8 +32,18 @@ interface ErrorCaseLike extends EventOutcomeLike {
   when?: { status?: unknown; code?: unknown };
 }
 
+interface EventBranchLike extends EventOutcomeLike {
+  id?: unknown;
+  when?: unknown;
+  otherwise?: unknown;
+  action?: { apiCall?: unknown };
+  onSuccess?: EventOutcomeLike;
+  onError?: EventOutcomeLike & { cases?: ErrorCaseLike[] };
+}
+
 interface EventLike {
   from?: unknown;
+  branches?: EventBranchLike[];
   to?: unknown;
   action?: { apiCall?: unknown };
   expects?: ExpectationLike;
@@ -545,6 +555,69 @@ function analyzeStateMachine(s: ScreenLike, diagnostics: Diagnostic[]): void {
         });
       }
       seenErrorCases.add(signature);
+    }
+    const branches = Array.isArray(ev.branches) ? ev.branches : [];
+    const seenBranchIds = new Set<string>();
+    let seenFallback = false;
+    for (const [index, branch] of branches.entries()) {
+      const branchId = asString(branch.id) ?? String(index);
+      const branchPath = `branches[${index}]`;
+      if (seenBranchIds.has(branchId)) diagnostics.push({
+        severity: "error", code: "duplicate-branch-id",
+        message: `event "${key}" のBranch ID "${branchId}" が重複しています。`, where: key,
+      });
+      seenBranchIds.add(branchId);
+      if (branch.otherwise === true) {
+        if (seenFallback) diagnostics.push({
+          severity: "error", code: "multiple-fallback-branches",
+          message: `event "${key}" にFallback Branchが複数あります。`, where: key,
+        });
+        seenFallback = true;
+        if (index !== branches.length - 1) diagnostics.push({
+          severity: "error", code: "fallback-branch-not-last",
+          message: `event "${key}" のFallback Branchは最後に置いてください。`, where: key,
+        });
+      } else {
+        const condition = asString(branch.when);
+        if (condition) {
+          const { errors, refs } = parseCondition(condition);
+          for (const error of errors) diagnostics.push({
+            severity: "warning", code: "branch-condition-syntax",
+            message: `event "${key}" のBranch "${branchId}" のwhen構文エラー: ${error}`, where: key,
+          });
+          for (const ref of refs) checkRefPart(ref, exprContext, `${key}.${branchPath}.when`, diagnostics);
+        }
+      }
+      const branchTo = checkRef(key, `${branchPath}.to`, branch.to);
+      const branchSuccess = checkRef(key, `${branchPath}.onSuccess.to`, branch.onSuccess?.to);
+      const branchError = checkRef(key, `${branchPath}.onError.to`, branch.onError?.to);
+      if (from && branchTo) edges.push([from, branchTo]);
+      if (branchTo && branchSuccess) edges.push([branchTo, branchSuccess]);
+      if (branchTo && branchError) edges.push([branchTo, branchError]);
+      checkExpects(key, `${branchPath}.expects`, branch.expects, branchTo);
+      checkExpects(key, `${branchPath}.onSuccess.expects`, branch.onSuccess?.expects, branchSuccess, asString(branch.onSuccess?.navigate));
+      checkExpects(key, `${branchPath}.onError.expects`, branch.onError?.expects, branchError);
+      const seenBranchErrorCases = new Set<string>();
+      for (const [caseIndex, errorCase] of (branch.onError?.cases ?? []).entries()) {
+        const casePath = `${branchPath}.onError.cases[${caseIndex}]`;
+        const caseTo = checkRef(key, `${casePath}.to`, errorCase.to);
+        if (branchTo && caseTo) edges.push([branchTo, caseTo]);
+        checkExpects(key, `${casePath}.expects`, errorCase.expects, caseTo);
+        const status = typeof errorCase.when?.status === "number" ? errorCase.when.status : "*";
+        const code = asString(errorCase.when?.code) ?? "*";
+        const signature = `${status}:${code}`;
+        if (seenBranchErrorCases.has(signature)) diagnostics.push({
+          severity: "warning", code: "duplicate-error-case",
+          message: `event "${key}" のBranch "${branchId}" の onError.cases に重複条件 status=${status}, code=${code} があります。`,
+          where: key,
+        });
+        seenBranchErrorCases.add(signature);
+      }
+      const branchApiCall = asString(branch.action?.apiCall);
+      if (branchApiCall !== undefined && !bindingKeys.has(branchApiCall)) diagnostics.push({
+        severity: "warning", code: "undefined-api-binding",
+        message: `event "${key}" のBranch "${branchId}" が未定義の apiBinding "${branchApiCall}" を参照しています。`, where: key,
+      });
     }
 
     const apiCall = asString(ev.action?.apiCall);

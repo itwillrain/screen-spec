@@ -1,6 +1,6 @@
 # screen-spec 言語仕様（v0.1・ドラフト）
 
-画面詳細設計書を記述する OpenAPI ライクな YAML 言語。本書は M0/M1 で実装済みの範囲を記す。
+画面詳細設計書を記述する OpenAPI ライクな YAML 言語。本書は v0.1 で実装済みの範囲を記す。
 確定した設計判断の根拠は運用上 `.knowledge`（Obsidian）で検討し、正式版は `docs/decisions/` に昇格する。
 
 ## ドキュメントの種類
@@ -51,19 +51,19 @@ email:
 
 ## v0.1 で表現できる要素
 
-- `screen`: `id`, `name`, `description`, `route`, `permissions`, `fields`
-- `field`: `label`, `type`, `text`, `eventId`, `required`, `validations`, `options`, `permission`
-- `validation`: `rule`, `value`, `message`
-- `option`: `value`, `label`
-- `permission`: `role`, `access`, `fields`, `editRoles`
-- `components`: `validations`, `fields`, `options`
+- `screen`: 基本情報、レイアウト、デザイン参照、権限、状態機械、API連携
+- `field`: ラベル、表示文言、`eventId`、型、検証、選択肢、表示/編集条件
+- `event`: `from` と単一結果 `to`、または順序付き `branches`
+- `branch`: `id`、`when` または `otherwise`、`to`、アクション、期待結果、成功/エラー結果
+- `apiBindings`: OpenAPI operation と request/response mapping
+- `testData`: 前提データ、パラメータ、初期表示期待値
+- `components` と `compose`: 仕様要素の再利用と明示合成
 
-## 未実装（後続マイルストーン）
+分岐イベントは first-match で評価する。fallback は末尾の `otherwise: true` 1件まで。fallback がなく一致しない場合は No Match とし、状態遷移・API呼び出し・副作用を行わない。詳細は ADR 0007 と Event リファレンスを参照。
 
-- `states` / `events` / `transitions`（状態遷移・案C: M3）
-- `apiBindings`（OpenAPI 連携・案B: M4）
-- Viewer（M2 以降）
-- `compose`（allOf 相当・予約のみ、決定 #12）
+## 非スコープ
+
+実描画ランタイム、入れ子/並行/履歴状態、任意スクリプト、業務ルールそのものは v0.1 の対象外。
 
 ## 使い方
 

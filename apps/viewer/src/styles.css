@@ -368,6 +368,20 @@ ul.warnings {
 .event-route {
   margin-top: 0.45rem !important;
 }
+.event-branches {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.event-branch {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 6px;
+}
+.event-branch > h4 {
+  overflow-wrap: anywhere;
+}
 .event-outcome {
   margin-top: 0.75rem;
   padding: 0.65rem 0.75rem;
@@ -663,7 +677,7 @@ html[data-theme="dark"] :where(.muted, .eyebrow, .meta dt) { color: #b6bec9; }
 html[data-theme="dark"] :where(.filter, .theme-control select) { color: #f2f5f8; background: #19212c; border-color: #3a4656; }
 html[data-theme="dark"] table.fields thead th { color: #b6bec9; background: #19212c; }
 html[data-theme="dark"] table.fields td { border-color: #2b3441; }
-html[data-theme="dark"] :where(.event-outcome, .badge-region) { background: #202a36; }
+html[data-theme="dark"] :where(.event-outcome, .event-branch, .badge-region) { background: #202a36; }
 html[data-theme="dark"] .badge-region { color: #b6bec9; }
 html[data-theme="dark"] .mapping-error { color: #fb7185; }
 html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; border-color: #71620c; }

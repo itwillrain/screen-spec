@@ -47,7 +47,7 @@ API 呼び出し（送信/反映・成功/失敗）、パラメータ（必須�
 3. 権限マトリクスの明示化（role×field×操作）✅ 完了
 4. フィールド既定値・編集可否条件（`enabledWhen`）✅ 完了
 5. 前提データ/受け入れ条件の置き場所（screen 内 or 別ドキュメント）を決める ✅ `testData`別文書として完了
-6. （将来）ガード条件（案B 方向・後方互換で追加）
+6. 条件分岐イベント（順序付きBranch、fallback、No Match）✅ 完了
 
 上記の形式化情報と`testData`から、coreの`generateTestItems`とViewerで前提・入力・期待値を含む
 テスト項目候補を自動導出できる。core・CLI・ViewerからMarkdown/CSVとして出力できる。

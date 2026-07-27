@@ -218,6 +218,32 @@ export function generateTestItems(screen: unknown, testData?: unknown): TestItem
     const from = asString(ev.from);
     const to = asString(ev.to);
     const trigger = asString(ev.trigger) ?? key;
+    const branches = Array.isArray(ev.branches) ? ev.branches : [];
+    branches.forEach((branch, index) => {
+      if (!isObject(branch)) return;
+      const branchId = asString(branch.id) ?? String(index + 1);
+      const branchTo = asString(branch.to);
+      const when = asString(branch.when);
+      const otherwise = branch.otherwise === true;
+      const expects = expectationText(branch.expects);
+      const prior = index > 0 ? "先行分岐はすべて偽 / " : "";
+      items.push({
+        id: `event.${key}.branch.${branchId}`,
+        category: "transition",
+        target: key,
+        title: `state=${from ?? "?"} で ${trigger}: ${prior}${otherwise ? "otherwise" : `[${when ?? "?"}] が真`}`,
+        expected: expects.length > 0 ? expects.join(" / ") : `state=${branchTo ?? "?"} へ遷移する`,
+      });
+    });
+    if (branches.length > 0 && !branches.some((branch) => isObject(branch) && branch.otherwise === true)) {
+      items.push({
+        id: `event.${key}.noMatch`,
+        category: "transition",
+        target: key,
+        title: `state=${from ?? "?"} で ${trigger}: すべての分岐条件が偽`,
+        expected: "状態遷移なし / API呼び出しなし / 副作用なし",
+      });
+    }
     if (from && to) {
       const expects = expectationText(ev.expects);
       items.push({

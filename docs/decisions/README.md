@@ -22,6 +22,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（優先度5・別ドキュメント種別 `testData` を実装）
 - [0006 — UI要素とイベントの連携](./0006-ui-elements-and-events.md)
   — ステータス: **Accepted**（`button` / `label` / `text` / `eventId`）
+- [0007 — first-match方式の分岐イベント](./0007-branched-events.md)
+  — ステータス: **Accepted**（`branches` / Branch ID / No Match）
 
 ## v0.1 決定の一覧
 

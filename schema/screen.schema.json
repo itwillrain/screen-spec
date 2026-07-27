@@ -152,21 +152,63 @@
 
     "Event": {
       "type": "object",
-      "required": ["from", "to"],
+      "required": ["from"],
       "additionalProperties": false,
+      "oneOf": [
+        { "required": ["to"], "not": { "required": ["branches"] } },
+        {
+          "required": ["branches"],
+          "not": {
+            "anyOf": [
+              { "required": ["to"] },
+              { "required": ["action"] },
+              { "required": ["expects"] },
+              { "required": ["onSuccess"] },
+              { "required": ["onError"] }
+            ]
+          }
+        }
+      ],
       "properties": {
         "trigger": { "type": "string" },
         "target": { "type": "string" },
         "from": { "type": "string", "description": "遷移元の状態キー" },
-        "to": { "type": "string", "description": "遷移先の状態キー" },
-        "expects": { "$ref": "#/$defs/Expectation" },
-        "action": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "apiCall": { "type": "string", "description": "apiBinding のキー（v0.1 では未検証）" }
-          }
+        "to": { "type": "string", "description": "Linear Eventの遷移先状態キー" },
+        "branches": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/EventBranch" }
         },
+        "expects": { "$ref": "#/$defs/Expectation" },
+        "action": { "$ref": "#/$defs/EventAction" },
+        "onSuccess": { "$ref": "#/$defs/EventOutcome" },
+        "onError": { "$ref": "#/$defs/ErrorOutcome" }
+      }
+    },
+
+    "EventAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apiCall": { "type": "string", "description": "apiBindingのキー" }
+      }
+    },
+
+    "EventBranch": {
+      "type": "object",
+      "required": ["id", "to"],
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["when"], "not": { "required": ["otherwise"] } },
+        { "required": ["otherwise"], "not": { "required": ["when"] } }
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "when": { "type": "string", "minLength": 1 },
+        "otherwise": { "const": true },
+        "to": { "type": "string", "description": "Branchの遷移先状態キー" },
+        "action": { "$ref": "#/$defs/EventAction" },
+        "expects": { "$ref": "#/$defs/Expectation" },
         "onSuccess": { "$ref": "#/$defs/EventOutcome" },
         "onError": { "$ref": "#/$defs/ErrorOutcome" }
       }

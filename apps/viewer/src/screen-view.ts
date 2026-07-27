@@ -95,6 +95,15 @@ export interface ErrorCaseView extends EventOutcomeView {
   code?: string;
 }
 
+export interface EventBranchView extends EventOutcomeView {
+  id: string;
+  when?: string;
+  otherwise: boolean;
+  apiCall?: string;
+  onSuccess?: EventOutcomeView;
+  onError?: EventOutcomeView & { cases: ErrorCaseView[] };
+}
+
 export interface EventView {
   key: string;
   trigger?: string;
@@ -105,6 +114,7 @@ export interface EventView {
   expects?: ExpectationView;
   onSuccess?: EventOutcomeView;
   onError?: EventOutcomeView & { cases: ErrorCaseView[] };
+  branches: EventBranchView[];
 }
 
 export interface ApiBindingView {
@@ -224,6 +234,7 @@ interface RawEvent {
   expects?: RawExpectation;
   onSuccess?: RawEventOutcome;
   onError?: RawEventOutcome & { cases?: RawErrorCase[] };
+  branches?: RawEventBranch[];
 }
 
 interface RawExpectedMessage {
@@ -250,6 +261,15 @@ interface RawEventOutcome {
   to?: string;
   navigate?: string;
   expects?: RawExpectation;
+}
+
+interface RawEventBranch extends RawEventOutcome {
+  id?: string;
+  when?: string;
+  otherwise?: boolean;
+  action?: { apiCall?: string };
+  onSuccess?: RawEventOutcome;
+  onError?: RawEventOutcome & { cases?: RawErrorCase[] };
 }
 
 interface RawErrorCase extends RawEventOutcome {
@@ -413,6 +433,16 @@ function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefi
   const edges: StateEdge[] = [];
   for (const [key, ev] of Object.entries(screen?.events ?? {})) {
     if (ev.from && ev.to) edges.push({ from: ev.from, to: ev.to, label: ev.trigger ? `${key} (${ev.trigger})` : key });
+    for (const branch of ev.branches ?? []) {
+      if (!ev.from || !branch.to) continue;
+      const condition = branch.otherwise === true ? "otherwise" : branch.when ?? "?";
+      edges.push({ from: ev.from, to: branch.to, label: key + "/" + (branch.id ?? "?") + " (" + condition + ")" });
+      if (branch.onSuccess?.to) edges.push({ from: branch.to, to: branch.onSuccess.to, label: (branch.id ?? "?") + ".onSuccess" });
+      if (branch.onError?.to) edges.push({ from: branch.to, to: branch.onError.to, label: (branch.id ?? "?") + ".onError" });
+      for (const errorCase of branch.onError?.cases ?? []) {
+        if (errorCase.to) edges.push({ from: branch.to, to: errorCase.to, label: (branch.id ?? "?") + ".onError" });
+      }
+    }
     if (ev.to && ev.onSuccess?.to) edges.push({ from: ev.to, to: ev.onSuccess.to, label: "onSuccess" });
     if (ev.to && ev.onError?.to) edges.push({ from: ev.to, to: ev.onError.to, label: "onError" });
     for (const errorCase of ev.onError?.cases ?? []) {
@@ -441,30 +471,41 @@ function buildOutcome(raw: RawEventOutcome | undefined): EventOutcomeView | unde
   return { to: raw.to, navigate: raw.navigate, expects: buildExpectation(raw.expects) };
 }
 
+function buildErrorOutcome(raw: (RawEventOutcome & { cases?: RawErrorCase[] }) | undefined): (EventOutcomeView & { cases: ErrorCaseView[] }) | undefined {
+  if (!raw) return undefined;
+  return {
+    ...buildOutcome(raw),
+    cases: (raw.cases ?? []).map((errorCase) => ({
+      ...buildOutcome(errorCase),
+      status: errorCase.when?.status,
+      code: errorCase.when?.code,
+    })),
+  };
+}
+
 function buildEvents(screen: SpecDoc["screen"]): EventView[] {
-  return Object.entries(screen?.events ?? {}).map(([key, event]) => {
-    const onError = event.onError
-      ? {
-          ...buildOutcome(event.onError),
-          cases: (event.onError.cases ?? []).map((errorCase) => ({
-            ...buildOutcome(errorCase),
-            status: errorCase.when?.status,
-            code: errorCase.when?.code,
-          })),
-        }
-      : undefined;
-    return {
-      key,
-      trigger: event.trigger,
-      target: event.target,
-      from: event.from,
-      to: event.to,
-      apiCall: event.action?.apiCall,
-      expects: buildExpectation(event.expects),
-      onSuccess: buildOutcome(event.onSuccess),
-      onError,
-    };
-  });
+  return Object.entries(screen?.events ?? {}).map(([key, event]) => ({
+    key,
+    trigger: event.trigger,
+    target: event.target,
+    from: event.from,
+    to: event.to,
+    apiCall: event.action?.apiCall,
+    expects: buildExpectation(event.expects),
+    onSuccess: buildOutcome(event.onSuccess),
+    onError: buildErrorOutcome(event.onError),
+    branches: (event.branches ?? []).map((branch, index) => ({
+      id: branch.id ?? String(index + 1),
+      when: branch.when,
+      otherwise: branch.otherwise === true,
+      to: branch.to,
+      navigate: branch.navigate,
+      apiCall: branch.action?.apiCall,
+      expects: buildExpectation(branch.expects),
+      onSuccess: buildOutcome(branch.onSuccess),
+      onError: buildErrorOutcome(branch.onError),
+    })),
+  }));
 }
 
 /**

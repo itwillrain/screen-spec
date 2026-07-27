@@ -67,6 +67,7 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ M1: スキーマ・core・CLI・`$ref`・2 段検証
 - ✅ M2: Viewer（Swagger UI 型・クライアント解決）
 - ✅ M3: `states` / `events` / `transitions`（状態機械解析・Mermaid 図）
+- ✅ 分岐イベント（first-match Branch・fallback・No Match・テスト候補生成）
 - ✅ M4: `apiBindings`（OpenAPI 参照＋項目マッピング）
 - ✅ M5: 複数画面対応・画面間遷移可視化
 - ✅ バリデーション語彙の形式化（既知ルール＋型付き値、未知ルールは warning）

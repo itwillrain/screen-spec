@@ -136,7 +136,16 @@ screen:
       trigger: click
       target: editButton
       from: viewing
-      to: editing
+      branches:
+        - id: editable
+          when: fields.role != "viewer"
+          to: editing
+        - id: readOnly
+          otherwise: true
+          to: viewing
+          expects:
+            state: viewing
+            message: { kind: warning, text: 編集権限がありません }
     submit:
       trigger: click
       target: submitButton
