@@ -1,0 +1,45 @@
+---
+title: Component Usage
+description: Componentの直接利用、依存、変更影響をプロジェクト全体で追跡する規則。
+---
+
+# Component Usage
+
+Component Usage Graphは、Authored Specificationに記述された`$ref`から導出するプロジェクト全体の関係です。UsageをYAMLへ手書きしたり永続化したりしません。
+
+## Identityと種別
+
+Component Identityは、解決後の文書URIとJSON Pointerの組です。同じ`EmailField`という名前でも定義ファイルが異なれば別Componentです。Viewerでは表示名、種別、定義元を短く表示し、完全参照は補足として示します。
+
+正式な種別はField Component、Validation Component、Options Componentです。Component定義そのものを別Componentへの単独`$ref`にするComponent Aliasは禁止します。
+
+## 利用関係
+
+- **Direct Usage**: Screen SpecificationまたはComponentが`$ref`でComponentを直接参照する一つの参照箇所
+- **Component Dependency**: Component自身の契約内にあるDirect Usage
+- **Impacted Field**: Direct UsageとComponent Dependencyを辿り、変更影響を受けるField
+
+```text
+user-edit.email
+└─ Field Component: EmailField
+   ├─ Validation Component: Required
+   └─ Validation Component: EmailFormat
+```
+
+Field本体がinlineでも、ValidationまたはOptions Componentを直接利用できます。その場合のField Originは`Inline`で、Component Usageは別に表示します。
+
+Usageは参照箇所単位で記録し、ViewerではField単位にまとめます。Direct Usage Count、Impacted Field Count、Dependency Countを分け、直接利用と変更影響を混同しません。
+
+## Component Contract
+
+通常表示ではComponent自身が記述した契約を維持し、依存Componentをインライン展開しません。依存先は個別に開きます。解決済みの完全展開は主表示にせず、必要ならデバッグ情報として扱います。
+
+## プロジェクト境界
+
+ViewerとProject Analysisはmanifestに含まれるScreen文書とComponent文書を読み、プロジェクト全体でUsageを集計します。単一ファイルの`validate`は、そのファイルと参照先だけを検証し、プロジェクト全体の未使用を判定しません。未使用Componentは有効ですが`unused-component` warningです。
+
+## Viewerでの追跡
+
+Component詳細はField詳細と同じ右ドロワーで開きます。パンくずと戻る操作で`Field → Component → Dependency`を移動でき、状態はURLで共有できます。現在画面の利用Fieldを先に表示し、他画面の利用件数と利用箇所を展開できます。他画面の利用Fieldを選ぶと、その画面のField Review Workspaceへ移動します。
+
+Componentを開く操作にはbuttonを使い、見出しへフォーカスを移します。パンくずはnavとして表現し、すべての移動をキーボードで操作可能にします。狭い画面ではドロワーを全幅にし、同じ情報順序を保ちます。独立したComponent Catalogは作りません。

@@ -27,6 +27,7 @@ YAML を主な記述形式とし、JSON Schema で検証できます。特定の
 - [はじめる](/getting-started) — インストールと検証コマンド
 - [ドキュメントの種類](/concepts/documents)
 - [`$ref` ガイド](/concepts/refs)
+- [Component Usage](/concepts/component-usage) — 直接利用・依存・変更影響の追跡
 - [状態遷移](/concepts/state-machine) — states / events / transitions
 - [API 連携](/concepts/api-bindings) — apiBindings（OpenAPI 参照）
 - [パラメータ](/reference/params) — path / query の宣言
@@ -48,6 +49,7 @@ spec を fetch し、その場で `$ref` を解決して表示します。複数
 - ✅ `$ref` コンポーネント再利用・2 段検証（M1）
 - ✅ Viewer（Swagger UI 型・M2）
 - ✅ Field Review Workspace（デザイン併置・Field詳細・関係追跡）
+- ⏳ Component Usage Graphとドロワー内Component追跡（ADR 0010）
 - ✅ `states` / `events` / `transitions`（状態遷移・M3）
 - ✅ `apiBindings`（OpenAPI 連携・M4）
 - ✅ 権限マトリクス、field既定値・`enabledWhen`、テストデータ

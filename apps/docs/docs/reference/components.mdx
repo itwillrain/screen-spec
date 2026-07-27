@@ -10,6 +10,8 @@ OpenAPI の `components` に相当します。定義名は **PascalCase**（[命
 
 同じ意味とUI契約を持つComponentは取得元が異なっても再利用できます。意味または確定仕様が異なる場合は、見た目が同じでも別Componentとして定義します。継承・差分合成は行いません。
 
+Component Identityは解決後の文書URIとJSON Pointerの組です。同名でも定義先が異なれば別Componentです。正式な種別はField Component、Validation Component、Options Componentです。独自契約を持たず別Componentを単独`$ref`するComponent Aliasは禁止します。
+
 ## サブセクション（v0.1）
 
 | セクション | 定義する部品 |
@@ -46,5 +48,4 @@ components:
       - { value: viewer, label: 閲覧者 }
 ```
 
-コンポーネント同士も `$ref` で参照できます（上の `EmailField` が `Required` を参照）。
-参照は純粋参照で、兄弟キーは書けません（[`$ref` ガイド](/concepts/refs)）。
+Componentの契約内から別種のComponentを`$ref`できます（上の`EmailField`から`Required`へのComponent Dependency）。Component定義全体を別Componentへの`$ref`だけにするAliasはできません。参照は純粋参照で、兄弟キーは書けません（[`$ref`ガイド](/concepts/refs)）。利用関係と変更影響の規則は[Component Usage](/concepts/component-usage)を参照してください。

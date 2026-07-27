@@ -28,6 +28,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（M6・デザイン併置／Field関係追跡）
 - [0009 — ComponentとScreen Dataの境界](./0009-component-and-screen-data-boundaries.md)
   — ステータス: **Accepted**（実装済み・`compose`廃止／動的Options Binding）
+- [0010 — Component Usage GraphとViewer追跡](./0010-component-usage-graph.md)
+  — ステータス: **Accepted**（実装待ち・プロジェクト横断Component追跡）
 
 ## v0.1 決定の一覧
 
