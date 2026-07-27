@@ -863,13 +863,36 @@ html[data-theme="dark"] :where(.sidebar-collapse, .sidebar-current) {
   z-index: 30;
   top: 0;
   right: 0;
-  width: min(32rem, calc(100vw - 4rem));
+  width: min(var(--field-drawer-width, 32rem), calc(100vw - 4rem));
   height: 100dvh;
   margin-top: 0;
   overflow-y: auto;
   border-width: 0 0 0 1px;
   border-radius: 0;
   box-shadow: -12px 0 32px rgb(15 23 42 / .18);
+}
+.field-detail-resizer {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  left: -.4rem;
+  width: .8rem;
+  cursor: col-resize;
+  touch-action: none;
+}
+.field-detail-resizer::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+  background: transparent;
+  content: "";
+}
+.field-detail-resizer:hover::before,
+.field-detail-resizer:focus-visible::before {
+  background: #4f46e5;
 }
 .field-detail > header {
   position: sticky;
@@ -892,10 +915,17 @@ html[data-theme="dark"] .field-detail > header {
     width: 100%;
     border-left: 0;
   }
+  .field-detail-resizer {
+    display: none;
+  }
 }
 @media (forced-colors: active) {
   .field-detail {
     border-left: 2px solid CanvasText;
+  }
+  .field-detail-resizer:hover::before,
+  .field-detail-resizer:focus-visible::before {
+    background: Highlight;
   }
 }
 
@@ -903,7 +933,7 @@ html[data-theme="dark"] .field-detail > header {
 .page,
 .layout .page {
   width: 100%;
-  max-width: 84rem;
+  max-width: none;
   min-width: 0;
   padding-inline: 2rem;
 }

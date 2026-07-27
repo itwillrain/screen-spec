@@ -4,6 +4,7 @@ import type { DiagnosticView, EventBranchView, EventView, FieldView, ScreenView 
 const PANE_KEY = 'screen-spec-field-review-pane'
 const COLLAPSED_KEY = 'screen-spec-field-review-design-collapsed'
 const ZOOM_KEY = 'screen-spec-field-review-zoom'
+const DRAWER_KEY = 'screen-spec-field-review-drawer-width'
 
 function queryValue(key: string): string | undefined {
   return new URLSearchParams(window.location.search).get(key) ?? undefined
@@ -39,6 +40,10 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
   const [eventFilter, setEventFilter] = useState('all')
   const [conditionFilter, setConditionFilter] = useState(false)
   const [diagnosticFilter, setDiagnosticFilter] = useState(false)
+  const [drawerWidth, setDrawerWidth] = useState(() => {
+    const saved = Number(localStorage.getItem(DRAWER_KEY)) || 512
+    return Math.min(Math.max(360, window.innerWidth - 64), Math.max(320, saved))
+  })
   const initialField = queryValue('field')
   const [selectedKey, setSelectedKey] = useState(() => screen.fields.some((field) => field.key === initialField) ? initialField : undefined)
   const detailHeading = useRef<HTMLHeadingElement>(null)
@@ -126,6 +131,26 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
     event.preventDefault()
     adjustPane(panePercent + (event.key === "ArrowRight" ? 5 : -5))
   }
+  const adjustDrawer = (next: number) => {
+    const value = Math.round(Math.min(Math.max(360, window.innerWidth - 64), Math.max(320, next)))
+    setDrawerWidth(value)
+    localStorage.setItem(DRAWER_KEY, String(value))
+  }
+  const startDrawerResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId)
+    const move = (pointer: globalThis.PointerEvent) => adjustDrawer(window.innerWidth - pointer.clientX)
+    const stop = () => {
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", stop)
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", stop)
+  }
+  const onDrawerResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return
+    event.preventDefault()
+    adjustDrawer(drawerWidth + (event.key === "ArrowLeft" ? 32 : -32))
+  }
   const toggleDesign = () => {
     const next = !designCollapsed
     setDesignCollapsed(next)
@@ -172,7 +197,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
             </table>
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致するFieldはありません。</p> : null}
-          {selected ? <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} /> : null}
+          {selected ? <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -236,12 +261,14 @@ function DesignReference({ screen }: { screen: ScreenView }) {
   </aside>
 }
 
-function FieldDetail({ item, section, headingRef, onClose, onOpenTab }: {
+function FieldDetail({ item, section, headingRef, onClose, onOpenTab, drawerWidth, onResizeStart, onResizeKeyDown }: {
   item: { field: FieldView; events: EventView[]; diagnostics: DiagnosticView[] }; section?: string
   headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenTab: (tab: string) => void
+  drawerWidth: number; onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
   const { field, events, diagnostics } = item
-  return <section className="field-detail" role="complementary" aria-labelledby="field-detail-title">
+  return <section className="field-detail" role="complementary" aria-labelledby="field-detail-title" style={{ '--field-drawer-width': drawerWidth + 'px' } as React.CSSProperties}>
+    <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Field詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
     <header><div><p className="eyebrow">selected field</p><h2 id="field-detail-title" ref={headingRef} tabIndex={-1}><code>{field.key}</code> — {field.label}</h2></div><button type="button" onClick={onClose} aria-label="Field詳細を閉じる">閉じる</button></header>
     <dl className="field-detail-grid">
       <Detail label="文言" value={field.text} /><Detail label="型" value={field.type} code /><Detail label="必須" value={field.required ? '必須' : '任意'} />
