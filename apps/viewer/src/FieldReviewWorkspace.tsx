@@ -22,6 +22,9 @@ function displayValue(value: unknown): string {
   return json === undefined ? String(value) : json
 }
 
+const INPUT_FIELD_TYPES = new Set(['text', 'textarea', 'email', 'number', 'date', 'select', 'checkbox', 'radio'])
+const OPTION_FIELD_TYPES = new Set(['select', 'radio'])
+
 function fieldDiagnostics(screen: ScreenView, field: FieldView, events: EventView[]): DiagnosticView[] {
   const keys = new Set([field.key, ...events.map((event) => event.key)])
   return screen.diagnostics.filter((diagnostic) => {
@@ -187,7 +190,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab }: { screen: ScreenView
                       <td><code>{field.key}</code></td>
                       <td><strong>{field.label}</strong>{field.text ? <span className="field-copy">{field.text}</span> : null}</td>
                       <td><code>{field.type}</code></td>
-                      <td>{field.required ? '必須' : <span className="muted">任意</span>}</td>
+                      <td>{INPUT_FIELD_TYPES.has(field.type) ? field.required ? '必須' : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
                       <td>{events.length ? events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
                       <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!diagnostics.length ? <span className="muted">—</span> : null}</td>
                     </tr>
@@ -271,12 +274,18 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, drawerWidt
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Field詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
     <header><div><p className="eyebrow">selected field</p><h2 id="field-detail-title" ref={headingRef} tabIndex={-1}><code>{field.key}</code> — {field.label}</h2></div><button type="button" onClick={onClose} aria-label="Field詳細を閉じる">閉じる</button></header>
     <dl className="field-detail-grid">
-      <Detail label="文言" value={field.text} /><Detail label="型" value={field.type} code /><Detail label="必須" value={field.required ? '必須' : '任意'} />
-      <Detail label="既定値" value={field.default === undefined ? undefined : displayValue(field.default)} code /><Detail label="表示条件" value={field.visibleWhen} code /><Detail label="有効条件" value={field.enabledWhen} code />
-      <Detail label="$ref由来" value={field.origin ?? 'inline'} code /><Detail label="セクション" value={section} /><Detail label="幅" value={field.width} code />
+      <Detail label="型" value={field.type} code />
+      {field.text !== undefined || field.type === "button" || field.type === "label" ? <Detail label="文言" value={field.text} /> : null}
+      {INPUT_FIELD_TYPES.has(field.type) ? <Detail label="必須" value={field.required ? "必須" : "任意"} /> : null}
+      {INPUT_FIELD_TYPES.has(field.type) && field.default !== undefined ? <Detail label="既定値" value={displayValue(field.default)} code /> : null}
+      {field.visibleWhen ? <Detail label="表示条件" value={field.visibleWhen} code /> : null}
+      {field.enabledWhen ? <Detail label="有効条件" value={field.enabledWhen} code /> : null}
+      <Detail label="$ref由来" value={field.origin ?? "inline"} code />
+      {section ? <Detail label="セクション" value={section} /> : null}
+      {field.width ? <Detail label="幅" value={field.width} code /> : null}
     </dl>
-    <DetailList title="Validation" empty="定義なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ''}</span>)} />
-    <DetailList title="Options" empty="定義なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} />
+    {INPUT_FIELD_TYPES.has(field.type) ? <DetailList title="Validation" empty="なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ""}</span>)} /> : null}
+    {OPTION_FIELD_TYPES.has(field.type) ? <DetailList title="Options" empty="なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} /> : null}
     <section><h3>診断</h3>{diagnostics.length ? <ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul> : <p className="muted">このFieldに関連する診断はありません。</p>}</section>
     <section><div className="detail-section-head"><h3>関連Event</h3>{events.length ? <button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button> : null}</div>{events.length ? events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />) : <p className="muted">直接関連するEventはありません。</p>}</section>
   </section>
