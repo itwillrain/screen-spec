@@ -70,6 +70,7 @@ GitHub Pages では docs をルート、viewer を `/screen-spec/viewer/` に配
 - ✅ 分岐イベント（first-match Branch・fallback・No Match・テスト候補生成）
 - ✅ M4: `apiBindings`（OpenAPI 参照＋項目マッピング）
 - ✅ M5: 複数画面対応・画面間遷移可視化
+- ✅ M6: Field Review Workspace（デザイン併置・Field詳細・関係追跡）
 - ✅ バリデーション語彙の形式化（既知ルール＋型付き値、未知ルールは warning）
 - ✅ event の期待結果（`expects`）と API エラー挙動の形式化・Viewer表示
 - ✅ 権限マトリクス（role×field×operation）の形式化・Viewer表示

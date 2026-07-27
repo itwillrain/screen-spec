@@ -1,0 +1,24 @@
+---
+title: Field Review Workspace
+description: デザインとField仕様を並べてレビューするViewerの項目画面。
+---
+
+# Field Review Workspace
+
+Viewerの「項目」タブは、エンジニア向けの読み取り専用レビュー領域です。デザイン画像を左、Field一覧と選択Fieldの詳細を右に表示します。デザインが未登録ならField領域を全幅で使用します。
+
+## Fieldを探す
+
+Field ID、ラベル、文言の検索に加え、型、Event連携、表示・有効条件、診断の有無で絞り込めます。一覧行にはField ID、ラベル／文言、型、必須、Event ID、error／warning件数を表示します。
+
+## Fieldを追跡する
+
+行を選択すると、既定値、Validation、Options、条件式、`$ref`、Layout情報を下部詳細に表示します。`eventId`またはEventの`target`で直接関連するEventについて、Branch順序、条件、遷移先、API Call、成功・エラー結果を一段だけ確認できます。
+
+選択中の画面、タブ、Field、デザイン画像はURLで共有できます。ペイン幅、ズーム、折りたたみ状態はブラウザへ保存します。
+
+## デザイン参照
+
+`design.images`は切り替え、幅合わせ、原寸、拡大・縮小、ドラッグ移動、リセット、別タブ表示に対応します。Figmaと外部リンクはViewer外で開きます。狭い画面ではFieldを優先し、デザイン領域を折りたためます。
+
+ViewerからのYAML編集、画像注釈、Fieldとの座標連動、Figma埋め込み、仕様からのUI仮描画は行いません。編集機能は将来のEditorとして別に扱います。

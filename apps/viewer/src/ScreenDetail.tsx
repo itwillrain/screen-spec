@@ -1,4 +1,5 @@
 import { Fragment, useState, type KeyboardEvent } from 'react'
+import { FieldReviewWorkspace } from './FieldReviewWorkspace'
 import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
 import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
@@ -19,16 +20,21 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
     { id: 'api', label: 'API 連携', show: screen.apiBindings.length > 0 },
     { id: 'transitions', label: '画面遷移', show: screen.transitions.length > 0 },
     { id: 'tests', label: `テスト項目 (${screen.testItems.length})`, show: screen.testItems.length > 0 },
-    { id: 'design', label: 'デザイン', show: !!screen.design },
     { id: 'raw', label: 'Raw YAML', show: true },
   ].filter((t) => t.show)
 
-  const [tab, setTab] = useState('fields')
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("tab") ?? "fields")
+  const selectTab = (next: string) => {
+    setTab(next)
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", next)
+    window.history.replaceState(null, "", url)
+  }
   const active = tabs.some((t) => t.id === tab) ? tab : 'fields'
 
   const moveTab = (index: number) => {
     const next = tabs[(index + tabs.length) % tabs.length]
-    setTab(next.id)
+    selectTab(next.id)
     requestAnimationFrame(() => document.getElementById(`tab-${next.id}`)?.focus())
   }
   const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -87,7 +93,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
             role="tab"
             aria-selected={active === t.id}
             onKeyDown={(event) => onTabKeyDown(event, tabs.indexOf(t))}
-            onClick={() => setTab(t.id)}
+            onClick={() => selectTab(t.id)}
           >
             {t.label}
           </button>
@@ -95,7 +101,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
       </nav>
 
       <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
-      {active === 'fields' ? <FieldsTab screen={screen} /> : null}
+      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'access' && screen.accessControl ? (
         <AccessTab screen={screen} accessControl={screen.accessControl} />
@@ -108,7 +114,6 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
         <TransitionsTab screen={screen} screenIds={screenIds} onNavigate={onNavigate} />
       ) : null}
       {active === 'tests' ? <TestItemsTab screen={screen} /> : null}
-      {active === 'design' && screen.design ? <DesignTab screen={screen} /> : null}
       {active === 'raw' ? (
         <section>
           <pre className="raw">{screen.rawText}</pre>
@@ -288,94 +293,6 @@ function formatExpectedValue(value: unknown): string {
   if (typeof value === 'string') return value
   const json = JSON.stringify(value)
   return json === undefined ? String(value) : json
-}
-
-function FieldsTab({ screen }: { screen: ScreenView }) {
-  const [filter, setFilter] = useState('')
-  const q = filter.trim().toLowerCase()
-  const fields = q
-    ? screen.fields.filter((f) => f.key.toLowerCase().includes(q) || f.label.toLowerCase().includes(q))
-    : screen.fields
-
-  const sectionByFieldKey = new Map<string, string>()
-  screen.layout?.sections.forEach((sec, i) => {
-    const label = sec.title ?? sec.id ?? `section ${i + 1}`
-    sec.fieldKeys.forEach((key) => sectionByFieldKey.set(key, label))
-  })
-
-  return (
-    <section>
-      <p className="muted">
-        記述順＝表示順。ブラウザで <code>$ref</code> を解決して表示しています。
-      </p>
-      <input
-        className="filter"
-        type="search"
-        placeholder="フィールドを絞り込み（キー/ラベル）"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-      />
-      <table className="fields">
-        <thead>
-          <tr>
-            <th>キー</th>
-            <th>ラベル</th>
-            <th>文言</th>
-            <th>イベントID</th>
-            <th>型</th>
-            <th>必須</th>
-            <th>既定</th>
-            <th>バリデーション</th>
-            <th>表示条件</th>
-            <th>編集可否</th>
-            <th>由来</th>
-            {screen.layout ? <th>セクション</th> : null}
-            <th>幅</th>
-          </tr>
-        </thead>
-        <tbody>
-          {fields.map((field) => (
-            <tr key={field.key}>
-              <td><code>{field.key}</code></td>
-              <td>{field.label}</td>
-              <td>{field.text ?? <span className="muted">—</span>}</td>
-              <td>{field.eventId ? <code>{field.eventId}</code> : <span className="muted">—</span>}</td>
-              <td><code>{field.type}</code></td>
-              <td>{field.required ? '必須' : <span className="muted">任意</span>}</td>
-              <td>{field.default !== undefined ? <code>{String(field.default)}</code> : <span className="muted">—</span>}</td>
-              <td>
-                {field.validations.length === 0 ? (
-                  <span className="muted">—</span>
-                ) : (
-                  <ul className="rules">
-                    {field.validations.map((v, i) => (
-                      <li key={i}>
-                        <code>{v.rule}</code>
-                        {v.message ? <span className="muted"> — {v.message}</span> : null}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </td>
-              <td>{field.visibleWhen ? <code>{field.visibleWhen}</code> : <span className="muted">—</span>}</td>
-              <td>{field.enabledWhen ? <code>{field.enabledWhen}</code> : <span className="muted">—</span>}</td>
-              <td>
-                {field.origin ? (
-                  <span className="badge badge-ref" title={field.origin}>$ref</span>
-                ) : (
-                  <span className="muted">inline</span>
-                )}
-              </td>
-              {screen.layout ? (
-                <td>{sectionByFieldKey.get(field.key) ?? <span className="muted">—</span>}</td>
-              ) : null}
-              <td>{field.width ? <code>{field.width}</code> : <span className="muted">—</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
-  )
 }
 
 function ParamsTab({ screen }: { screen: ScreenView }) {
@@ -679,38 +596,6 @@ function TransitionsTab({
           </li>
         ))}
       </ul>
-    </section>
-  )
-}
-
-function DesignTab({ screen }: { screen: ScreenView }) {
-  const design = screen.design!
-  return (
-    <section>
-      {design.figma ? (
-        <p>
-          <a href={design.figma} target="_blank" rel="noreferrer">Figma を開く ↗</a>
-        </p>
-      ) : null}
-      {design.images.length > 0 ? (
-        <div className="mockups">
-          {design.images.map((img, i) => (
-            <figure key={i} className="mockup">
-              <img src={img.url} alt={img.caption ?? `mockup ${i + 1}`} loading="lazy" />
-              {img.caption ? <figcaption className="muted">{img.caption}</figcaption> : null}
-            </figure>
-          ))}
-        </div>
-      ) : null}
-      {design.links.length > 0 ? (
-        <ul className="rules">
-          {design.links.map((l, i) => (
-            <li key={i}>
-              <a href={l.url} target="_blank" rel="noreferrer">{l.label ?? l.url} ↗</a>
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </section>
   )
 }

@@ -17,6 +17,18 @@ export interface FieldValidationView {
   message?: string;
 }
 
+export interface FieldOptionView {
+  value: unknown;
+  label: string;
+}
+
+export interface DiagnosticView {
+  severity: "error" | "warning";
+  stage: string;
+  path: string;
+  message: string;
+}
+
 export interface FieldView {
   key: string;
   label: string;
@@ -30,6 +42,7 @@ export interface FieldView {
   default?: unknown;
   design?: DesignView;
   validations: FieldValidationView[];
+  options: FieldOptionView[];
   /** フィールド自体が $ref 由来なら、その参照文字列 */
   origin?: string;
 }
@@ -184,6 +197,7 @@ export interface ScreenView {
   transitions: TransitionView[];
   testItems: TestItem[];
   warnings: string[];
+  diagnostics: DiagnosticView[];
   valid: boolean;
   issueCount: number;
   sourceUri: string;
@@ -208,6 +222,7 @@ interface RawField {
   default?: unknown;
   design?: RawDesign;
   validations?: Array<{ rule?: string; message?: string }>;
+  options?: Array<{ value?: unknown; label?: string }>;
 }
 
 interface RawLayout {
@@ -569,6 +584,7 @@ export async function buildScreenView(
       default: rf.default,
       design: buildDesign(rf.design),
       validations,
+      options: (rf.options ?? []).map((option) => ({ value: option.value, label: String(option.label ?? option.value ?? "") })),
       origin,
     };
   });
@@ -613,6 +629,10 @@ export async function buildScreenView(
     })),
     testItems: generateTestItems(resolved.screen, combinedTestData),
     warnings: result.warnings.map((w) => w.message),
+    diagnostics: [
+      ...result.issues.map((issue) => ({ ...issue, severity: "error" as const })),
+      ...result.warnings.map((issue) => ({ ...issue, severity: "warning" as const })),
+    ],
     valid: result.valid,
     issueCount: result.issues.length,
     sourceUri: entryUri,

@@ -35,13 +35,19 @@ function ThemeControl() {
 
 export function App() {
   const [state, setState] = useState<State>({ status: 'loading' })
-  const [selected, setSelected] = useState<Selection>('overview')
+  const [selected, setSelected] = useState<Selection>(() => new URLSearchParams(window.location.search).get("screen") ?? "overview")
   const [navFilter, setNavFilter] = useState('')
   const [navOpen, setNavOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   const selectScreen = (selection: Selection) => {
     setSelected(selection)
+    const url = new URL(window.location.href)
+    if (selection === "overview") url.searchParams.delete("screen")
+    else url.searchParams.set("screen", selection)
+    url.searchParams.delete("field")
+    url.searchParams.delete("design")
+    window.history.replaceState(null, "", url)
     setNavOpen(false)
     requestAnimationFrame(() => mainRef.current?.focus())
   }

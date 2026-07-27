@@ -39,3 +39,7 @@ _Avoid_: Error, failure
 **Error Case**:
 API実行後のHTTP statusやエラーコードに応じた`onError`内の分岐。実行前のBranchとは異なる。
 _Avoid_: Branch
+
+**Field Review Workspace**:
+デザインを参照しながらFieldと直接関連するEvent、Branch、API、診断を確認する、エンジニア向けの読み取り専用Viewer領域。
+_Avoid_: Editor, Design preview

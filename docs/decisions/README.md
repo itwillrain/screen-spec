@@ -24,6 +24,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（`button` / `label` / `text` / `eventId`）
 - [0007 — first-match方式の分岐イベント](./0007-branched-events.md)
   — ステータス: **Accepted**（`branches` / Branch ID / No Match）
+- [0008 — 読み取り専用Field Review Workspace](./0008-field-review-workspace.md)
+  — ステータス: **Accepted**（M6・デザイン併置／Field関係追跡）
 
 ## v0.1 決定の一覧
 
