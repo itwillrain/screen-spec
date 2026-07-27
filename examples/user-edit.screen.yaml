@@ -46,9 +46,9 @@ screen:
   design:
     figma: https://www.figma.com/file/EXAMPLE/user-edit
     images:
-      - url: https://placehold.co/640x400?text=user-edit+viewing
+      - url: wireframes/user-edit-viewing.svg
         caption: 初期表示（閲覧中）
-      - url: https://placehold.co/640x400?text=user-edit+editing
+      - url: wireframes/user-edit-editing.svg
         caption: 編集中
     links:
       - label: デザインガイドライン
@@ -107,7 +107,7 @@ screen:
       # フィールド単位のデザイン参照。
       design:
         images:
-          - url: https://placehold.co/320x120?text=role+select
+          - url: wireframes/role-select.svg
             caption: ロール選択のモック
     # compose（決定 #12）: EmailField を土台に、ラベルと必須のみローカルで上書き。
     altEmail:

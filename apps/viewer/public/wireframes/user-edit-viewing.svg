@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560" viewBox="0 0 800 560">
+  <rect width="800" height="560" fill="#f4f5f7"/>
+  <rect width="800" height="56" fill="#fff" stroke="#c9cdd3"/>
+  <circle cx="30" cy="28" r="13" fill="#30343b"/>
+  <text x="52" y="34" font-family="sans-serif" font-size="16" font-weight="700" fill="#20242a">Admin Console</text>
+  <text x="620" y="33" font-family="sans-serif" font-size="13" fill="#5e6570">山田 太郎</text>
+  <circle cx="744" cy="28" r="16" fill="#d8dbe0"/>
+  <rect x="0" y="56" width="168" height="504" fill="#252930"/>
+  <g font-family="sans-serif" font-size="13" fill="#d9dde3">
+    <text x="24" y="100">ダッシュボード</text>
+    <rect x="12" y="120" width="144" height="38" rx="5" fill="#3c424b"/>
+    <text x="24" y="144" fill="#fff" font-weight="700">ユーザー管理</text>
+    <text x="24" y="188">権限管理</text><text x="24" y="226">設定</text>
+  </g>
+  <text x="200" y="92" font-family="sans-serif" font-size="12" fill="#707782">ユーザー管理  /  usr_00125</text>
+  <text x="200" y="128" font-family="sans-serif" font-size="25" font-weight="700" fill="#20242a">ユーザー情報</text>
+  <text x="200" y="153" font-family="sans-serif" font-size="13" fill="#606772">登録されているユーザー情報を確認できます。</text>
+  <rect x="666" y="108" width="102" height="38" rx="6" fill="#fff" stroke="#727984"/>
+  <text x="697" y="132" font-family="sans-serif" font-size="13" font-weight="700" fill="#292e35">編集する</text>
+  <rect x="200" y="178" width="568" height="318" rx="8" fill="#fff" stroke="#d1d5db"/>
+  <text x="224" y="214" font-family="sans-serif" font-size="17" font-weight="700" fill="#252a31">基本情報</text>
+  <line x1="224" y1="230" x2="744" y2="230" stroke="#e1e3e7"/>
+  <g font-family="sans-serif">
+    <text x="224" y="268" font-size="12" fill="#707782">氏名</text><text x="224" y="292" font-size="15" fill="#252a31">山田 太郎</text>
+    <text x="500" y="268" font-size="12" fill="#707782">メールアドレス</text><text x="500" y="292" font-size="15" fill="#252a31">taro.yamada@example.com</text>
+    <line x1="224" y1="314" x2="744" y2="314" stroke="#eceef1"/>
+    <text x="224" y="350" font-size="12" fill="#707782">予備メールアドレス</text><text x="224" y="374" font-size="15" fill="#9aa0a9">未登録</text>
+    <text x="500" y="350" font-size="12" fill="#707782">ロール</text>
+    <rect x="500" y="363" width="82" height="28" rx="14" fill="#eef0f3"/><text x="519" y="382" font-size="13" fill="#3e454e">閲覧者</text>
+    <line x1="224" y1="414" x2="744" y2="414" stroke="#eceef1"/>
+    <text x="224" y="450" font-size="12" fill="#707782">ユーザーID</text><text x="224" y="474" font-size="14" fill="#3e454e">usr_00125</text>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560" viewBox="0 0 800 560">
+  <rect width="800" height="560" fill="#f4f5f7"/>
+  <rect width="800" height="56" fill="#fff" stroke="#c9cdd3"/>
+  <circle cx="30" cy="28" r="13" fill="#30343b"/>
+  <text x="52" y="34" font-family="sans-serif" font-size="16" font-weight="700" fill="#20242a">Admin Console</text>
+  <text x="620" y="33" font-family="sans-serif" font-size="13" fill="#5e6570">山田 太郎</text>
+  <circle cx="744" cy="28" r="16" fill="#d8dbe0"/>
+  <rect x="0" y="56" width="168" height="504" fill="#252930"/>
+  <g font-family="sans-serif" font-size="13" fill="#d9dde3">
+    <text x="24" y="100">ダッシュボード</text>
+    <rect x="12" y="120" width="144" height="38" rx="5" fill="#3c424b"/>
+    <text x="24" y="144" fill="#fff" font-weight="700">ユーザー管理</text>
+    <text x="24" y="188">権限管理</text><text x="24" y="226">設定</text>
+  </g>
+  <text x="200" y="92" font-family="sans-serif" font-size="12" fill="#707782">ユーザー管理  /  usr_00125</text>
+  <text x="200" y="128" font-family="sans-serif" font-size="25" font-weight="700" fill="#20242a">ユーザー情報を編集</text>
+  <text x="200" y="153" font-family="sans-serif" font-size="13" fill="#606772">ユーザー情報を編集してください。</text>
+  <rect x="200" y="178" width="568" height="318" rx="8" fill="#fff" stroke="#d1d5db"/>
+  <text x="224" y="214" font-family="sans-serif" font-size="17" font-weight="700" fill="#252a31">基本情報</text>
+  <line x1="224" y1="230" x2="744" y2="230" stroke="#e1e3e7"/>
+  <g font-family="sans-serif">
+    <text x="224" y="260" font-size="12" font-weight="700" fill="#4b515a">氏名 <tspan fill="#b42318">*</tspan></text>
+    <rect x="224" y="271" width="244" height="40" rx="5" fill="#fff" stroke="#7b828d"/><text x="236" y="296" font-size="14" fill="#252a31">山田 太郎</text>
+    <text x="500" y="260" font-size="12" font-weight="700" fill="#4b515a">メールアドレス <tspan fill="#b42318">*</tspan></text>
+    <rect x="500" y="271" width="244" height="40" rx="5" fill="#fff" stroke="#7b828d"/><text x="512" y="296" font-size="13" fill="#252a31">taro.yamada@example.com</text>
+    <text x="224" y="343" font-size="12" font-weight="700" fill="#4b515a">予備メールアドレス</text>
+    <rect x="224" y="354" width="244" height="40" rx="5" fill="#fff" stroke="#b7bcc4"/><text x="236" y="379" font-size="13" fill="#9aa0a9">メールアドレスを入力</text>
+    <text x="500" y="343" font-size="12" font-weight="700" fill="#4b515a">ロール</text>
+    <rect x="500" y="354" width="244" height="40" rx="5" fill="#fff" stroke="#7b828d"/><text x="512" y="379" font-size="14" fill="#252a31">閲覧者</text>
+    <path d="M724 370l6 7 6-7" fill="none" stroke="#555c65" stroke-width="2"/>
+  </g>
+  <line x1="224" y1="424" x2="744" y2="424" stroke="#e1e3e7"/>
+  <rect x="572" y="444" width="80" height="38" rx="6" fill="#fff" stroke="#8b929c"/><text x="592" y="468" font-family="sans-serif" font-size="13" fill="#30363d">キャンセル</text>
+  <rect x="662" y="444" width="82" height="38" rx="6" fill="#30363d"/><text x="682" y="468" font-family="sans-serif" font-size="13" font-weight="700" fill="#fff">保存する</text>
+</svg>

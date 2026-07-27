@@ -545,7 +545,7 @@
             "required": ["url"],
             "additionalProperties": false,
             "properties": {
-              "url": { "type": "string", "format": "uri", "description": "モックアップ画像の URL" },
+              "url": { "type": "string", "format": "uri-reference", "description": "モックアップ画像の絶対または相対 URL" },
               "caption": { "type": "string" }
             }
           }
