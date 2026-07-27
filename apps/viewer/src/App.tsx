@@ -38,7 +38,14 @@ export function App() {
   const [selected, setSelected] = useState<Selection>(() => new URLSearchParams(window.location.search).get("screen") ?? "overview")
   const [navFilter, setNavFilter] = useState('')
   const [navOpen, setNavOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("screen-spec-sidebar-collapsed") === "true")
   const mainRef = useRef<HTMLElement>(null)
+
+  const toggleSidebar = () => {
+    const next = !sidebarCollapsed
+    setSidebarCollapsed(next)
+    localStorage.setItem("screen-spec-sidebar-collapsed", String(next))
+  }
 
   const selectScreen = (selection: Selection) => {
     setSelected(selection)
@@ -94,10 +101,13 @@ export function App() {
   return (
     <>
       <a className="skip-link" href="#main-content">本文へ移動</a>
-      <div className="layout">
+      <div className={sidebarCollapsed ? "layout sidebar-collapsed" : "layout"}>
       <nav className="sidebar" aria-label="画面ナビゲーション">
         <div className="sidebar-head">
           <p className="eyebrow">screen-spec viewer</p>
+          <button className="sidebar-collapse" type="button" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed ? "サイドバーを開く" : "サイドバーを閉じる"} onClick={toggleSidebar}>
+            <span aria-hidden="true">{sidebarCollapsed ? "›" : "‹"}</span>
+          </button>
           <button
             className="nav-toggle"
             type="button"
@@ -109,6 +119,11 @@ export function App() {
           </button>
         </div>
         <ThemeControl />
+        {sidebarCollapsed ? (
+          <span className="sidebar-current" title={current?.name ?? "概要"} aria-label={`現在の画面: ${current?.name ?? "概要"}`}>
+            {current?.name?.slice(0, 1) ?? "⌂"}
+          </span>
+        ) : null}
         <div id="screen-navigation" className={navOpen ? 'sidebar-content open' : 'sidebar-content'}>
           <input
             className="filter"
