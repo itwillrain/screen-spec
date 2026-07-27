@@ -61,7 +61,7 @@ screen:
         title: 基本情報
         region: body
         columns: 2
-        fields: [name, email, altEmail]
+        fields: [introText, name, email, altEmail, editButton, submitButton]
       - id: authz
         title: 権限
         region: sidebar
@@ -69,6 +69,20 @@ screen:
 
   fields:
     # マップのキー（name / email / role）がフィールド識別子。記述順＝表示順（決定 #5, #6）。
+    introText:
+      label: 編集画面の説明
+      type: label
+      text: ユーザー情報を編集してください。
+    editButton:
+      label: 編集開始ボタン
+      type: button
+      text: 編集する
+      eventId: edit
+    submitButton:
+      label: 保存ボタン
+      type: button
+      text: 保存する
+      eventId: submit
     name:
       label: 氏名
       type: text

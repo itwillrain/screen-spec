@@ -690,6 +690,36 @@ describe("条件式（parseCondition / visibleWhen）", () => {
   });
 });
 
+describe("UI要素とeventIdの連携", () => {
+  it("button/labelと既存eventの参照は診断なし", () => {
+    const screen = {
+      fields: {
+        notice: { type: "label", text: "確認してください" },
+        submitButton: { type: "button", text: "保存", eventId: "submit" },
+      },
+      events: { submit: { from: "a", to: "b", target: "submitButton" } },
+      states: { a: { initial: true }, b: {} },
+    };
+    const codes = analyzeScreen(screen).map((d) => d.code);
+    expect(codes).not.toContain("unknown-field-event");
+    expect(codes).not.toContain("field-event-target-mismatch");
+  });
+
+  it("未知eventIdとtarget不一致を警告する", () => {
+    const screen = {
+      fields: {
+        missingButton: { eventId: "missing" },
+        saveButton: { eventId: "save" },
+      },
+      events: { save: { from: "a", to: "b", target: "otherButton" } },
+      states: { a: { initial: true }, b: {} },
+    };
+    const codes = analyzeScreen(screen).map((d) => d.code);
+    expect(codes).toContain("unknown-field-event");
+    expect(codes).toContain("field-event-target-mismatch");
+  });
+});
+
 describe("field.default と options の整合", () => {
   it("default が options にあれば診断なし", () => {
     const screen = {

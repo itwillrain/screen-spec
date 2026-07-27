@@ -20,6 +20,8 @@ export interface FieldValidationView {
 export interface FieldView {
   key: string;
   label: string;
+  text?: string;
+  eventId?: string;
   type: string;
   required: boolean;
   width?: string;
@@ -186,6 +188,8 @@ export interface ScreenView {
 interface RawField {
   $ref?: string;
   label?: string;
+  text?: string;
+  eventId?: string;
   type?: string;
   required?: boolean;
   width?: string;
@@ -514,6 +518,8 @@ export async function buildScreenView(
     return {
       key,
       label: String(rf.label ?? ""),
+      text: typeof rf.text === "string" ? rf.text : undefined,
+      eventId: typeof rf.eventId === "string" ? rf.eventId : undefined,
       type: String(rf.type ?? ""),
       required: Boolean(rf.required),
       width: typeof rf.width === "string" ? rf.width : undefined,

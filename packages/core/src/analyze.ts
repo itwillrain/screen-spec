@@ -299,6 +299,35 @@ function analyzeVisibility(s: ScreenLike, diagnostics: Diagnostic[]): void {
   }
 }
 
+/** UI要素のeventIdとevent.targetの相互参照を検査する。 */
+function analyzeUiEventLinks(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const fields = s.fields ?? {};
+  const events = s.events ?? {};
+  for (const [key, raw] of Object.entries(fields)) {
+    const eventId = asString((raw as { eventId?: unknown }).eventId);
+    if (!eventId) continue;
+    const event = events[eventId];
+    if (!event) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unknown-field-event",
+        message: `field "${key}" の eventId が未定義のevent "${eventId}" を参照しています。`,
+        where: key,
+      });
+      continue;
+    }
+    const target = asString((event as { target?: unknown }).target);
+    if (target && target !== key) {
+      diagnostics.push({
+        severity: "warning",
+        code: "field-event-target-mismatch",
+        message: `field "${key}" の eventId "${eventId}" は target "${target}" を指しており、fieldキーと一致しません。`,
+        where: key,
+      });
+    }
+  }
+}
+
 /** field.default が options（選択肢）にある値かを検査する。 */
 function analyzeFieldDefaults(s: ScreenLike, diagnostics: Diagnostic[]): void {
   const fields = s.fields;
@@ -573,6 +602,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   analyzeValidations(s, diagnostics);
   analyzeVisibility(s, diagnostics);
   analyzeFieldDefaults(s, diagnostics);
+  analyzeUiEventLinks(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
   analyzeAccessControl(s, diagnostics);
   analyzeStateMachine(s, diagnostics);

@@ -20,6 +20,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（優先度3 実装済み・ビューア表示含む）
 - [0005 — テストデータ（前提データ／フィクスチャ）](./0005-test-data-document.md)
   — ステータス: **Accepted**（優先度5・別ドキュメント種別 `testData` を実装）
+- [0006 — UI要素とイベントの連携](./0006-ui-elements-and-events.md)
+  — ステータス: **Accepted**（`button` / `label` / `text` / `eventId`）
 
 ## v0.1 決定の一覧
 

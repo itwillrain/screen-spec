@@ -52,7 +52,7 @@ email:
 ## v0.1 で表現できる要素
 
 - `screen`: `id`, `name`, `description`, `route`, `permissions`, `fields`
-- `field`: `label`, `type`, `required`, `validations`, `options`, `permission`
+- `field`: `label`, `type`, `text`, `eventId`, `required`, `validations`, `options`, `permission`
 - `validation`: `rule`, `value`, `message`
 - `option`: `value`, `label`
 - `permission`: `role`, `access`, `fields`, `editRoles`

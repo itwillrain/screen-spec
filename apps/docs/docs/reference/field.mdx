@@ -12,6 +12,8 @@ description: 画面上の項目定義。
 | キー | 型 | 必須 | 説明 |
 |---|---|---|---|
 | `label` | string | ✔ | 表示ラベル |
+| `text` | string | | ボタンやラベルなどに表示する文言 |
+| `eventId` | string | | このUI要素が発火する`screen.events`のキー |
 | `type` | enum | ✔ | 項目型（下記） |
 | `required` | boolean | | 必須かどうか |
 | `default` | any | | 既定値（`type` / `options` に整合。不一致は warning） |
@@ -39,7 +41,33 @@ altEmail:
 
 ## `type` の値
 
-`text` / `textarea` / `email` / `number` / `date` / `select` / `checkbox` / `radio`
+`text` / `textarea` / `email` / `number` / `date` / `select` / `checkbox` / `radio` / `button` / `label`
+
+## ボタンとラベル
+
+入力欄以外のUI要素も`fields`へ記述します。`label`は設計上・アクセシブルな名称、`text`は実際の表示文言です。`eventId`は同じ画面の`events`キーを参照し、event側の`target`にはfieldキーを指定します。
+
+```yaml
+helpText:
+  label: 入力案内
+  type: label
+  text: 必須項目を入力してください。
+
+submitButton:
+  label: 保存ボタン
+  type: button
+  text: 保存する
+  eventId: submit
+
+events:
+  submit:
+    trigger: click
+    target: submitButton
+    from: editing
+    to: submitting
+```
+
+未定義の`eventId`、またはfieldキーと`event.target`の不一致はwarningです。
 
 ## 例
 

@@ -308,6 +308,8 @@
       "additionalProperties": false,
       "properties": {
         "label": { "type": "string" },
+        "text": { "type": "string", "minLength": 1, "description": "ボタンやラベルなどに表示する文言" },
+        "eventId": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "このUI要素が発火するscreen.eventsのキー" },
         "type": {
           "type": "string",
           "enum": [
@@ -318,7 +320,9 @@
             "date",
             "select",
             "checkbox",
-            "radio"
+            "radio",
+            "button",
+            "label"
           ]
         },
         "required": { "type": "boolean" },

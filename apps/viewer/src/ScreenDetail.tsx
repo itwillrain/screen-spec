@@ -304,6 +304,8 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
           <tr>
             <th>キー</th>
             <th>ラベル</th>
+            <th>文言</th>
+            <th>イベントID</th>
             <th>型</th>
             <th>必須</th>
             <th>既定</th>
@@ -320,6 +322,8 @@ function FieldsTab({ screen }: { screen: ScreenView }) {
             <tr key={field.key}>
               <td><code>{field.key}</code></td>
               <td>{field.label}</td>
+              <td>{field.text ?? <span className="muted">—</span>}</td>
+              <td>{field.eventId ? <code>{field.eventId}</code> : <span className="muted">—</span>}</td>
               <td><code>{field.type}</code></td>
               <td>{field.required ? '必須' : <span className="muted">任意</span>}</td>
               <td>{field.default !== undefined ? <code>{String(field.default)}</code> : <span className="muted">—</span>}</td>
