@@ -241,7 +241,7 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab }: {
   headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenTab: (tab: string) => void
 }) {
   const { field, events, diagnostics } = item
-  return <section className="field-detail" aria-labelledby="field-detail-title">
+  return <section className="field-detail" role="complementary" aria-labelledby="field-detail-title">
     <header><div><p className="eyebrow">selected field</p><h2 id="field-detail-title" ref={headingRef} tabIndex={-1}><code>{field.key}</code> — {field.label}</h2></div><button type="button" onClick={onClose} aria-label="Field詳細を閉じる">閉じる</button></header>
     <dl className="field-detail-grid">
       <Detail label="文言" value={field.text} /><Detail label="型" value={field.type} code /><Detail label="必須" value={field.required ? '必須' : '任意'} />

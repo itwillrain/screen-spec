@@ -856,3 +856,61 @@ html[data-theme="dark"] :where(.sidebar-collapse, .sidebar-current) {
     padding-left: 0;
   }
 }
+
+/* Selected Field detail drawer */
+.field-detail {
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  right: 0;
+  width: min(32rem, calc(100vw - 4rem));
+  height: 100dvh;
+  margin-top: 0;
+  overflow-y: auto;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  box-shadow: -12px 0 32px rgb(15 23 42 / .18);
+}
+.field-detail > header {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  margin: -1rem -1rem 0;
+  padding: 1rem;
+  background: #fff;
+}
+html[data-theme="dark"] .field-detail > header {
+  background: #141a23;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] .field-detail > header {
+    background: #141a23;
+  }
+}
+@media (max-width: 760px) {
+  .field-detail {
+    width: 100%;
+    border-left: 0;
+  }
+}
+@media (forced-colors: active) {
+  .field-detail {
+    border-left: 2px solid CanvasText;
+  }
+}
+
+/* Explicit main content gutters */
+.page,
+.layout .page {
+  width: 100%;
+  max-width: 84rem;
+  min-width: 0;
+  padding-inline: 2rem;
+}
+@media (max-width: 760px) {
+  .page,
+  .layout .page {
+    width: 100%;
+    padding-inline: .75rem;
+  }
+}
