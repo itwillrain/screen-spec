@@ -19,6 +19,7 @@ export {
 } from "./analyze.js";
 export {
   findOperation,
+  hasResponsePath,
   type OpenApiOperation,
   type OpenApiParameter,
 } from "./openapi.js";

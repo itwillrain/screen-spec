@@ -64,14 +64,13 @@ events:
 評価（実データの当てはめ）は設計書のスコープ外です。
 
 :::note
-`specRef` の OpenAPI 定義は operationId の存在を検証します（型・スキーマの厳密な突合は行いません）。
+`specRef` のOpenAPI定義はoperationIdに加え、`response.mapping`のプロパティパスが2xxの`application/json`レスポンスに存在するか検証します。レスポンススキーマを取得・解釈できない場合はwarning、存在しないことが確定した場合はerrorです。
 :::
 
 ## ビューアでの連携表示
 
 ビューアの「API 連携」タブは `specRef` を実際に解決し、各バインディングが呼ぶ **operation の
-メソッド・パス・パラメータ・リクエスト/レスポンス項目**を表示します。マッピングした項目が
-OpenAPI 側に存在しない場合は印（`?`）で示します。
+メソッド・パス・パラメータ・リクエスト/レスポンス項目**を表示します。各response mappingはOpenAPIの完全なproperty pathと照合し、「path確認済み」「存在しないpath」「path未検証」の状態を表示します。
 
 さらに各バインディングから **Redoc / Swagger UI** で OpenAPI を開くリンクを提供します
 （Redoc は該当 operation へディープリンク）。外部ツールは spec を URL で取得するため、
@@ -83,5 +82,8 @@ OpenAPI 側に存在しない場合は印（`?`）で示します。
 - 式 `{fields.X}` が未定義フィールドを参照 → **warning**
 - 式 `{screen.route.Y}` が route に無いパラメータを参照 → **warning**
 - `response.mapping` の格納先が未定義のFieldまたはScreen Data → **error**
+- `response.mapping` のパスがOpenAPIレスポンスに存在しない → **error**
+- OpenAPIレスポンススキーマを取得・解釈できずパスを検証できない → **warning**
+- Screen Dataの供給元が0件または複数 → **error**
 - 既存の裸のField IDは互換形式として受理し、**warning**
 - （複数画面時）`transition.to` / `onSuccess.navigate` が未知の画面 id を参照 → **warning**

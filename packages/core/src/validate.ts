@@ -7,6 +7,7 @@ import schema from "../../../schema/screen.schema.json" with { type: "json" };
 import { parseYaml } from "./parse.js";
 import { findResidualRefs, resolveRefs, RefError, type DocumentLoader } from "./resolve.js";
 import { analyzeScreen, analyzeTestData } from "./analyze.js";
+import { hasResponsePath } from "./openapi.js";
 
 // ESM/CJS 相互運用: 実行環境差を吸収して呼び出し可能な関数を得る。
 type AddFormatsFn = (ajv: unknown, opts?: unknown) => unknown;
@@ -70,49 +71,61 @@ function collectOperationIds(openapi: unknown): Set<string> {
   return ids;
 }
 
-/** apiBindings の specRef を解決し、operationId の存在を検証する（決定 #11・warning）。 */
+/** apiBindingsのoperationとresponse mapping pathをOpenAPIに照合する。 */
 async function checkOpenApiRefs(
   screen: unknown,
   entryUri: string,
   load: DocumentLoader,
-): Promise<ValidationIssue[]> {
+): Promise<{ issues: ValidationIssue[]; warnings: ValidationIssue[] }> {
   const bindings = (screen as { apiBindings?: Record<string, unknown> } | null)?.apiBindings;
-  if (!bindings || typeof bindings !== "object") return [];
+  if (!bindings || typeof bindings !== "object") return { issues: [], warnings: [] };
 
+  const issues: ValidationIssue[] = [];
   const warnings: ValidationIssue[] = [];
-  const opIdCache = new Map<string, Set<string> | null>(); // null = 取得失敗
+  const documentCache = new Map<string, unknown | null>();
 
   for (const [key, binding] of Object.entries(bindings)) {
-    const openapi = (binding as { openapi?: { operationId?: unknown; specRef?: unknown } }).openapi;
-    const specRef = typeof openapi?.specRef === "string" ? openapi.specRef : undefined;
-    const operationId = typeof openapi?.operationId === "string" ? openapi.operationId : undefined;
+    const typed = binding as {
+      openapi?: { operationId?: unknown; specRef?: unknown };
+      response?: { mapping?: Record<string, unknown> };
+    };
+    const specRef = typeof typed.openapi?.specRef === "string" ? typed.openapi.specRef : undefined;
+    const operationId = typeof typed.openapi?.operationId === "string" ? typed.openapi.operationId : undefined;
     if (!specRef || !operationId) continue;
 
     const targetUri = new URL(specRef, entryUri).href;
-    if (!opIdCache.has(targetUri)) {
+    if (!documentCache.has(targetUri)) {
       try {
-        const text = await load(targetUri);
-        opIdCache.set(targetUri, collectOperationIds(parseYaml(text)));
+        documentCache.set(targetUri, parseYaml(await load(targetUri)));
       } catch {
-        opIdCache.set(targetUri, null);
+        documentCache.set(targetUri, null);
       }
     }
-    const ids = opIdCache.get(targetUri);
-    if (ids === null) {
-      warnings.push({
-        stage: "openapi",
-        path: `/screen/apiBindings/${key}`,
-        message: `apiBinding "${key}" の specRef を取得できません: ${specRef}`,
+    const document = documentCache.get(targetUri);
+    const path = `/screen/apiBindings/${key}`;
+    if (document === null) {
+      warnings.push({ stage: "openapi", path, message: `apiBinding "${key}" の specRef を取得できません: ${specRef}` });
+      continue;
+    }
+    const ids = collectOperationIds(document);
+    if (!ids.has(operationId)) {
+      warnings.push({ stage: "openapi", path, message: `apiBinding "${key}" の operationId "${operationId}" が ${specRef} に見つかりません。` });
+      continue;
+    }
+    for (const [target, source] of Object.entries(typed.response?.mapping ?? {})) {
+      if (typeof source !== "string") continue;
+      const exists = hasResponsePath(document, operationId, source);
+      if (exists === false) issues.push({
+        stage: "openapi", path: `${path}/response/mapping/${target}`,
+        message: `apiBinding "${key}" のresponse path "${source}" がoperation "${operationId}"の2xx JSONレスポンスに存在しません。`,
       });
-    } else if (ids && !ids.has(operationId)) {
-      warnings.push({
-        stage: "openapi",
-        path: `/screen/apiBindings/${key}`,
-        message: `apiBinding "${key}" の operationId "${operationId}" が ${specRef} に見つかりません。`,
+      else if (exists === undefined) warnings.push({
+        stage: "openapi", path: `${path}/response/mapping/${target}`,
+        message: `apiBinding "${key}" のresponse path "${source}" はOpenAPIから検証できません。`,
       });
     }
   }
-  return warnings;
+  return { issues, warnings };
 }
 
 /**
@@ -193,7 +206,9 @@ export async function validateSpec(
 
   // 段5: OpenAPI 参照（specRef の operationId 検証）
   if (screen !== undefined) {
-    warnings.push(...(await checkOpenApiRefs(screen, entryUri, load)));
+    const openapiDiagnostics = await checkOpenApiRefs(screen, entryUri, load);
+    issues.push(...openapiDiagnostics.issues);
+    warnings.push(...openapiDiagnostics.warnings);
   }
 
   return { valid: issues.length === 0, issues, warnings };

@@ -90,6 +90,37 @@ function firstSuccessResponse(responses: unknown): unknown {
   return undefined;
 }
 
+function responseSchema(openapi: unknown, operationId: string): unknown {
+  if (!isObject(openapi) || !isObject(openapi.paths)) return undefined;
+  for (const item of Object.values(openapi.paths)) {
+    if (!isObject(item)) continue;
+    for (const method of HTTP_METHODS) {
+      const op = item[method];
+      if (isObject(op) && op.operationId === operationId) return jsonSchema(openapi, firstSuccessResponse(op.responses));
+    }
+  }
+  return undefined;
+}
+
+/** 2xx JSONレスポンス内にproperty pathが存在するか。検証不能ならundefined。 */
+export function hasResponsePath(openapi: unknown, operationId: string, path: string): boolean | undefined {
+  let current = responseSchema(openapi, operationId);
+  if (current === undefined) return undefined;
+  for (const part of path.split(".")) {
+    current = deref(openapi, current);
+    if (!isObject(current)) return undefined;
+    if (typeof current.$ref === "string") return undefined;
+    if (current.type === "array") {
+      current = deref(openapi, current.items);
+      if (!isObject(current) || typeof current.$ref === "string") return undefined;
+    }
+    if (!isObject(current.properties)) return current.type === "object" ? false : undefined;
+    if (!(part in current.properties)) return false;
+    current = current.properties[part];
+  }
+  return true;
+}
+
 /** operationId で operation を検索し、要約情報を返す。見つからなければ undefined。 */
 export function findOperation(openapi: unknown, operationId: string): OpenApiOperation | undefined {
   if (!isObject(openapi) || !isObject(openapi.paths)) return undefined;

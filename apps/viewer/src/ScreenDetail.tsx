@@ -17,7 +17,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate }: Props) {
     { id: 'params', label: 'パラメータ', show: !!screen.params },
     { id: 'access', label: '権限', show: !!screen.accessControl },
     { id: 'states', label: '状態遷移', show: !!screen.stateMachine },
-    { id: 'api', label: 'API 連携', show: screen.apiBindings.length > 0 },
+    { id: 'api', label: 'API 連携', show: screen.apiBindings.length > 0 || screen.screenData.length > 0 },
     { id: 'transitions', label: '画面遷移', show: screen.transitions.length > 0 },
     { id: 'tests', label: `テスト項目 (${screen.testItems.length})`, show: screen.testItems.length > 0 },
     { id: 'raw', label: 'Raw YAML', show: true },
@@ -446,12 +446,14 @@ function AccessTab({
 }
 
 function ApiTab({ screen }: { screen: ScreenView }) {
+  const diagnostics = screen.diagnostics.filter((item) => item.stage === "openapi" || item.path.includes("/apiBindings/") || item.message.includes("Screen Data"))
   return (
     <section>
+      {screen.screenData.length ? <section className="binding"><h3>Screen Data</h3><ul className="rules">{screen.screenData.map((data) => <li key={data.key}><code>data.{data.key}</code>{data.description ? ` — ${data.description}` : ""}<div>{data.producers.length ? data.producers.map((producer) => <span key={`${producer.apiBinding}:${producer.responsePath}`}><code>api.{producer.apiBinding}</code> → <code>{producer.responsePath}</code>{" "}{producer.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}{producer.pathStatus === "invalid" ? <span className="badge badge-ng">path不正</span> : null}{producer.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}</span>) : <span className="badge badge-ng">供給元なし</span>}</div></li>)}</ul></section> : null}
+      {diagnostics.length ? <section><h3>API／Screen Data診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === "error" ? "badge-ng" : "badge-warning"}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
       {screen.apiBindings.map((b) => {
         const op = b.operation
         const reqFields = new Set(op?.requestFields ?? [])
-        const resFields = new Set(op?.responseFields ?? [])
         const queryParams = new Set(op?.parameters.filter((p) => p.in === 'query').map((p) => p.name))
         const pathParams = new Set(op?.parameters.filter((p) => p.in === 'path').map((p) => p.name))
         const requestKnown = (scope: string, key: string): boolean => {
@@ -544,16 +546,14 @@ function ApiTab({ screen }: { screen: ScreenView }) {
                   <span className="muted">—</span>
                 ) : (
                   <ul className="rules">
-                    {b.responseMappings.map((m, i) => {
-                      const top = m.expr.split('.')[0]
-                      const known = resFields.has(m.field) || resFields.has(top)
-                      return (
-                        <li key={i}>
-                          <code>{m.field}</code> ← <code>{m.expr}</code>
-                          {op && !known ? <span className="mapping-error">OpenAPIレスポンスに存在しない項目</span> : null}
-                        </li>
-                      )
-                    })}
+                    {b.responseMappings.map((m, i) => (
+                      <li key={i}>
+                        <code>{m.target}</code> ← <code>{m.expr}</code>{" "}
+                        {m.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}
+                        {m.pathStatus === "invalid" ? <span className="mapping-error">OpenAPIレスポンスに存在しないpath</span> : null}
+                        {m.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}
+                      </li>
+                    ))}
                   </ul>
                 )}
                 {op ? (

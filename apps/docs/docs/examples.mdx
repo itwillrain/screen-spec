@@ -5,7 +5,7 @@ description: サンプル YAML（common.yaml と user-edit.screen.yaml）の解�
 
 # Examples
 
-リポジトリの `examples/` にある 2 ファイルは、v0.1 の機能を一通り示すサンプルです。
+リポジトリの `examples/` には、画面、共通Component、OpenAPI、testDataのサンプルがあります。
 
 ## common.yaml（共通コンポーネント）
 
@@ -41,7 +41,7 @@ components:
 ## user-edit.screen.yaml（画面）
 
 `fields` はマップで、キー（`name` / `email` / `role`）が識別子・記述順が表示順です。
-`email` は外部コンポーネントを純粋参照、`role.options` は選択肢リストを参照しています。
+`email`は外部Componentを純粋参照し、`role`の動的Optionsは`getUser → data.roleOptions → role.options`として接続します。Viewerではこの供給経路とOpenAPI response pathの照合結果を確認できます。
 
 ```yaml
 specVersion: "0.1"
@@ -65,10 +65,35 @@ screen:
     role:
       label: ロール
       type: select
+      placeholder: ロールを選択
+
+  data:
+    roleOptions:
+      schema:
+        type: array
+        items:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+
+  fieldBindings:
+    role:
       options:
-        $ref: "./common.yaml#/components/options/RoleOptions"
-      permission:
-        editRoles: [admin]
+        source: data.roleOptions
+        item: { value: id, label: name }
+      loading:
+        source: api.getUser.loading
+
+  apiBindings:
+    getUser:
+      openapi:
+        operationId: getUserById
+        specRef: ./openapi/users.yaml
+      response:
+        mapping:
+          fields.role: data.role
+          data.roleOptions: roleOptions
 ```
 
 ## 検証してみる

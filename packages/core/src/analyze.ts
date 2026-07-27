@@ -379,11 +379,12 @@ function analyzeFieldDefaults(s: ScreenLike, diagnostics: Diagnostic[]): void {
 
 /** apiBindings の request/response 式・マッピングを検査する（決定 #11）。 */
 function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
-  const bindings = s.apiBindings;
-  if (!bindings) return;
+  const bindings = s.apiBindings ?? {};
   const fieldKeys = new Set(Object.keys(s.fields ?? {}));
   const { pathParams, queryParams } = paramSets(s);
   const ctx: RefContext = { fieldKeys, pathParams, queryParams };
+
+  const dataProducers = new Map<string, string[]>();
 
   for (const [key, b] of Object.entries(bindings)) {
     for (const scope of ["path", "query", "body"] as const) {
@@ -403,6 +404,9 @@ function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
         });
       } else if (target.startsWith("data.")) {
         const dataId = target.slice("data.".length);
+        const producers = dataProducers.get(dataId) ?? [];
+        producers.push(key);
+        dataProducers.set(dataId, producers);
         if (!(dataId in (s.data ?? {}))) diagnostics.push({
           severity: "error", code: "unknown-data-in-mapping",
           message: `apiBinding "${key}" の response.mapping が未定義のScreen Data "${dataId}" を指しています。`, where: dataId,
@@ -419,6 +423,18 @@ function analyzeApiExpressions(s: ScreenLike, diagnostics: Diagnostic[]): void {
         });
       }
     }
+  }
+
+  for (const dataId of Object.keys(s.data ?? {})) {
+    const producers = dataProducers.get(dataId) ?? [];
+    if (producers.length === 0) diagnostics.push({
+      severity: "error", code: "screen-data-without-producer",
+      message: `Screen Data "${dataId}" にresponse mappingの供給元がありません。`, where: dataId,
+    });
+    else if (producers.length > 1) diagnostics.push({
+      severity: "error", code: "screen-data-multiple-producers",
+      message: `Screen Data "${dataId}" に複数の供給元があります: ${producers.join(", ")}。`, where: dataId,
+    });
   }
 }
 

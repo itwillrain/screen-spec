@@ -18,7 +18,7 @@ import {
   type DocumentLoader,
 } from "../src/index.js";
 import { validateDocument, resolveDocument, nodeFileLoader, fileUri } from "../src/node.js";
-import { findOperation } from "../src/openapi.js";
+import { findOperation, hasResponsePath } from "../src/openapi.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const examples = resolve(here, "../../../examples");
@@ -266,10 +266,26 @@ describe("Field Binding解析（ADR 0009）", () => {
   it("動的Optionsとloadingの正しい契約は診断なし", () => {
     const screen = {
       fields: { role: { type: "select" } }, data,
-      apiBindings: { getRoles: {} },
+      apiBindings: { getRoles: { response: { mapping: { "data.roles": "roles" } } } },
       fieldBindings: { role: { options: { source: "data.roles", item: { value: "id", label: "name" } }, loading: { source: "api.getRoles.loading" } } },
     };
     expect(analyzeScreen(screen)).toEqual([]);
+  });
+
+  it("供給元がないScreen Dataはerror", () => {
+    const diagnostics = analyzeScreen({ data });
+    expect(diagnostics).toContainEqual(expect.objectContaining({ severity: "error", code: "screen-data-without-producer", where: "roles" }));
+  });
+
+  it("複数APIが同じScreen Dataを供給するとerror", () => {
+    const diagnostics = analyzeScreen({
+      data,
+      apiBindings: {
+        first: { response: { mapping: { "data.roles": "roles" } } },
+        second: { response: { mapping: { "data.roles": "roles" } } },
+      },
+    });
+    expect(diagnostics).toContainEqual(expect.objectContaining({ severity: "error", code: "screen-data-multiple-producers", where: "roles" }));
   });
 
   it("静的・動的Options競合と不正な参照はerror", () => {
@@ -580,6 +596,43 @@ screen:
     const r = await validateSpec(text, `${BASE}screen.yaml`, loaderFor(text));
     expect(r.valid).toBe(true);
     expect(r.warnings).toEqual([]);
+  });
+
+  it("存在しないresponse pathはopenapi error", async () => {
+    const richApi = `openapi: 3.1.0
+info: { title: t, version: 1.0.0 }
+paths:
+  /x:
+    get:
+      operationId: getIt
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      name: { type: string }`;
+    const text = `specVersion: "0.1"
+screen:
+  id: s
+  name: S
+  fields:
+    name: { label: Name, type: text }
+  apiBindings:
+    a:
+      openapi: { operationId: getIt, specRef: ./api.yaml }
+      response:
+        mapping:
+          fields.name: data.missing`;
+    const loader: DocumentLoader = (uri) => uri.endsWith("api.yaml") ? richApi : text;
+    const result = await validateSpec(text, `${BASE}screen.yaml`, loader);
+    expect(result.valid).toBe(false);
+    expect(result.issues).toContainEqual(expect.objectContaining({ stage: "openapi", path: "/screen/apiBindings/a/response/mapping/fields.name" }));
   });
 
   it("operationId が無ければ openapi warning", async () => {
@@ -928,6 +981,13 @@ describe("findOperation（OpenAPI 解決）", () => {
     ]);
     // $ref(UserListResponse) → { data, total }
     expect(list?.responseFields).toEqual(["data", "total"]);
+  });
+
+  it("response property pathを内部ref越しに検証する", () => {
+    const doc = parseYaml(readFileSync(example("openapi/users.yaml"), "utf8"));
+    expect(hasResponsePath(doc, "getUserById", "data.name")).toBe(true);
+    expect(hasResponsePath(doc, "getUserById", "data.missing")).toBe(false);
+    expect(hasResponsePath(doc, "getUserById", "roleOptions.name")).toBe(true);
   });
 
   it("未知 operationId は undefined", () => {

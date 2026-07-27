@@ -13,6 +13,10 @@ testData:
           name: 田中太郎
           email: taro@example.com
           role: editor
+        roleOptions:
+          - { id: admin, name: 管理者 }
+          - { id: editor, name: 編集者 }
+          - { id: viewer, name: 閲覧者 }
       expected:
         fields:
           name: 田中太郎
@@ -28,6 +32,10 @@ testData:
           name: 佐藤花子
           email: hanako@example.com
           role: admin
+        roleOptions:
+          - { id: admin, name: 管理者 }
+          - { id: editor, name: 編集者 }
+          - { id: viewer, name: 閲覧者 }
       expected:
         fields:
           role: admin

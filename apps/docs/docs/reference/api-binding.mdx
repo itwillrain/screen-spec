@@ -21,15 +21,15 @@ description: 画面が呼ぶ API と項目マッピングの定義。
 | キー | 型 | 必須 | 説明 |
 |---|---|---|---|
 | `operationId` | string | ✔ | OpenAPI の operationId |
-| `specRef` | string | ✔ | OpenAPI 定義への参照（ローカル相対パス。v0.1 では未解決） |
+| `specRef` | string | ✔ | OpenAPI定義への参照（ローカル相対パス） |
 
 ### ExpressionMap / ResponseMapping
 
 `request.path/query/body` のExpressionMapは「API フィールド → 式」、
 `response.mapping` のResponseMappingは「`fields.<fieldId>` または `data.<dataId>` → APIレスポンスのパス」。裸のField IDは互換形式です。
 
-- `{screen.route.userId}` / `{fields.name}` / `data.name`
-- v0.1 では式を**パースしません**（文字列保持）
+- request: `{screen.route.userId}` / `{fields.name}`（テンプレート式として構文と参照を検証）
+- response: `data.name`（OpenAPIの2xx JSONレスポンスに存在するproperty pathか検証）
 
 ## 例
 

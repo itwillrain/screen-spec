@@ -5,6 +5,7 @@ import {
   resolveRefs,
   validateSpec,
   findOperation,
+  hasResponsePath,
   generateTestItems,
   type DocumentLoader,
   type OpenApiOperation,
@@ -42,7 +43,7 @@ export interface FieldView {
   default?: unknown;
   placeholder?: string;
   binding?: {
-    options?: { source: string; valuePath: string; labelPath: string; apiBinding?: string; responsePath?: string };
+    options?: { source: string; valuePath: string; labelPath: string; apiBinding?: string; responsePath?: string; pathStatus?: "valid" | "invalid" | "unverifiable" };
     loading?: { source: string };
   };
   design?: DesignView;
@@ -135,12 +136,18 @@ export interface EventView {
   branches: EventBranchView[];
 }
 
+export interface ScreenDataView {
+  key: string;
+  description?: string;
+  producers: Array<{ apiBinding: string; responsePath: string; pathStatus?: "valid" | "invalid" | "unverifiable" }>;
+}
+
 export interface ApiBindingView {
   key: string;
   operationId: string;
   specRef: string;
   requestMappings: Array<{ scope: string; key: string; expr: string }>;
-  responseMappings: Array<{ field: string; expr: string }>;
+  responseMappings: Array<{ target: string; expr: string; pathStatus?: "valid" | "invalid" | "unverifiable" }>;
   /** specRef を解決した絶対 URL（Redoc/Swagger UI 連携用） */
   specUrl?: string;
   /** specRef を解決して得た実 operation（見つかれば） */
@@ -199,6 +206,7 @@ export interface ScreenView {
   stateMachine?: StateMachineView;
   events: EventView[];
   apiBindings: ApiBindingView[];
+  screenData: ScreenDataView[];
   transitions: TransitionView[];
   testItems: TestItem[];
   warnings: string[];
@@ -369,6 +377,7 @@ interface SpecDoc {
       >;
     };
     fields?: Record<string, RawField>;
+    data?: Record<string, { description?: string; schema?: unknown }>;
     fieldBindings?: Record<string, RawFieldBinding>;
     states?: Record<string, RawState>;
     events?: Record<string, RawEvent>;
@@ -407,8 +416,8 @@ function buildApiBindings(screen: SpecDoc["screen"]): ApiBindingView[] {
         }
       }
     }
-    const responseMappings = Object.entries(b.response?.mapping ?? {}).map(([field, expr]) => ({
-      field,
+    const responseMappings = Object.entries(b.response?.mapping ?? {}).map(([target, expr]) => ({
+      target,
       expr: String(expr),
     }));
     return {
@@ -565,11 +574,24 @@ export async function buildScreenView(
       const url = new URL(b.specRef, entryUri).href;
       b.specUrl = url;
       if (!openapiCache.has(url)) openapiCache.set(url, parseYaml(await load(url)));
-      b.operation = findOperation(openapiCache.get(url), b.operationId);
+      const openapi = openapiCache.get(url);
+      b.operation = findOperation(openapi, b.operationId);
+      for (const mapping of b.responseMappings) {
+        const exists = hasResponsePath(openapi, b.operationId, mapping.expr);
+        mapping.pathStatus = exists === true ? "valid" : exists === false ? "invalid" : "unverifiable";
+      }
     } catch {
       // 取得/解決に失敗しても表示は継続（検証側で warning 済み）
     }
   }
+
+  const screenData: ScreenDataView[] = Object.entries(resolved.screen?.data ?? {}).map(([key, data]) => ({
+    key,
+    description: data.description,
+    producers: apiBindings.flatMap((api) => api.responseMappings
+      .filter((mapping) => mapping.target === `data.${key}`)
+      .map((mapping) => ({ apiBinding: api.key, responsePath: mapping.expr, pathStatus: mapping.pathStatus }))),
+  }));
 
   const rawFields = raw.screen?.fields ?? {};
   const resolvedFields = resolved.screen?.fields ?? {};
@@ -582,7 +604,7 @@ export async function buildScreenView(
     const fieldBinding = resolved.screen?.fieldBindings?.[key];
     const optionsSource = fieldBinding?.options?.source;
     const dataTarget = optionsSource?.startsWith("data.") ? optionsSource : undefined;
-    const producer = dataTarget ? apiBindings.flatMap((api) => api.responseMappings.map((mapping) => ({ api, mapping }))).find(({ mapping }) => mapping.field === dataTarget) : undefined;
+    const producer = dataTarget ? apiBindings.flatMap((api) => api.responseMappings.map((mapping) => ({ api, mapping }))).find(({ mapping }) => mapping.target === dataTarget) : undefined;
     const binding = fieldBinding ? {
       options: fieldBinding.options && optionsSource ? {
         source: optionsSource,
@@ -590,6 +612,7 @@ export async function buildScreenView(
         labelPath: String(fieldBinding.options.item?.label ?? ""),
         apiBinding: producer?.api.key,
         responsePath: producer?.mapping.expr,
+        pathStatus: producer?.mapping.pathStatus,
       } : undefined,
       loading: fieldBinding.loading?.source ? { source: fieldBinding.loading.source } : undefined,
     } : undefined;
@@ -650,6 +673,7 @@ export async function buildScreenView(
     stateMachine: buildStateMachine(resolved.screen),
     events: buildEvents(resolved.screen),
     apiBindings,
+    screenData,
     transitions: Object.entries(resolved.screen?.transitions ?? {}).map(([key, t]) => ({
       key,
       to: String(t.to ?? ""),
