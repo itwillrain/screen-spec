@@ -830,3 +830,29 @@ html[data-theme="dark"] :where(.sidebar-collapse, .sidebar-current) {
 @media (forced-colors: active) {
   .sidebar-collapse, .sidebar-current { border: 1px solid ButtonText; }
 }
+
+/* Layout spacing corrections */
+.page-head + .warnings {
+  margin-top: 1rem;
+}
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 1100px) {
+  .field-review-workspace {
+    display: block;
+    min-height: 0;
+  }
+  .pane-resizer {
+    display: none;
+  }
+  .design-reference {
+    padding: 0 0 1rem;
+  }
+  .field-review-main {
+    padding-left: 0;
+  }
+}
