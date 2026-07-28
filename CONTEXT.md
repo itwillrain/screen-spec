@@ -13,7 +13,7 @@ _Avoid_: Screen definition, UI config
 _Avoid_: Input（入力要素だけを指す場合を除く）
 
 **Component**:
-`components`配下に名前付きで登録された、取得元に依存しない再利用可能な完全な仕様契約。実際の参照回数ではなく、登録された再利用意図によってComponentとなる。
+`components`配下に名前付きで登録された、取得元に依存しない再利用可能な仕様定義。実際の参照回数ではなく、登録された再利用意図によってComponentとなる。
 _Avoid_: Template, Base Component, React Component
 
 **Component Identity**:
