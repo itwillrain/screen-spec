@@ -52,6 +52,7 @@
         "design": { "$ref": "#/$defs/Design" },
         "layout": { "$ref": "#/$defs/Layout" },
         "fields": { "$ref": "#/$defs/FieldMap" },
+        "ui": { "$ref": "#/$defs/UIInstanceMap" },
         "data": { "$ref": "#/$defs/ScreenDataMap" },
         "fieldBindings": { "$ref": "#/$defs/FieldBindingMap" },
         "states": { "$ref": "#/$defs/StateMap" },
@@ -245,7 +246,7 @@
         }
       ],
       "properties": {
-        "trigger": { "type": "string" },
+        "trigger": { "oneOf": [{ "type": "string" }, { "$ref": "#/$defs/ComponentEventTrigger" }] },
         "target": { "type": "string" },
         "from": { "type": "string", "description": "遷移元の状態キー" },
         "to": { "type": "string", "description": "Linear Eventの遷移先状態キー" },
@@ -258,6 +259,16 @@
         "action": { "$ref": "#/$defs/EventAction" },
         "onSuccess": { "$ref": "#/$defs/EventOutcome" },
         "onError": { "$ref": "#/$defs/ErrorOutcome" }
+      }
+    },
+
+    "ComponentEventTrigger": {
+      "type": "object",
+      "required": ["component", "event"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "event": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" }
       }
     },
 
@@ -538,6 +549,51 @@
       }
     },
 
+    "UIInstanceMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$" },
+      "additionalProperties": { "$ref": "#/$defs/UIInstance" }
+    },
+    "UIInstance": {
+      "type": "object",
+      "required": ["component"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "oneOf": [{ "$ref": "#/$defs/refObject" }, { "$ref": "#/$defs/UIComponent" }] },
+        "bindings": { "$ref": "#/$defs/UIBindingMap" },
+        "events": { "type": "object", "additionalProperties": { "type": "string" } },
+        "visibleWhen": { "type": "string" }
+      }
+    },
+    "UIBindingMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIBinding" } },
+    "UIBinding": {
+      "type": "object", "additionalProperties": false,
+      "oneOf": [{ "required": ["source"] }, { "required": ["value"] }],
+      "properties": { "source": { "type": "string" }, "value": true }
+    },
+    "UIComponent": {
+      "type": "object", "required": ["name", "inputs", "events"], "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" }, "description": { "type": "string" },
+        "inputs": { "$ref": "#/$defs/UIInputMap" }, "events": { "$ref": "#/$defs/UIContractEventMap" },
+        "parts": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UISemanticPart" } },
+        "rules": { "type": "array", "items": { "$ref": "#/$defs/UIRule" } },
+        "derived": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIDerivedValue" } },
+        "accessibility": { "type": "object", "minProperties": 1, "additionalProperties": true },
+        "responsive": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "UIInputMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIInput" } },
+    "UIInput": {
+      "type": "object", "required": ["type"], "additionalProperties": false,
+      "properties": { "type": { "type": "string", "enum": ["null", "boolean", "object", "array", "number", "integer", "string"] }, "required": { "type": "boolean" }, "default": true, "description": { "type": "string" }, "items": { "$ref": "#/$defs/UIInput" }, "properties": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIInput" } } }
+    },
+    "UIContractEventMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIContractEvent" } },
+    "UIContractEvent": { "type": "object", "additionalProperties": false, "properties": { "required": { "type": "boolean" }, "description": { "type": "string" }, "payload": { "$ref": "#/$defs/UIInputMap" } } },
+    "UISemanticPart": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "type": "string" }, "description": { "type": "string" } } },
+    "UIRule": { "type": "object", "required": ["when", "target"], "additionalProperties": false, "properties": { "when": { "type": "string" }, "target": { "type": "string" }, "visible": { "type": "boolean" }, "enabled": { "type": "boolean" }, "description": { "type": "string" } } },
+    "UIDerivedValue": { "type": "object", "required": ["type", "expression"], "additionalProperties": false, "properties": { "type": { "type": "string" }, "expression": { "type": "string" } } },
+
     "Params": {
       "title": "画面パラメータ（path / query）",
       "type": "object",
@@ -587,8 +643,8 @@
 
     "LayoutSection": {
       "type": "object",
-      "required": ["fields"],
       "additionalProperties": false,
+      "anyOf": [{ "required": ["fields"] }, { "required": ["items"] }],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
         "title": { "type": "string" },
@@ -601,6 +657,15 @@
         "fields": {
           "type": "array",
           "items": { "type": "string", "description": "配置するフィールドのキー" }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "object", "required": ["field"], "additionalProperties": false, "properties": { "field": { "type": "string" } } },
+              { "type": "object", "required": ["component"], "additionalProperties": false, "properties": { "component": { "type": "string" } } }
+            ]
+          }
         }
       }
     },
@@ -799,6 +864,11 @@
             "description": "PascalCase"
           },
           "additionalProperties": { "$ref": "#/$defs/FieldOrRef" }
+        },
+        "ui": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Z][A-Za-z0-9]*$", "description": "PascalCase" },
+          "additionalProperties": { "$ref": "#/$defs/UIComponent" }
         },
         "options": {
           "type": "object",

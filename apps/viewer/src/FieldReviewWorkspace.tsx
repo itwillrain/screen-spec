@@ -65,9 +65,10 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   })
   const initialField = queryValue('field')
   const [selectedKey, setSelectedKey] = useState(() => screen.fields.some((field) => field.key === initialField) ? initialField : undefined)
+  const [selectedInstanceKey, setSelectedInstanceKey] = useState(() => queryValue("instance"))
   const [componentTrail, setComponentTrail] = useState<string[]>(() => {
     const target = queryValue("component")
-    return target && initialField ? shortestComponentPath(screen, initialField, target) : []
+    return target && initialField ? shortestComponentPath(screen, initialField, target) : target && queryValue("instance") ? [target] : []
   })
   const detailHeading = useRef<HTMLHeadingElement>(null)
   const [panePercent, setPanePercent] = useState(() => Number(localStorage.getItem(PANE_KEY)) || 40)
@@ -104,16 +105,26 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   })
 
   const selected = enriched.find(({ field }) => field.key === selectedKey)
+  const selectedInstance = screen.uiInstances.find((instance) => instance.key === selectedInstanceKey)
   const selectField = (key: string) => {
+    setSelectedInstanceKey(undefined)
     setSelectedKey(key)
     setComponentTrail([])
-    setQuery({ field: key, component: undefined })
+    setQuery({ field: key, instance: undefined, component: undefined })
+    requestAnimationFrame(() => detailHeading.current?.focus())
+  }
+  const selectInstance = (key: string) => {
+    setSelectedKey(undefined)
+    setSelectedInstanceKey(key)
+    setComponentTrail([])
+    setQuery({ field: undefined, instance: key, component: undefined })
     requestAnimationFrame(() => detailHeading.current?.focus())
   }
   const closeDetail = () => {
+    setSelectedInstanceKey(undefined)
     setSelectedKey(undefined)
     setComponentTrail([])
-    setQuery({ field: undefined, component: undefined })
+    setQuery({ field: undefined, instance: undefined, component: undefined })
   }
   const openComponent = (id: string) => {
     setComponentTrail((trail) => trail.length ? [...trail, id] : [id])
@@ -145,11 +156,11 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape' && componentTrail.length) backDetail()
-      else if (event.key === 'Escape' && selectedKey) closeDetail()
+      else if (event.key === 'Escape' && (selectedKey || selectedInstanceKey)) closeDetail()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedKey, componentTrail])
+  }, [selectedKey, selectedInstanceKey, componentTrail])
 
   const startResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -215,6 +226,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
         {hasDesign && !designCollapsed ? <DesignReference screen={screen} /> : null}
         {hasDesign && !designCollapsed ? <div className="pane-resizer" role="separator" tabIndex={0} aria-label="デザインペインの幅" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={60} aria-valuenow={Math.round(panePercent)} onPointerDown={startResize} onKeyDown={onResizeKeyDown} /> : null}
         <div className="field-review-main">
+          {screen.layout ? <section className="screen-outline" aria-labelledby="screen-outline-title"><div className="detail-section-head"><h2 id="screen-outline-title">Screen Outline</h2><span className="muted">定義順</span></div><ol>{screen.layout.sections.map((section, sectionIndex) => <li key={section.id ?? sectionIndex}><div className="screen-outline-section"><span className="badge badge-region">{section.region ?? "body"}</span><strong>{section.title ?? section.id ?? `Section ${sectionIndex + 1}`}</strong></div><ol>{section.items.map((item) => <li key={item.kind + item.key}>{item.kind === "field" ? <button type="button" className="screen-outline-item" onClick={() => selectField(item.key)}><span>Field</span><code>{item.key}</code><span>{screen.fields.find((field) => field.key === item.key)?.label}</span></button> : <button type="button" className="screen-outline-item" onClick={() => selectInstance(item.key)}><span>UI Component</span><code>{item.key}</code><span>{componentName(screen.uiInstances.find((instance) => instance.key === item.key)?.componentId ?? item.key)}</span></button>}</li>)}</ol></li>)}</ol></section> : null}
           <FieldFilters
             filter={filter} setFilter={setFilter}
             types={types} typeFilter={typeFilter} setTypeFilter={setTypeFilter}
@@ -248,7 +260,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
             </table>
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致するFieldはありません。</p> : null}
-          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
+          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} screen={screen} headingRef={detailHeading} onClose={closeDetail} onOpenComponent={openComponent} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -312,6 +324,22 @@ function DesignReference({ screen }: { screen: ScreenView }) {
   </aside>
 }
 
+function UIInstanceDetail({ instance, screen, headingRef, onClose, onOpenComponent, drawerWidth, onResizeStart, onResizeKeyDown }: {
+  instance: UIInstanceView; screen: ScreenView; headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenComponent: (id: string) => void; drawerWidth: number; onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
+}) {
+  const component = screen.componentGraph.components.find((item) => item.id === instance.componentId)
+  const placement = screen.layout?.sections.find((section) => section.items.some((item) => item.kind === "component" && item.key === instance.key))
+  return <section className="field-detail" role="complementary" aria-labelledby="instance-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
+    <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component Instance詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
+    <header><div><p className="eyebrow">component instance</p><h2 id="instance-detail-title" ref={headingRef} tabIndex={-1}><code>{instance.key}</code></h2><p className="component-identity">{component?.name ?? componentName(instance.componentId ?? instance.componentRef ?? "Unknown")}</p></div><button type="button" onClick={onClose}>閉じる</button></header>
+    <dl className="field-detail-grid"><Detail label="Section" value={placement?.title ?? placement?.id} /><Detail label="Region" value={placement?.region ?? "body"} /><Detail label="Input Binding" value={String(instance.bindings.length)} /><Detail label="Event Mapping" value={String(instance.events.length)} /></dl>
+    {instance.componentId ? <section><h3>UI Component</h3><button type="button" className="component-link" onClick={() => onOpenComponent(instance.componentId!)}><span>Contractを開く</span><code>{component?.name ?? componentName(instance.componentId)}</code></button></section> : null}
+    {instance.bindings.length ? <section><h3>Input Bindings</h3><ul className="instance-mappings">{instance.bindings.map((binding) => <li key={binding.input}><code>{binding.input}</code><span aria-hidden="true"> ← </span>{binding.source ? <code>{binding.source}</code> : <code>{displayValue(binding.value)}</code>}</li>)}</ul></section> : null}
+    {instance.events.length ? <section><h3>Event Mappings</h3><ul className="instance-mappings">{instance.events.map((event) => <li key={event.contractEvent}><code>{event.contractEvent}</code><span aria-hidden="true"> → </span><code>{event.screenEvent}</code></li>)}</ul></section> : null}
+    {instance.visibleWhen ? <section><h3>表示条件</h3><code>{instance.visibleWhen}</code></section> : null}
+  </section>
+}
+
 function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenComponent, componentUsages, drawerWidth, onResizeStart, onResizeKeyDown }: {
   item: { field: FieldView; events: EventView[]; diagnostics: DiagnosticView[] }; section?: string
   headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenTab: (tab: string) => void
@@ -365,6 +393,12 @@ function ComponentDetail({ componentId, componentTrail, screen, fieldId, heading
   const diagnostics = screen.componentGraph.diagnostics.filter((item) => item.where === component.id || item.where?.includes(component.uri + component.pointer) || item.message.includes(component.id))
   const contract = asRecord(component.contract)
   const validations = Array.isArray(contract?.validations) ? contract.validations : []
+  const uiInputs = asRecord(contract?.inputs) ?? {}
+  const uiEvents = asRecord(contract?.events) ?? {}
+  const uiParts = asRecord(contract?.parts) ?? {}
+  const uiDerived = asRecord(contract?.derived) ?? {}
+  const uiRules = Array.isArray(contract?.rules) ? contract.rules : []
+  const instanceImpacts = screen.componentGraph.instanceImpacts.filter((impact) => impact.componentId === componentId)
   const options = component.kind === "options" && Array.isArray(component.contract) ? component.contract : Array.isArray(contract?.options) ? contract.options : []
   const filteredOptions = options.filter((item) => { const row = asRecord(item); const query = optionQuery.toLowerCase(); return !query || String(row?.value ?? "").toLowerCase().includes(query) || String(row?.label ?? "").toLowerCase().includes(query) })
   const dependencyButton = (id: string, label = "dependency") => <button key={id + label} type="button" className="component-link" onClick={() => onOpenComponent(id)}><span>{label}</span><code>{componentName(id)}</code></button>
@@ -372,17 +406,19 @@ function ComponentDetail({ componentId, componentTrail, screen, fieldId, heading
   return <section className="field-detail" role="complementary" aria-labelledby="component-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
     <header><div><nav aria-label="詳細のパンくず"><button type="button" className="link" onClick={() => onBackTo(-1)}><code>{fieldId}</code></button>{componentTrail.map((id, index) => <span key={id + index}><span aria-hidden="true"> / </span>{index === componentTrail.length - 1 ? <span aria-current="page">{componentName(id)}</span> : <button type="button" className="link" onClick={() => onBackTo(index)}>{componentName(id)}</button>}</span>)}</nav><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <button type="button" className="link" onClick={() => void navigator.clipboard?.writeText(component.id)}>参照をコピー</button></p></div><div className="detail-actions"><button type="button" onClick={onBack}>戻る</button><button type="button" onClick={onClose}>閉じる</button></div></header>
-    <dl className="component-metrics"><Detail label="直接参照" value={String(usages.length)} /><Detail label="影響Field" value={String(impacts.length)} /><Detail label="依存Component" value={String(dependencyIds.length)} /></dl>
+    <dl className="component-metrics"><Detail label="直接参照" value={String(usages.length)} /><Detail label={component.kind === "ui" ? "影響Instance" : "影響Field"} value={String(component.kind === "ui" ? instanceImpacts.length : impacts.length)} /><Detail label="依存Component" value={String(dependencyIds.length)} /></dl>
     <section><h3>Contract</h3>
       {component.kind === "field" && contract ? <><dl className="field-detail-grid">{typeof contract.label === "string" ? <Detail label="ラベル" value={contract.label} /> : null}{typeof contract.type === "string" ? <Detail label="型" value={contract.type} code /> : null}{typeof contract.text === "string" ? <Detail label="文言" value={contract.text} /> : null}{typeof contract.required === "boolean" ? <Detail label="必須" value={contract.required ? "必須" : "任意"} /> : null}{contract.default !== undefined ? <Detail label="既定値" value={displayValue(contract.default)} code /> : null}{typeof contract.placeholder === "string" ? <Detail label="プレースホルダー" value={contract.placeholder} /> : null}</dl>{validations.length ? <section><h4>Validation</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "validation").map((usage) => dependencyButton(usage.componentId, "validation"))}</div>{validations.filter((item) => !asRecord(item)?.$ref).map((item, index) => <pre key={index} className="contract-inline"><code>{stringifyYaml(item)}</code></pre>)}</section> : null}{contract.options !== undefined ? <section><h4>Options</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "options").map((usage) => dependencyButton(usage.componentId, "options"))}</div></section> : null}</> : null}
       {component.kind === "validation" && contract ? <dl className="field-detail-grid"><Detail label="rule" value={typeof contract.rule === "string" ? contract.rule : undefined} code /><Detail label="value" value={contract.value === undefined ? undefined : displayValue(contract.value)} code /><Detail label="message" value={typeof contract.message === "string" ? contract.message : undefined} /></dl> : null}
       {component.kind === "options" ? <><p className="muted">{options.length} options</p>{options.length > 10 ? <details><summary>Optionsを表示 ({options.length})</summary><input type="search" className="filter" aria-label="Optionsを検索" placeholder="value・labelを検索" value={optionQuery} onChange={(event) => setOptionQuery(event.target.value)} /><div className="options-contract-scroll"><table className="fields"><thead><tr><th>value</th><th>label</th></tr></thead><tbody>{filteredOptions.map((item, index) => { const row = asRecord(item); return <tr key={String(row?.value) + index}><td><code>{displayValue(row?.value)}</code></td><td>{String(row?.label ?? "")}</td></tr> })}</tbody></table></div></details> : <table className="fields"><thead><tr><th>value</th><th>label</th></tr></thead><tbody>{filteredOptions.map((item, index) => { const row = asRecord(item); return <tr key={String(row?.value) + index}><td><code>{displayValue(row?.value)}</code></td><td>{String(row?.label ?? "")}</td></tr> })}</tbody></table>}</> : null}
+      {component.kind === "ui" && contract ? <><p>{typeof contract.description === "string" ? contract.description : null}</p><section><h4>Inputs</h4><table className="fields"><thead><tr><th>Input</th><th>型</th><th>必須</th><th>既定値</th></tr></thead><tbody>{Object.entries(uiInputs).map(([name, raw]) => { const input = asRecord(raw); return <tr key={name}><td><code>{name}</code></td><td><code>{String(input?.type ?? "unknown")}</code></td><td>{input?.required === true ? "必須" : "任意"}</td><td>{input && "default" in input ? <code>{displayValue(input.default)}</code> : <span className="muted">—</span>}</td></tr> })}</tbody></table></section><section><h4>Events</h4><div className="ui-contract-grid">{Object.entries(uiEvents).map(([name, raw]) => { const event = asRecord(raw); return <article key={name}><strong><code>{name}</code></strong><span className={event?.required === true ? "badge badge-warning" : "badge badge-region"}>{event?.required === true ? "required" : "optional"}</span>{event?.payload ? <pre className="contract-inline"><code>{stringifyYaml(event.payload)}</code></pre> : null}</article> })}</div></section>{Object.keys(uiParts).length ? <section><h4>Semantic Parts</h4><div className="ui-contract-grid">{Object.entries(uiParts).map(([name, raw]) => <article key={name}><strong><code>{name}</code></strong><span>{String(asRecord(raw)?.kind ?? "part")}</span></article>)}</div></section> : null}{Object.keys(uiDerived).length ? <section><h4>Derived</h4><pre className="contract-inline"><code>{stringifyYaml(uiDerived)}</code></pre></section> : null}{uiRules.length ? <section><h4>Rules</h4>{uiRules.map((rule, index) => <pre key={index} className="contract-inline"><code>{stringifyYaml(rule)}</code></pre>)}</section> : null}{contract.accessibility ? <section><h4>Accessibility</h4><pre className="contract-inline"><code>{stringifyYaml(contract.accessibility)}</code></pre></section> : null}{contract.responsive ? <section><h4>Responsive</h4><pre className="contract-inline"><code>{stringifyYaml(contract.responsive)}</code></pre></section> : null}</> : null}
     </section>
     {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((item, index) => <li key={item.code + index}><span className={"badge " + (item.severity === "error" ? "badge-ng" : "badge-warning")}>{item.severity}</span> {item.message}</li>)}</ul></section> : null}
     {dependencies.length ? <section><h3>依存Component</h3><div className="component-links">{dependencyIds.map((id) => dependencyButton(id))}</div></section> : null}
     <details><summary>Authored YAML</summary><pre className="component-contract"><code>{stringifyYaml(component.contract)}</code></pre></details>
-    <section><h3>この画面での利用 <span className="muted">({current.length})</span></h3>{current.length ? usageList(current) : <p className="muted">なし</p>}</section>
-    {otherGroups.size ? <section><h3>他の画面での利用 <span className="muted">({impacts.length - current.length})</span></h3>{[...otherGroups].map(([screenId, items]) => <details key={screenId}><summary><code>{screenId}</code> ({items.length})</summary>{usageList(items)}</details>)}</section> : null}
+    {component.kind === "ui" ? <section><h3>利用Instance <span className="muted">({instanceImpacts.length})</span></h3><ul className="component-usage-list">{instanceImpacts.map((impact) => <li key={impact.screenId + impact.instanceId}><span><code>{impact.screenId}</code> › <code>{impact.instanceId}</code></span><span className="badge badge-ok">直接利用</span></li>)}</ul></section> : null}
+    {component.kind !== "ui" ? <section><h3>この画面での利用 <span className="muted">({current.length})</span></h3>{current.length ? usageList(current) : <p className="muted">なし</p>}</section> : null}
+    {component.kind !== "ui" && otherGroups.size ? <section><h3>他の画面での利用 <span className="muted">({impacts.length - current.length})</span></h3>{[...otherGroups].map(([screenId, items]) => <details key={screenId}><summary><code>{screenId}</code> ({items.length})</summary>{usageList(items)}</details>)}</section> : null}
   </section>
 }
 

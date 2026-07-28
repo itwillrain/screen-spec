@@ -530,12 +530,14 @@ describe("横断解析（analyzeProject）", () => {
     expect(diags.filter((d) => d.code === "unknown-screen-ref")).toHaveLength(2);
   });
 
-  it("実サンプル 2 画面は横断診断なし", async () => {
+  it("実サンプル 3 画面は横断診断なし", async () => {
     const a = (await resolveDocument(example("user-edit.screen.yaml"))) as { screen?: { id: string } };
     const b = (await resolveDocument(example("user-list.screen.yaml"))) as { screen?: { id: string } };
+    const c = (await resolveDocument(example("audit-log.screen.yaml"))) as { screen?: { id: string } };
     const diags = analyzeProject([
       { id: a.screen!.id, screen: a.screen },
       { id: b.screen!.id, screen: b.screen },
+      { id: c.screen!.id, screen: c.screen },
     ]);
     expect(diags).toEqual([]);
   });
@@ -987,10 +989,11 @@ describe("findOperation（OpenAPI 解決）", () => {
     expect(list?.parameters.map((p) => `${p.in}:${p.name}`)).toEqual([
       "query:keyword",
       "query:role",
+      "query:pageSize",
       "query:page",
     ]);
     // $ref(UserListResponse) → { data, total }
-    expect(list?.responseFields).toEqual(["data", "total"]);
+    expect(list?.responseFields).toEqual(["data", "total", "page", "pageSize"]);
   });
 
   it("response property pathを内部ref越しに検証する", () => {
@@ -1056,6 +1059,16 @@ describe("Component Usage Graph", () => {
     expect(graph.usages.some((usage) => usage.componentId === required && usage.referrerComponentId === email)).toBe(true);
     expect(graph.impacts.filter((impact) => impact.componentId === required).map((impact) => impact.fieldId).sort()).toEqual(["email", "name"]);
     expect(graph.diagnostics).toEqual([]);
+  });
+
+  it("UI Componentの利用と影響Instanceを追跡する", () => {
+    const common = { components: { ui: { Pagination: { name: "Pagination", inputs: {}, events: {}, accessibility: { requirements: "standard" } } } } };
+    const screen = { screen: { id: "users", ui: { pagination: { component: { ["$" + "ref"]: "./common.yaml#/components/ui/Pagination" } } } } };
+    const graph = buildComponentUsageGraph([{ uri: screenUri, document: screen }, { uri: commonUri, document: common }]);
+    const pagination = commonUri + "#/components/ui/Pagination";
+    expect(graph.components.find((component) => component.id === pagination)?.kind).toBe("ui");
+    expect(graph.usages.some((usage) => usage.componentId === pagination && usage.instanceId === "pagination")).toBe(true);
+    expect(graph.instanceImpacts).toContainEqual({ componentId: pagination, screenId: "users", instanceId: "pagination" });
   });
 
   it("aliasをerror、未使用をwarningにする", () => {

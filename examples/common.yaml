@@ -21,3 +21,173 @@ components:
       - { value: admin, label: 管理者 }
       - { value: editor, label: 編集者 }
       - { value: viewer, label: 閲覧者 }
+
+  ui:
+    AppHeader:
+      name: アプリケーションヘッダー
+      description: 管理画面共通のブランド、現在ユーザー、主要操作を表示する
+      inputs:
+        productName: { type: string, required: false, default: Admin Console }
+        currentUserName: { type: string, required: true }
+        notificationCount: { type: integer, required: false, default: 0 }
+      events:
+        openNotifications:
+          required: false
+        logout:
+          required: true
+      parts:
+        brand: { kind: content }
+        notifications: { kind: action }
+        accountMenu: { kind: action }
+      accessibility:
+        landmark: banner
+        label: グローバルヘッダー
+        keyboard: { activation: [Enter, Space] }
+      responsive:
+        compact:
+          preserves: [brand, notifications, accountMenu]
+          omits: [currentUserName]
+    AdminSidebar:
+      name: 管理ナビゲーション
+      description: 管理画面共通の主要ナビゲーション
+      inputs:
+        items:
+          type: array
+          required: true
+          items: { type: object }
+        activeItem: { type: string, required: true }
+      events:
+        navigate:
+          required: true
+          payload:
+            itemId: { type: string, required: true }
+      parts:
+        navigationItems: { kind: navigation }
+      accessibility:
+        landmark: navigation
+        label: 管理メニュー
+      responsive:
+        compact:
+          preserves: [navigationItems]
+          omits: []
+    AppFooter:
+      name: アプリケーションフッター
+      description: 管理画面共通の補助リンクと著作権表示
+      inputs:
+        copyright: { type: string, required: true }
+        links:
+          type: array
+          required: false
+          default: []
+          items: { type: object }
+      events:
+        openLink:
+          required: false
+          payload:
+            linkId: { type: string, required: true }
+      parts:
+        legalLinks: { kind: navigation }
+        copyright: { kind: content }
+      accessibility:
+        landmark: contentinfo
+        label: フッター
+    DataTable:
+      name: データテーブル
+      description: 列定義に従って一覧データを表示し、行選択と並び替えを通知する
+      inputs:
+        rows:
+          type: array
+          required: true
+          items: { type: object }
+        columns:
+          type: array
+          required: true
+          items: { type: object }
+        rowKey: { type: string, required: true }
+        loading: { type: boolean, required: false, default: false }
+        emptyText: { type: string, required: false, default: データがありません }
+      events:
+        rowSelect:
+          required: false
+          payload:
+            key: { type: string, required: true }
+        sortChange:
+          required: false
+          payload:
+            column: { type: string, required: true }
+            direction: { type: string, required: true }
+      parts:
+        header: { kind: collection }
+        rows: { kind: collection }
+        emptyState: { kind: content }
+      rules:
+        - when: inputs.loading == true
+          target: parts.rows
+          enabled: false
+        - when: inputs.rows.length == 0
+          target: parts.emptyState
+          visible: true
+      accessibility:
+        requirements: table
+        label: データ一覧
+        keyboard: { rowActivation: [Enter, Space] }
+      responsive:
+        compact:
+          preserves: [rows]
+          omits: [header]
+    Pagination:
+      name: ページネーション
+      description: 総件数とページサイズからページ移動を提供する
+      inputs:
+        currentPage: { type: integer, required: true }
+        pageSize: { type: integer, required: true }
+        totalCount: { type: integer, required: true }
+        loading: { type: boolean, required: false, default: false }
+        showPageSizeSelector: { type: boolean, required: false, default: true }
+        pageSizeOptions:
+          type: array
+          required: false
+          default: [20, 50, 100]
+          items: { type: integer }
+      events:
+        pageChange:
+          required: true
+          payload:
+            page: { type: integer, required: true }
+        pageSizeChange:
+          required: false
+          payload:
+            pageSize: { type: integer, required: true }
+      parts:
+        previous: { kind: action }
+        next: { kind: action }
+        pageNumbers: { kind: collection }
+        pageSizeSelector: { kind: selection }
+        summary: { kind: content }
+      derived:
+        totalPages:
+          type: integer
+          expression: ceil(inputs.totalCount / inputs.pageSize)
+      rules:
+        - when: inputs.totalCount == 0
+          target: component
+          visible: false
+        - when: inputs.currentPage == 1
+          target: parts.previous
+          enabled: false
+        - when: inputs.currentPage == derived.totalPages
+          target: parts.next
+          enabled: false
+        - when: inputs.loading == true
+          target: component
+          enabled: false
+      accessibility:
+        landmark: navigation
+        label: ページネーション
+        currentItem: page
+        keyboard: { activation: [Enter, Space] }
+        announcements: { pageChanged: "{page}ページ目を表示" }
+      responsive:
+        compact:
+          preserves: [previous, next, summary]
+          omits: [pageNumbers, pageSizeSelector]

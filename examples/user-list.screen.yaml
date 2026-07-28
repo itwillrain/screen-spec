@@ -4,6 +4,40 @@ screen:
   name: ユーザー一覧画面
   description: ユーザーを検索・一覧する画面
   route: /users
+  design:
+    images:
+      - url: wireframes/user-list.svg
+        caption: ユーザー一覧
+
+  layout:
+    sections:
+      - id: globalHeader
+        region: header
+        items:
+          - component: appHeader
+      - id: navigation
+        region: sidebar
+        items:
+          - component: adminSidebar
+      - id: search
+        title: 検索条件
+        region: body
+        fields: [keyword, role, searchButton]
+        items:
+          - field: keyword
+          - field: role
+          - field: searchButton
+      - id: results
+        title: 検索結果
+        region: body
+        items:
+          - component: userTable
+          - component: userPagination
+      - id: globalFooter
+        region: footer
+        items:
+          - component: appFooter
+
   fields:
     keyword:
       label: 検索キーワード
@@ -15,37 +49,133 @@ screen:
       type: select
       options:
         $ref: "./common.yaml#/components/options/RoleOptions"
+    searchButton:
+      label: 検索ボタン
+      type: button
+      text: 検索する
+      eventId: search
+
+  data:
+    userRows:
+      description: 一覧に表示するユーザー
+      schema:
+        type: array
+        items: { type: object }
+    userTotal:
+      description: 検索結果の総件数
+      schema: { type: integer }
+    userPage:
+      description: 現在ページ
+      schema: { type: integer }
+    userPageSize:
+      description: 1ページの表示件数
+      schema: { type: integer }
+
+  ui:
+    appHeader:
+      component:
+        $ref: "./common.yaml#/components/ui/AppHeader"
+      bindings:
+        currentUserName: { value: 山田 太郎 }
+        notificationCount: { value: 3 }
+      events:
+        logout: logout
+    adminSidebar:
+      component:
+        $ref: "./common.yaml#/components/ui/AdminSidebar"
+      bindings:
+        items:
+          value:
+            - { id: dashboard, label: ダッシュボード }
+            - { id: users, label: ユーザー管理 }
+            - { id: audit, label: 監査ログ }
+        activeItem: { value: users }
+      events:
+        navigate: navigateFromSidebar
+    userTable:
+      component:
+        $ref: "./common.yaml#/components/ui/DataTable"
+      bindings:
+        rows: { source: data.userRows }
+        columns:
+          value:
+            - { key: name, label: 氏名 }
+            - { key: email, label: メールアドレス }
+            - { key: role, label: ロール }
+            - { key: status, label: ステータス }
+        rowKey: { value: id }
+        loading: { source: api.listUsers.loading }
+        emptyText: { value: 条件に一致するユーザーはいません }
+      events:
+        rowSelect: openUser
+        sortChange: sortUsers
+    userPagination:
+      component:
+        $ref: "./common.yaml#/components/ui/Pagination"
+      bindings:
+        currentPage: { source: data.userPage }
+        pageSize: { source: data.userPageSize }
+        totalCount: { source: data.userTotal }
+        loading: { source: api.listUsers.loading }
+        pageSizeOptions: { value: [20, 50, 100] }
+      events:
+        pageChange: changePage
+        pageSizeChange: changePageSize
+    appFooter:
+      component:
+        $ref: "./common.yaml#/components/ui/AppFooter"
+      bindings:
+        copyright: { value: "© 2026 Example Inc." }
+        links:
+          value:
+            - { id: privacy, label: プライバシー }
+            - { id: terms, label: 利用規約 }
 
   states:
-    loading:
-      name: 読み込み中
-      initial: true
-    loaded:
-      name: 表示中
-    empty:
-      name: 該当なし
+    loading: { name: 読み込み中, initial: true }
+    loaded: { name: 表示中 }
+    empty: { name: 該当なし }
 
   events:
-    onLoaded:
-      trigger: dataLoaded
-      from: loading
-      to: loaded
-    onEmpty:
-      trigger: dataEmpty
-      from: loading
-      to: empty
+    onLoaded: { trigger: dataLoaded, from: loading, to: loaded }
+    onEmpty: { trigger: dataEmpty, from: loading, to: empty }
     search:
       trigger: submit
       target: searchButton
       from: loaded
       to: loading
-      action:
-        apiCall: listUsers
+      action: { apiCall: listUsers }
+    changePage:
+      trigger: { component: userPagination, event: pageChange }
+      from: loaded
+      to: loading
+      action: { apiCall: listUsers }
+    changePageSize:
+      trigger: { component: userPagination, event: pageSizeChange }
+      from: loaded
+      to: loading
+      action: { apiCall: listUsers }
+    openUser:
+      trigger: { component: userTable, event: rowSelect }
+      from: loaded
+      to: loaded
+    sortUsers:
+      trigger: { component: userTable, event: sortChange }
+      from: loaded
+      to: loading
+      action: { apiCall: listUsers }
+    navigateFromSidebar:
+      trigger: { component: adminSidebar, event: navigate }
+      from: loaded
+      to: loaded
+    logout:
+      trigger: { component: appHeader, event: logout }
+      from: loaded
+      to: loaded
 
   transitions:
-    toUserEdit:
-      to: user-edit
-      trigger: rowClick
+    toUserEdit: { to: user-edit, trigger: openUser }
+    toAuditLog: { to: audit-log, trigger: navigateFromSidebar }
 
   apiBindings:
     listUsers:
@@ -56,3 +186,11 @@ screen:
         query:
           keyword: "{fields.keyword}"
           role: "{fields.role}"
+          page: "{event.payload.page}"
+          pageSize: "{event.payload.pageSize}"
+      response:
+        mapping:
+          data.userRows: data
+          data.userTotal: total
+          data.userPage: page
+          data.userPageSize: pageSize

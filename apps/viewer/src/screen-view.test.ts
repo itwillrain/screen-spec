@@ -83,3 +83,50 @@ paths:
     })
   })
 })
+
+
+describe("UI Component Screen Outline view model", () => {
+  it("Instance Bindingと定義順itemsを保持する", async () => {
+    const screen = `specVersion: "0.1"
+screen:
+  id: users
+  name: Users
+  layout:
+    sections:
+      - id: results
+        items:
+          - field: keyword
+          - component: pagination
+        fields: [keyword]
+  fields:
+    keyword: { label: Keyword, type: text }
+  ui:
+    pagination:
+      component: { $ref: "./common.yaml#/components/ui/Pagination" }
+      bindings:
+        currentPage: { value: 1 }
+      events:
+        pageChange: changePage
+  states:
+    loaded: { initial: true }
+  events:
+    changePage: { trigger: { component: pagination, event: pageChange }, from: loaded, to: loaded }
+`;
+    const common = `specVersion: "0.1"
+components:
+  ui:
+    Pagination:
+      name: Pagination
+      inputs:
+        currentPage: { type: integer, required: true }
+      events:
+        pageChange: { required: true }
+      accessibility: { requirements: standard }
+`;
+    const view = await buildScreenView("https://example.test/users.yaml", async (uri) => uri.endsWith("/common.yaml") ? common : screen)
+    expect(view.valid).toBe(true)
+    expect(view.uiInstances[0]).toMatchObject({ key: "pagination", componentRef: "./common.yaml#/components/ui/Pagination", bindings: [{ input: "currentPage", value: 1 }], events: [{ contractEvent: "pageChange", screenEvent: "changePage" }] })
+    expect(view.layout?.sections[0].items).toEqual([{ kind: "field", key: "keyword" }, { kind: "component", key: "pagination" }])
+    expect(view.events[0].trigger).toBe("pagination.pageChange")
+  })
+})

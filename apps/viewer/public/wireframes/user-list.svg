@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="680" viewBox="0 0 960 680">
+  <rect width="960" height="680" fill="#f4f5f7"/>
+  <rect width="960" height="58" fill="#fff" stroke="#c9cdd3"/>
+  <circle cx="30" cy="29" r="13" fill="#30343b"/><text x="52" y="35" font-family="sans-serif" font-size="16" font-weight="700" fill="#20242a">Admin Console</text>
+  <text x="748" y="34" font-family="sans-serif" font-size="13" fill="#5e6570">通知 3</text><text x="824" y="34" font-family="sans-serif" font-size="13" fill="#30343b">山田 太郎</text>
+  <rect x="0" y="58" width="184" height="580" fill="#252930"/>
+  <g font-family="sans-serif" font-size="13" fill="#d9dde3"><text x="24" y="102">ダッシュボード</text><rect x="12" y="122" width="160" height="38" rx="5" fill="#3c424b"/><text x="24" y="146" fill="#fff" font-weight="700">ユーザー管理</text><text x="24" y="190">監査ログ</text><text x="24" y="230">設定</text></g>
+  <text x="216" y="98" font-family="sans-serif" font-size="12" fill="#707782">ユーザー管理 / 一覧</text><text x="216" y="134" font-family="sans-serif" font-size="25" font-weight="700" fill="#20242a">ユーザー一覧</text>
+  <rect x="216" y="158" width="712" height="88" rx="8" fill="#fff" stroke="#d1d5db"/>
+  <g font-family="sans-serif" font-size="12" fill="#4b515a"><text x="236" y="182">検索キーワード</text><text x="524" y="182">ロール</text></g>
+  <rect x="236" y="192" width="268" height="36" rx="5" fill="#fff" stroke="#aeb4bd"/><text x="248" y="215" font-family="sans-serif" font-size="13" fill="#9aa0a9">氏名・メールアドレス</text>
+  <rect x="524" y="192" width="184" height="36" rx="5" fill="#fff" stroke="#aeb4bd"/><text x="536" y="215" font-family="sans-serif" font-size="13" fill="#30363d">すべて</text>
+  <rect x="824" y="192" width="84" height="36" rx="5" fill="#30363d"/><text x="846" y="215" font-family="sans-serif" font-size="13" font-weight="700" fill="#fff">検索</text>
+  <rect x="216" y="264" width="712" height="318" rx="8" fill="#fff" stroke="#d1d5db"/>
+  <text x="236" y="296" font-family="sans-serif" font-size="16" font-weight="700" fill="#252a31">検索結果</text><text x="836" y="296" font-family="sans-serif" font-size="12" fill="#707782">153件</text>
+  <rect x="236" y="312" width="672" height="34" fill="#f1f2f4"/>
+  <g font-family="sans-serif" font-size="12" fill="#555c65"><text x="250" y="334">氏名</text><text x="390" y="334">メールアドレス</text><text x="624" y="334">ロール</text><text x="748" y="334">ステータス</text></g>
+  <g font-family="sans-serif" font-size="13" fill="#292e35"><text x="250" y="374">山田 太郎</text><text x="390" y="374">taro@example.com</text><text x="624" y="374">管理者</text><text x="748" y="374">有効</text><text x="250" y="416">佐藤 花子</text><text x="390" y="416">hanako@example.com</text><text x="624" y="416">編集者</text><text x="748" y="416">有効</text><text x="250" y="458">鈴木 一郎</text><text x="390" y="458">ichiro@example.com</text><text x="624" y="458">閲覧者</text><text x="748" y="458">停止</text></g>
+  <g stroke="#e4e6e9"><line x1="236" y1="388" x2="908" y2="388"/><line x1="236" y1="430" x2="908" y2="430"/><line x1="236" y1="472" x2="908" y2="472"/></g>
+  <text x="248" y="548" font-family="sans-serif" font-size="12" fill="#606772">1–20 / 153件</text><rect x="634" y="522" width="68" height="34" rx="5" fill="#fff" stroke="#b7bcc4"/><text x="651" y="544" font-family="sans-serif" font-size="12" fill="#555c65">前へ</text><rect x="710" y="522" width="34" height="34" rx="5" fill="#30363d"/><text x="724" y="544" font-family="sans-serif" font-size="12" fill="#fff">1</text><text x="760" y="544" font-family="sans-serif" font-size="12" fill="#555c65">2</text><text x="794" y="544" font-family="sans-serif" font-size="12" fill="#555c65">3</text><rect x="826" y="522" width="68" height="34" rx="5" fill="#fff" stroke="#b7bcc4"/><text x="843" y="544" font-family="sans-serif" font-size="12" fill="#555c65">次へ</text>
+  <rect x="0" y="638" width="960" height="42" fill="#fff" stroke="#d6d9de"/><text x="216" y="664" font-family="sans-serif" font-size="11" fill="#727984">© 2026 Example Inc.</text><text x="790" y="664" font-family="sans-serif" font-size="11" fill="#727984">プライバシー　利用規約</text>
+</svg>

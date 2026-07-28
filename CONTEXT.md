@@ -36,6 +36,22 @@ _Avoid_: Direct Usage
 Authored Specificationの`$ref`から導出される、Component Identity、Direct Usage、Component Dependency、Impacted Fieldのプロジェクト全体の関係。
 _Avoid_: Component Registry, Component Catalog
 
+**UI Component**:
+複数の表示要素と操作を一体として扱う、取得元と実装に依存しない再利用可能なComponent。
+_Avoid_: Composite Field, React Component
+
+**Component Instance**:
+UI Componentを特定Screenへ配置し、InputsとEventsを画面固有の契約へ接続した利用実体。
+_Avoid_: Component Usage, Widget
+
+**Screen Outline**:
+Layoutの定義順にFieldとComponent Instanceを並べた、画面構造の読み取り表現。
+_Avoid_: Field List（Component Instanceを含む場合）
+
+**Impacted Component Instance**:
+UI Componentの変更によって影響を受ける、Screen上のComponent Instance。
+_Avoid_: Impacted Field
+
 **Screen Data**:
 APIレスポンスから作られ、Fieldへ読み取り用データを供給する、画面に必要な最小Projection。
 _Avoid_: Domain Model, View Model, Store

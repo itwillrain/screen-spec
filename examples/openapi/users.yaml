@@ -16,6 +16,35 @@ servers:
     description: 本番
 
 paths:
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      summary: 監査ログ一覧を取得
+      parameters:
+        - { name: actor, in: query, schema: { type: string } }
+        - { name: dateFrom, in: query, schema: { type: string, format: date } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        occurredAt: { type: string, format: date-time }
+                        actor: { type: string }
+                        action: { type: string }
+                        target: { type: string }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
   /users:
     get:
       operationId: listUsers
@@ -27,6 +56,9 @@ paths:
         - name: role
           in: query
           schema: { $ref: "#/components/schemas/Role" }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20 }
         - name: page
           in: query
           schema: { type: integer, default: 1 }
@@ -128,6 +160,8 @@ components:
           type: array
           items: { $ref: "#/components/schemas/User" }
         total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
     Error:
       type: object
       properties:

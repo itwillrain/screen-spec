@@ -1,61 +1,51 @@
 ---
 title: Layout
-description: 画面レイアウト（言語レベルの構造）。
+description: FieldとComponent Instanceを定義順に配置する画面構造。
 ---
 
 # Layout
 
-画面のデザインを**言語レベル**で表現する構造。`screen.layout` に置きます。特定の UI フレームワークに
-依存しないよう、ピクセル単位のスタイルではなく **セクション・列・幅ヒント** で構造を表します。
+`screen.layout`は、ピクセルや実装フレームワークに依存せず、Section、region、定義順によって画面構造を表します。FieldやComponent Instanceを再定義せず、キーで参照します。
 
-フィールドはここで再定義せず、**キー参照**で配置します（[コレクションはマップ](/concepts/collections)）。
-
-## フィールド
-
-| キー | 型 | 説明 |
-|---|---|---|
-| `sections` | `LayoutSection[]` | セクション（項目グループ）の配列 |
-
-### LayoutSection
+## LayoutSection
 
 | キー | 型 | 必須 | 説明 |
 |---|---|---|---|
-| `id` | string (camelCase) | | セクション識別子 |
+| `id` | string (camelCase) | | Section識別子 |
 | `title` | string | | 見出し |
-| `region` | enum | | 配置領域 `header` / `body` / `footer` / `sidebar`（既定 body） |
-| `columns` | integer (1–4) | | 列数（既定 1） |
-| `fields` | string[] | ✔ | 配置するフィールドキー |
+| `region` | enum | | `header` / `sidebar` / `body` / `footer`（既定`body`） |
+| `columns` | integer (1–4) | | 列数ヒント（既定1） |
+| `items` | `LayoutItem[]` | ✔ | FieldとComponent Instanceの順序付き配置 |
+| `fields` | string[] | | v0.1互換のField配置 |
 
-各フィールドには `design`（[デザイン参照](/reference/design)）も指定でき、画面全体の `screen.design`
-とは別に項目単位のモックアップ/リンクを持てます。
+Sectionは平坦です。入れ子Regionは定義しません。ViewerはSectionとItemの記述順をScreen Outlineとして維持します。
 
-各フィールド側には表示幅ヒント `width`（`full` / `half` / `third`）を指定できます。
+## LayoutItem
 
-## 例
+Fieldは`field`、UI Component Instanceは`component`で参照します。1つのItemに両方は指定できません。
 
 ```yaml
 screen:
-  id: user-edit
-  name: ユーザー編集画面
   layout:
     sections:
-      - id: basic
-        title: 基本情報
+      - { id: header, region: header, items: [{ component: appHeader }] }
+      - { id: navigation, region: sidebar, items: [{ component: adminSidebar }] }
+      - id: results
+        title: 検索結果
+        region: body
         columns: 2
-        fields: [name, email, altEmail]
-      - id: authz
-        title: 権限
-        fields: [role]
-  fields:
-    name:
-      label: 氏名
-      type: text
-      width: half
+        items:
+          - field: keyword
+          - component: userTable
+          - component: userPagination
+      - { id: footer, region: footer, items: [{ component: appFooter }] }
 ```
+
+同じComponent Instanceを複数箇所へ配置せず、配置ごとに別Instance IDを定義します。`fields`は既存仕様との互換形式として受理しますが、新規記述では`items`を正規形とします。
 
 ## 診断
 
-- `sections[].fields` が未定義フィールドを配置 → **warning**
-- `layout` があるのにどのセクションにも配置されていないフィールド → **warning**
-
-ビューアは各画面の「レイアウト」セクションで、列グリッドと幅ヒントを可視化します。
+- 未定義Fieldの配置 → warning
+- 未定義Component Instanceの配置 → error
+- Layoutに配置されていないField → warning
+- Layoutに配置されていないComponent Instance → warning

@@ -61,8 +61,11 @@ interface ApiBindingLike {
 }
 
 interface LayoutLike {
-  sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown }>;
+  sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown; items?: unknown }>;
 }
+
+interface UIComponentLike { inputs?: Record<string, { required?: unknown; default?: unknown }>; events?: Record<string, { required?: unknown }>; accessibility?: unknown }
+interface UIInstanceLike { component?: UIComponentLike; bindings?: Record<string, { source?: unknown; value?: unknown }>; events?: Record<string, unknown>; visibleWhen?: unknown }
 
 interface DataSchemaLike {
   type?: unknown;
@@ -83,6 +86,7 @@ interface ScreenLike {
   route?: unknown;
   params?: { path?: Record<string, unknown>; query?: Record<string, unknown> };
   fields?: Record<string, unknown>;
+  ui?: Record<string, UIInstanceLike>;
   data?: Record<string, ScreenDataLike>;
   fieldBindings?: Record<string, FieldBindingLike>;
   layout?: LayoutLike;
@@ -194,6 +198,7 @@ interface RefContext {
 
 /** 参照（fields.X / screen.route.Y / screen.query.Y）が実在するか検査する。 */
 function checkRefPart(ref: RefExpr, ctx: RefContext, where: string, diagnostics: Diagnostic[]): void {
+  if (ref.root === "event" && ref.path[0] === "payload" && ref.path.length >= 2) return;
   if (ref.root === "fields") {
     const f = ref.path[0];
     if (ref.path.length !== 1 || !f || !ctx.fieldKeys.has(f)) {
@@ -450,6 +455,7 @@ function analyzeFieldBindings(s: ScreenLike, diagnostics: Diagnostic[]): void {
   const data = s.data ?? {};
   const apiBindings = s.apiBindings ?? {};
   const usedData = new Set<string>();
+  for (const instance of Object.values(s.ui ?? {})) for (const binding of Object.values(instance.bindings ?? {})) { const source = asString(binding.source); if (source?.startsWith("data.")) usedData.add(source.slice(5)); }
 
   for (const [fieldId, binding] of Object.entries(s.fieldBindings ?? {})) {
     const field = fields[fieldId] as { type?: unknown; options?: unknown } | undefined;
@@ -483,7 +489,7 @@ function analyzeFieldBindings(s: ScreenLike, diagnostics: Diagnostic[]): void {
       if (!match || !(match[1] in apiBindings)) diagnostics.push({ severity: "error", code: "unknown-loading-source", message: `field "${fieldId}" のloading source "${source ?? ""}" は未定義のAPI Bindingです。`, where: fieldId });
     }
   }
-  for (const dataId of Object.keys(data)) if (!usedData.has(dataId)) diagnostics.push({ severity: "warning", code: "unused-screen-data", message: `Screen Data "${dataId}" はField Bindingから参照されていません。`, where: dataId });
+  for (const dataId of Object.keys(data)) if (!usedData.has(dataId)) diagnostics.push({ severity: "warning", code: "unused-screen-data", message: `Screen Data "${dataId}" はField BindingまたはComponent Instanceから参照されていません。`, where: dataId });
 }
 
 /** layout.sections のフィールド参照を検査する。 */
@@ -761,6 +767,31 @@ function analyzeStateMachine(s: ScreenLike, diagnostics: Diagnostic[]): void {
  * 解決済み screen オブジェクトを解析し、診断を返す。
  * states / apiBindings が無い部分はそれぞれスキップする。
  */
+function analyzeUIComponents(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const instances = s.ui ?? {};
+  const placements = new Map<string, number>();
+  for (const section of s.layout?.sections ?? []) for (const item of Array.isArray(section.items) ? section.items : []) {
+    const instanceId = item && typeof item === "object" ? asString((item as { component?: unknown }).component) : undefined;
+    if (!instanceId) continue;
+    placements.set(instanceId, (placements.get(instanceId) ?? 0) + 1);
+    if (!(instanceId in instances)) diagnostics.push({ severity: "error", code: "unknown-component-instance-in-layout", message: `layoutが未定義Component Instance "${instanceId}" を配置しています。`, where: instanceId });
+  }
+  for (const [instanceId, instance] of Object.entries(instances)) {
+    const contract = instance.component;
+    if (!contract || typeof contract !== "object") continue;
+    const inputs = contract.inputs ?? {}, bindings = instance.bindings ?? {};
+    for (const [input, spec] of Object.entries(inputs)) if (spec.required === true && spec.default === undefined && !(input in bindings)) diagnostics.push({ severity: "error", code: "missing-ui-input-binding", message: `Component Instance "${instanceId}" の必須Input "${input}" が接続されていません。`, where: instanceId });
+    for (const input of Object.keys(bindings)) if (!(input in inputs)) diagnostics.push({ severity: "error", code: "unknown-ui-input", message: `Component Instance "${instanceId}" が未定義Input "${input}" を接続しています。`, where: instanceId });
+    const contractEvents = contract.events ?? {}, mappings = instance.events ?? {};
+    for (const [event, spec] of Object.entries(contractEvents)) if (spec.required === true && !(event in mappings)) diagnostics.push({ severity: "error", code: "missing-ui-event-mapping", message: `Component Instance "${instanceId}" の必須Event "${event}" が接続されていません。`, where: instanceId });
+    for (const [event, target] of Object.entries(mappings)) { const targetId = asString(target); if (!(event in contractEvents)) diagnostics.push({ severity: "error", code: "unknown-ui-event", message: `Component Instance "${instanceId}" が未定義Event "${event}" を接続しています。`, where: instanceId }); if (targetId && !(targetId in (s.events ?? {}))) diagnostics.push({ severity: "error", code: "unknown-ui-screen-event", message: `Component Instance "${instanceId}" が未定義Screen Event "${targetId}" を指しています。`, where: instanceId }); }
+    if (!contract.accessibility) diagnostics.push({ severity: "warning", code: "missing-ui-accessibility", message: `Component Instance "${instanceId}" のUI Componentにaccessibility契約がありません。`, where: instanceId });
+    const count = placements.get(instanceId) ?? 0;
+    if (count === 0) diagnostics.push({ severity: "warning", code: "component-instance-not-in-layout", message: `Component Instance "${instanceId}" はlayoutに配置されていません。`, where: instanceId });
+    if (count > 1) diagnostics.push({ severity: "error", code: "component-instance-multiple-placement", message: `Component Instance "${instanceId}" はlayoutへ複数回配置されています。`, where: instanceId });
+  }
+}
+
 export function analyzeScreen(screen: unknown): Diagnostic[] {
   if (screen === null || typeof screen !== "object") return [];
   const s = screen as ScreenLike;
@@ -773,6 +804,7 @@ export function analyzeScreen(screen: unknown): Diagnostic[] {
   analyzeUiEventLinks(s, diagnostics);
   analyzeApiExpressions(s, diagnostics);
   analyzeFieldBindings(s, diagnostics);
+  analyzeUIComponents(s, diagnostics);
   analyzeAccessControl(s, diagnostics);
   analyzeStateMachine(s, diagnostics);
   return diagnostics;
@@ -782,6 +814,7 @@ interface ProjectScreenLike {
   transitions?: Record<string, { to?: unknown }>;
   events?: Record<string, { onSuccess?: { navigate?: unknown } }>;
   fields?: Record<string, unknown>;
+  ui?: Record<string, UIInstanceLike>;
   params?: { path?: Record<string, unknown>; query?: Record<string, unknown> };
 }
 

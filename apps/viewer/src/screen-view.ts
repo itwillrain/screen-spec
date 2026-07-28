@@ -55,11 +55,14 @@ export interface FieldView {
   origin?: string;
 }
 
+export interface LayoutItemView { kind: "field" | "component"; key: string }
+
 export interface LayoutSectionView {
   id?: string;
   title?: string;
   region?: string;
   columns: number;
+  items: LayoutItemView[];
   fieldKeys: string[];
 }
 
@@ -195,6 +198,15 @@ export interface AccessControlView {
   roles: RoleAccessView[];
 }
 
+export interface UIInstanceView {
+  key: string;
+  componentId?: string;
+  componentRef?: string;
+  bindings: Array<{ input: string; source?: string; value?: unknown }>;
+  events: Array<{ contractEvent: string; screenEvent: string }>;
+  visibleWhen?: string;
+}
+
 export interface ScreenView {
   id: string;
   name: string;
@@ -203,6 +215,7 @@ export interface ScreenView {
   params?: ParamsView;
   accessControl?: AccessControlView;
   fields: FieldView[];
+  uiInstances: UIInstanceView[];
   layout?: LayoutView;
   design?: DesignView;
   stateMachine?: StateMachineView;
@@ -249,7 +262,15 @@ interface RawLayout {
     region?: string;
     columns?: number;
     fields?: string[];
+    items?: Array<{ field?: string; component?: string }>;
   }>;
+}
+
+interface RawUIInstance {
+  component?: { $ref?: string };
+  bindings?: Record<string, { source?: string; value?: unknown }>;
+  events?: Record<string, string>;
+  visibleWhen?: string;
 }
 
 interface RawState {
@@ -260,7 +281,7 @@ interface RawState {
 interface RawEvent {
   from?: string;
   to?: string;
-  trigger?: string;
+  trigger?: string | { component?: string; event?: string };
   target?: string;
   action?: { apiCall?: string };
   expects?: RawExpectation;
@@ -380,6 +401,7 @@ interface SpecDoc {
       >;
     };
     fields?: Record<string, RawField>;
+    ui?: Record<string, RawUIInstance>;
     data?: Record<string, { description?: string; schema?: unknown }>;
     fieldBindings?: Record<string, RawFieldBinding>;
     states?: Record<string, RawState>;
@@ -442,7 +464,10 @@ function buildLayout(layout: RawLayout | undefined): LayoutView | undefined {
       title: sec.title,
       region: sec.region,
       columns: typeof sec.columns === "number" && sec.columns >= 1 ? sec.columns : 1,
-      fieldKeys: Array.isArray(sec.fields) ? sec.fields.map(String) : [],
+      items: Array.isArray(sec.items)
+        ? sec.items.map((item): LayoutItemView | undefined => item.field ? { kind: "field", key: item.field } : item.component ? { kind: "component", key: item.component } : undefined).filter((item): item is LayoutItemView => item !== undefined)
+        : (sec.fields ?? []).map((key): LayoutItemView => ({ kind: "field", key: String(key) })),
+      fieldKeys: Array.isArray(sec.items) ? sec.items.flatMap((item) => item.field ? [item.field] : []) : Array.isArray(sec.fields) ? sec.fields.map(String) : [],
     })),
   };
 }
@@ -525,7 +550,7 @@ function buildErrorOutcome(raw: (RawEventOutcome & { cases?: RawErrorCase[] }) |
 function buildEvents(screen: SpecDoc["screen"]): EventView[] {
   return Object.entries(screen?.events ?? {}).map(([key, event]) => ({
     key,
-    trigger: event.trigger,
+    trigger: typeof event.trigger === "string" ? event.trigger : event.trigger?.component && event.trigger.event ? event.trigger.component + "." + event.trigger.event : undefined,
     target: event.target,
     from: event.from,
     to: event.to,
@@ -671,6 +696,12 @@ export async function buildScreenView(
     params: buildParams(resolved.screen?.params),
     accessControl: buildAccessControl(resolved.screen),
     fields,
+    uiInstances: Object.entries(raw.screen?.ui ?? {}).map(([key, instance]) => {
+      const componentRef = instance.component?.$ref;
+      let componentId: string | undefined;
+      if (componentRef) { const target = new URL(componentRef, entryUri); componentId = `${target.href.split("#")[0]}${target.hash}`; }
+      return { key, componentId, componentRef, bindings: Object.entries(instance.bindings ?? {}).map(([input, binding]) => ({ input, source: binding.source, value: binding.value })), events: Object.entries(instance.events ?? {}).map(([contractEvent, screenEvent]) => ({ contractEvent, screenEvent })), visibleWhen: instance.visibleWhen };
+    }),
     layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),
     stateMachine: buildStateMachine(resolved.screen),
@@ -696,7 +727,7 @@ export async function buildScreenView(
     projectTestData: testDataDocuments
       .filter(({ document }) => document.testData !== undefined)
       .map(({ document, source }) => ({ testData: document.testData, source })),
-    componentGraph: { components: [], usages: [], impacts: [], diagnostics: [] },
+    componentGraph: { components: [], usages: [], impacts: [], instanceImpacts: [], diagnostics: [] },
   };
 }
 

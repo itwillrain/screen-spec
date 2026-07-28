@@ -10,7 +10,7 @@ OpenAPI の `components` に相当します。定義名は **PascalCase**（[命
 
 同じ意味とUI契約を持つComponentは取得元が異なっても再利用できます。意味または確定仕様が異なる場合は、見た目が同じでも別Componentとして定義します。継承・差分合成は行いません。
 
-Component Identityは解決後の文書URIとJSON Pointerの組です。同名でも定義先が異なれば別Componentです。正式な種別はField Component、Validation Component、Options Componentです。独自契約を持たず別Componentを単独`$ref`するComponent Aliasは禁止します。
+Component Identityは解決後の文書URIとJSON Pointerの組です。同名でも定義先が異なれば別Componentです。正式な種別はField Component、Validation Component、Options Component、UI Componentです。独自契約を持たず別Componentを単独`$ref`するComponent Aliasは禁止します。
 
 ## サブセクション（v0.1）
 
@@ -19,6 +19,7 @@ Component Identityは解決後の文書URIとJSON Pointerの組です。同名�
 | `components.validations` | [Validation](/reference/validation) |
 | `components.fields` | [Field](/reference/field) |
 | `components.options` | [Options](/reference/options) |
+| `components.ui` | [UI Component](/reference/ui-components) |
 
 ## 例
 

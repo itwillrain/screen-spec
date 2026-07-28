@@ -1,0 +1,105 @@
+specVersion: "0.1"
+screen:
+  id: audit-log
+  name: 監査ログ画面
+  description: 管理操作の監査ログを検索・一覧する画面
+  route: /audit-logs
+  design:
+    images:
+      - url: wireframes/audit-log.svg
+        caption: 監査ログ一覧
+  layout:
+    sections:
+      - { id: globalHeader, region: header, items: [{ component: appHeader }] }
+      - { id: navigation, region: sidebar, items: [{ component: adminSidebar }] }
+      - id: search
+        title: 検索条件
+        region: body
+        fields: [actor, dateFrom, searchButton]
+        items: [{ field: actor }, { field: dateFrom }, { field: searchButton }]
+      - id: results
+        title: 監査ログ
+        region: body
+        items: [{ component: auditTable }, { component: auditPagination }]
+      - { id: globalFooter, region: footer, items: [{ component: appFooter }] }
+  fields:
+    actor: { label: 操作者, type: text, placeholder: 氏名またはID }
+    dateFrom: { label: 開始日, type: date }
+    searchButton: { label: 検索ボタン, type: button, text: 検索する, eventId: search }
+  data:
+    auditRows:
+      description: 監査ログ行
+      schema: { type: array, items: { type: object } }
+    auditTotal: { description: 総件数, schema: { type: integer } }
+    auditPage: { description: 現在ページ, schema: { type: integer } }
+    auditPageSize: { description: 表示件数, schema: { type: integer } }
+  ui:
+    appHeader:
+      component: { $ref: "./common.yaml#/components/ui/AppHeader" }
+      bindings:
+        currentUserName: { value: 山田 太郎 }
+        notificationCount: { value: 3 }
+      events: { logout: logout }
+    adminSidebar:
+      component: { $ref: "./common.yaml#/components/ui/AdminSidebar" }
+      bindings:
+        items:
+          value:
+            - { id: dashboard, label: ダッシュボード }
+            - { id: users, label: ユーザー管理 }
+            - { id: audit, label: 監査ログ }
+        activeItem: { value: audit }
+      events: { navigate: navigateFromSidebar }
+    auditTable:
+      component: { $ref: "./common.yaml#/components/ui/DataTable" }
+      bindings:
+        rows: { source: data.auditRows }
+        columns:
+          value:
+            - { key: occurredAt, label: 日時 }
+            - { key: actor, label: 操作者 }
+            - { key: action, label: 操作 }
+            - { key: target, label: 対象 }
+        rowKey: { value: id }
+        loading: { source: api.listAuditLogs.loading }
+        emptyText: { value: 監査ログはありません }
+      events: { sortChange: sortAuditLogs }
+    auditPagination:
+      component: { $ref: "./common.yaml#/components/ui/Pagination" }
+      bindings:
+        currentPage: { source: data.auditPage }
+        pageSize: { source: data.auditPageSize }
+        totalCount: { source: data.auditTotal }
+        loading: { source: api.listAuditLogs.loading }
+        showPageSizeSelector: { value: false }
+      events: { pageChange: changePage }
+    appFooter:
+      component: { $ref: "./common.yaml#/components/ui/AppFooter" }
+      bindings:
+        copyright: { value: "© 2026 Example Inc." }
+  states:
+    loading: { name: 読み込み中, initial: true }
+    loaded: { name: 表示中 }
+  events:
+    onLoaded: { trigger: dataLoaded, from: loading, to: loaded }
+    search: { trigger: submit, target: searchButton, from: loaded, to: loading, action: { apiCall: listAuditLogs } }
+    changePage: { trigger: { component: auditPagination, event: pageChange }, from: loaded, to: loading, action: { apiCall: listAuditLogs } }
+    sortAuditLogs: { trigger: { component: auditTable, event: sortChange }, from: loaded, to: loading, action: { apiCall: listAuditLogs } }
+    navigateFromSidebar: { trigger: { component: adminSidebar, event: navigate }, from: loaded, to: loaded }
+    logout: { trigger: { component: appHeader, event: logout }, from: loaded, to: loaded }
+  transitions:
+    toUserList: { to: user-list, trigger: navigateFromSidebar }
+  apiBindings:
+    listAuditLogs:
+      openapi: { operationId: listAuditLogs, specRef: ./openapi/users.yaml }
+      request:
+        query:
+          actor: "{fields.actor}"
+          dateFrom: "{fields.dateFrom}"
+          page: "{event.payload.page}"
+      response:
+        mapping:
+          data.auditRows: data
+          data.auditTotal: total
+          data.auditPage: page
+          data.auditPageSize: pageSize
