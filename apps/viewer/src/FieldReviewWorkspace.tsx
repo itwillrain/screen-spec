@@ -45,7 +45,7 @@ function CopyableText({ value, className, codeBlock = false }: { value: string; 
     window.setTimeout(() => setCopied(false), 1200)
   }
   return <span className={`copyable-text${className ? ` ${className}` : ""}`}>
-    codeBlock ? <code>{value}</code> : <span>{value}</span>
+    {codeBlock ? <code>{value}</code> : <span>{value}</span>}
     <button type="button" className="copy-text-button" aria-label={`「${value}」をコピー`} title={copied ? "コピーしました" : "コピー"} data-copied={copied || undefined} onClick={(event) => void copy(event)}>
       {copied ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" /></svg>}
       <span className="sr-only" aria-live="polite">{copied ? "コピーしました" : ""}</span>
