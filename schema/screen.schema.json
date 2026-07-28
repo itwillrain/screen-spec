@@ -444,6 +444,8 @@
             "textarea",
             "email",
             "number",
+            "list",
+            "table",
             "date",
             "select",
             "checkbox",
@@ -565,32 +567,24 @@
         "visibleWhen": { "type": "string" }
       }
     },
-    "UIBindingMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIBinding" } },
+    "UIBindingMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*)*$" },
+      "additionalProperties": { "$ref": "#/$defs/UIBinding" }
+    },
     "UIBinding": {
       "type": "object", "additionalProperties": false,
       "oneOf": [{ "required": ["source"] }, { "required": ["value"] }],
       "properties": { "source": { "type": "string" }, "value": true }
     },
     "UIComponent": {
-      "type": "object", "required": ["name", "inputs", "events"], "additionalProperties": false,
+      "type": "object", "required": ["name", "fields"], "additionalProperties": false,
       "properties": {
-        "name": { "type": "string" }, "description": { "type": "string" },
-        "inputs": { "$ref": "#/$defs/UIInputMap" }, "events": { "$ref": "#/$defs/UIContractEventMap" },
-        "parts": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UISemanticPart" } },
-        "rules": { "type": "array", "items": { "$ref": "#/$defs/UIRule" } },
-        "derived": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIDerivedValue" } }
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "fields": { "$ref": "#/$defs/FieldMap" }
       }
     },
-    "UIInputMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIInput" } },
-    "UIInput": {
-      "type": "object", "required": ["type"], "additionalProperties": false,
-      "properties": { "type": { "type": "string", "enum": ["null", "boolean", "object", "array", "number", "integer", "string"] }, "required": { "type": "boolean" }, "default": true, "description": { "type": "string" }, "items": { "$ref": "#/$defs/UIInput" }, "properties": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIInput" } } }
-    },
-    "UIContractEventMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIContractEvent" } },
-    "UIContractEvent": { "type": "object", "additionalProperties": false, "properties": { "required": { "type": "boolean" }, "description": { "type": "string" }, "payload": { "$ref": "#/$defs/UIInputMap" } } },
-    "UISemanticPart": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "type": "string" }, "description": { "type": "string" } } },
-    "UIRule": { "type": "object", "required": ["when", "target"], "additionalProperties": false, "properties": { "when": { "type": "string" }, "target": { "type": "string" }, "visible": { "type": "boolean" }, "enabled": { "type": "boolean" }, "description": { "type": "string" } } },
-    "UIDerivedValue": { "type": "object", "required": ["type", "expression"], "additionalProperties": false, "properties": { "type": { "type": "string" }, "expression": { "type": "string" } } },
 
     "Params": {
       "title": "画面パラメータ（path / query）",

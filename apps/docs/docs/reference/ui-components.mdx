@@ -1,50 +1,49 @@
 ---
 title: UI Components
-description: 複数要素からなる再利用可能なUI Contractと画面への接続。
+description: 複数のFieldをまとめた再利用可能なUI Componentと画面への接続。
 ---
 
 # UI Components
 
-UI Componentは、Pagination、DataTable、Header、Sidebar、Footerのように複数の表示要素と操作を一体として扱う、取得元と実装に依存しないComponentです。内部Fieldは公開せず、外部Contractだけを定義します。
+UI Componentは、Pagination、DataTable、Header、Sidebar、Footerのような複数のFieldを名前付きでまとめる、取得元と実装に依存しないComponentです。内部要素にもScreen直下と同じField定義を使います。
 
 ## Component Contract
 
-`components.ui`へPascalCaseで登録します。
+`components.ui`へPascalCaseで登録し、`fields`へFieldを定義します。専用のInputs、Events、Partsはありません。操作を通知するFieldには`eventId`を指定します。
 
 ```yaml
 components:
   ui:
     Pagination:
       name: ページネーション
-      inputs:
-        currentPage: { type: integer, required: true }
-        pageSize: { type: integer, required: true }
-        totalCount: { type: integer, required: true }
-        loading: { type: boolean, default: false }
-      events:
-        pageChange:
-          required: true
-          payload:
-            page: { type: integer, required: true }
-      parts:
-        previous: { kind: action }
-        next: { kind: action }
-        pageNumbers: { kind: collection }
-      derived:
-        totalPages:
-          type: integer
-          expression: ceil(inputs.totalCount / inputs.pageSize)
-      rules:
-        - when: inputs.currentPage == 1
-          target: parts.previous
-          enabled: false
+      description: 一覧の表示範囲を移動する
+      fields:
+        previous:
+          label: 前のページ
+          type: button
+          text: 前へ
+          eventId: pageChange
+        pageNumbers:
+          label: ページ番号
+          type: list
+          eventId: pageChange
+        next:
+          label: 次のページ
+          type: button
+          text: 次へ
+          eventId: pageChange
+        pageSizeSelector:
+          label: 表示件数
+          type: select
+          eventId: pageSizeChange
+        summary:
+          label: 表示範囲
+          type: label
 ```
-
-Inputsは値の型、必須性、任意のdefaultを定義します。EventsはComponentが通知する契機とPayloadです。PartsはFieldではなく、RulesとViewerのフラット表示から参照するsemantic partです。Derivedは宣言済みInputだけから求める副作用のない値です。
 
 ## Component Instance
 
-Screenでは`ui`へInstanceを定義し、InputとEventを画面固有の契約へ明示的に接続します。
+Screenでは`ui`へInstanceを定義し、内部Fieldの値・属性と`eventId`を画面固有の契約へ接続します。
 
 ```yaml
 screen:
@@ -53,20 +52,20 @@ screen:
       component:
         $ref: "./common.yaml#/components/ui/Pagination"
       bindings:
-        currentPage: { source: data.userPage }
-        pageSize: { source: data.userPageSize }
-        totalCount: { source: data.userTotal }
-        loading: { source: api.listUsers.loading }
-        pageSizeOptions: { value: [20, 50, 100] }
+        summary.currentPage: { source: data.userPage }
+        summary.totalCount: { source: data.userTotal }
+        pageSizeSelector.options: { value: [20, 50, 100] }
+        pageNumbers.loading: { source: api.listUsers.loading }
       events:
         pageChange: changePage
+        pageSizeChange: changePageSize
 ```
 
-Bindingは`source`または固定`value`の一方です。必須Inputと必須Eventは接続が必要です。Component EventのPayloadは接続先Screen Eventで`event.payload`として参照できます。
+Binding keyは`fieldId`または`fieldId.property`です。値には`source`または固定`value`の一方を指定します。先頭の`fieldId`はComponentの`fields`に存在する必要があります。Event Mapping keyは内部Fieldに定義された`eventId`、値はScreen Event IDです。同じ`eventId`を複数Fieldで共有できます。
 
 ## 画面要素の配置と表示
 
-`layout.sections[].items`へFieldとComponent Instanceを定義順に配置します。Sectionは平坦で、`region`に`header`、`sidebar`、`body`、`footer`を指定します。入れ子Regionは扱いません。
+`layout.sections[].items`へScreen直下のFieldとComponent Instanceを定義順に配置します。Sectionは平坦で、`region`に`header`、`sidebar`、`body`、`footer`を指定します。入れ子Regionは扱いません。
 
 ```yaml
 layout:
@@ -81,5 +80,4 @@ layout:
     - { id: footer, region: footer, items: [{ component: appFooter }] }
 ```
 
-同じInstanceを複数配置せず、配置ごとに別Instance IDを定義します。既存の`sections[].fields`はv0.1の互換形式として受理します。
-ViewerではComponent Instanceを開閉可能なチャンクとして表示し、semantic partsを `instanceId.partId` の行へフラットに展開します。
+同じInstanceを複数配置せず、配置ごとに別Instance IDを定義します。既存の`sections[].fields`はv0.1の互換形式として受理します。ViewerではComponent Instanceを開閉可能なチャンクとして表示し、内部Fieldを`instanceId.fieldId`の通常のField行へフラットに展開します。

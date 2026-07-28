@@ -76,36 +76,36 @@ screen:
       component:
         $ref: "./common.yaml#/components/ui/AppHeader"
       bindings:
-        currentUserName: { value: 山田 太郎 }
-        notificationCount: { value: 3 }
+        currentUserName.text: { value: 山田 太郎 }
+        notifications.value: { value: 3 }
       events:
         logout: logout
     adminSidebar:
       component:
         $ref: "./common.yaml#/components/ui/AdminSidebar"
       bindings:
-        items:
+        navigationItems.value:
           value:
             - { id: dashboard, label: ダッシュボード }
             - { id: users, label: ユーザー管理 }
             - { id: audit, label: 監査ログ }
-        activeItem: { value: users }
+        navigationItems.activeItem: { value: users }
       events:
         navigate: navigateFromSidebar
     userTable:
       component:
         $ref: "./common.yaml#/components/ui/DataTable"
       bindings:
-        rows: { source: data.userRows }
-        columns:
+        rows.value: { source: data.userRows }
+        header.value:
           value:
             - { key: name, label: 氏名 }
             - { key: email, label: メールアドレス }
             - { key: role, label: ロール }
             - { key: status, label: ステータス }
-        rowKey: { value: id }
-        loading: { source: api.listUsers.loading }
-        emptyText: { value: 条件に一致するユーザーはいません }
+        rows.rowKey: { value: id }
+        rows.loading: { source: api.listUsers.loading }
+        emptyState.text: { value: 条件に一致するユーザーはいません }
       events:
         rowSelect: openUser
         sortChange: sortUsers
@@ -113,11 +113,11 @@ screen:
       component:
         $ref: "./common.yaml#/components/ui/Pagination"
       bindings:
-        currentPage: { source: data.userPage }
-        pageSize: { source: data.userPageSize }
-        totalCount: { source: data.userTotal }
-        loading: { source: api.listUsers.loading }
-        pageSizeOptions: { value: [20, 50, 100] }
+        summary.currentPage: { source: data.userPage }
+        summary.pageSize: { source: data.userPageSize }
+        summary.totalCount: { source: data.userTotal }
+        pageNumbers.loading: { source: api.listUsers.loading }
+        pageSizeSelector.options: { value: [20, 50, 100] }
       events:
         pageChange: changePage
         pageSizeChange: changePageSize
@@ -125,8 +125,8 @@ screen:
       component:
         $ref: "./common.yaml#/components/ui/AppFooter"
       bindings:
-        copyright: { value: "© 2026 Example Inc." }
-        links:
+        copyright.text: { value: "© 2026 Example Inc." }
+        legalLinks.value:
           value:
             - { id: privacy, label: プライバシー }
             - { id: terms, label: 利用規約 }

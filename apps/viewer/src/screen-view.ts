@@ -202,8 +202,8 @@ export interface UIInstanceView {
   key: string;
   componentId?: string;
   componentRef?: string;
-  bindings: Array<{ input: string; source?: string; value?: unknown }>;
-  events: Array<{ contractEvent: string; screenEvent: string }>;
+  bindings: Array<{ target: string; source?: string; value?: unknown }>;
+  events: Array<{ fieldEvent: string; screenEvent: string }>;
   visibleWhen?: string;
 }
 
@@ -700,7 +700,7 @@ export async function buildScreenView(
       const componentRef = instance.component?.$ref;
       let componentId: string | undefined;
       if (componentRef) { const target = new URL(componentRef, entryUri); componentId = `${target.href.split("#")[0]}${target.hash}`; }
-      return { key, componentId, componentRef, bindings: Object.entries(instance.bindings ?? {}).map(([input, binding]) => ({ input, source: binding.source, value: binding.value })), events: Object.entries(instance.events ?? {}).map(([contractEvent, screenEvent]) => ({ contractEvent, screenEvent })), visibleWhen: instance.visibleWhen };
+      return { key, componentId, componentRef, bindings: Object.entries(instance.bindings ?? {}).map(([target, binding]) => ({ target, source: binding.source, value: binding.value })), events: Object.entries(instance.events ?? {}).map(([fieldEvent, screenEvent]) => ({ fieldEvent, screenEvent })), visibleWhen: instance.visibleWhen };
     }),
     layout: buildLayout(resolved.screen?.layout),
     design: buildDesign(resolved.screen?.design),

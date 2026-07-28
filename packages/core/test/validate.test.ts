@@ -1045,6 +1045,44 @@ describe("params（path / query）", () => {
 });
 
 
+describe("UI Component Field集合", () => {
+  it("内部FieldのbindingとeventIdを接続できる", () => {
+    const screen = {
+      layout: { sections: [{ items: [{ component: "pagination" }] }] },
+      ui: {
+        pagination: {
+          component: { name: "Pagination", fields: { pageNumbers: { type: "list", eventId: "pageChange" } } },
+          bindings: { "pageNumbers.value": { value: [1, 2, 3] } },
+          events: { pageChange: "changePage" },
+        },
+      },
+      events: { changePage: {} },
+    };
+    const codes = analyzeScreen(screen).map((diagnostic) => diagnostic.code);
+    expect(codes).not.toContain("unknown-ui-field-binding");
+    expect(codes).not.toContain("unknown-ui-event");
+    expect(codes).not.toContain("unknown-ui-screen-event");
+  });
+
+  it("存在しない内部FieldとeventIdへの接続をerrorにする", () => {
+    const screen = {
+      layout: { sections: [{ items: [{ component: "pagination" }] }] },
+      ui: {
+        pagination: {
+          component: { name: "Pagination", fields: { pageNumbers: { type: "list", eventId: "pageChange" } } },
+          bindings: { "missing.value": { value: 1 } },
+          events: { missingEvent: "missingScreenEvent" },
+        },
+      },
+      events: {},
+    };
+    const codes = analyzeScreen(screen).map((diagnostic) => diagnostic.code);
+    expect(codes).toContain("unknown-ui-field-binding");
+    expect(codes).toContain("unknown-ui-event");
+    expect(codes).toContain("unknown-ui-screen-event");
+  });
+});
+
 describe("Component Usage Graph", () => {
   const commonUri = "https://example.test/specs/common.yaml";
   const screenUri = "https://example.test/specs/user.screen.yaml";
@@ -1062,7 +1100,7 @@ describe("Component Usage Graph", () => {
   });
 
   it("UI Componentの利用と影響Instanceを追跡する", () => {
-    const common = { components: { ui: { Pagination: { name: "Pagination", inputs: {}, events: {} } } } };
+    const common = { components: { ui: { Pagination: { name: "Pagination", fields: { pageNumbers: { label: "Page numbers", type: "list", eventId: "pageChange" } } } } } };
     const screen = { screen: { id: "users", ui: { pagination: { component: { ["$" + "ref"]: "./common.yaml#/components/ui/Pagination" } } } } };
     const graph = buildComponentUsageGraph([{ uri: screenUri, document: screen }, { uri: commonUri, document: common }]);
     const pagination = commonUri + "#/components/ui/Pagination";

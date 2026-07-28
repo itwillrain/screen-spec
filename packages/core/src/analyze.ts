@@ -64,7 +64,7 @@ interface LayoutLike {
   sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown; items?: unknown }>;
 }
 
-interface UIComponentLike { inputs?: Record<string, { required?: unknown; default?: unknown }>; events?: Record<string, { required?: unknown }> }
+interface UIComponentLike { fields?: Record<string, { eventId?: unknown }> }
 interface UIInstanceLike { component?: UIComponentLike; bindings?: Record<string, { source?: unknown; value?: unknown }>; events?: Record<string, unknown>; visibleWhen?: unknown }
 
 interface DataSchemaLike {
@@ -779,12 +779,17 @@ function analyzeUIComponents(s: ScreenLike, diagnostics: Diagnostic[]): void {
   for (const [instanceId, instance] of Object.entries(instances)) {
     const contract = instance.component;
     if (!contract || typeof contract !== "object") continue;
-    const inputs = contract.inputs ?? {}, bindings = instance.bindings ?? {};
-    for (const [input, spec] of Object.entries(inputs)) if (spec.required === true && spec.default === undefined && !(input in bindings)) diagnostics.push({ severity: "error", code: "missing-ui-input-binding", message: `Component Instance "${instanceId}" の必須Input "${input}" が接続されていません。`, where: instanceId });
-    for (const input of Object.keys(bindings)) if (!(input in inputs)) diagnostics.push({ severity: "error", code: "unknown-ui-input", message: `Component Instance "${instanceId}" が未定義Input "${input}" を接続しています。`, where: instanceId });
-    const contractEvents = contract.events ?? {}, mappings = instance.events ?? {};
-    for (const [event, spec] of Object.entries(contractEvents)) if (spec.required === true && !(event in mappings)) diagnostics.push({ severity: "error", code: "missing-ui-event-mapping", message: `Component Instance "${instanceId}" の必須Event "${event}" が接続されていません。`, where: instanceId });
-    for (const [event, target] of Object.entries(mappings)) { const targetId = asString(target); if (!(event in contractEvents)) diagnostics.push({ severity: "error", code: "unknown-ui-event", message: `Component Instance "${instanceId}" が未定義Event "${event}" を接続しています。`, where: instanceId }); if (targetId && !(targetId in (s.events ?? {}))) diagnostics.push({ severity: "error", code: "unknown-ui-screen-event", message: `Component Instance "${instanceId}" が未定義Screen Event "${targetId}" を指しています。`, where: instanceId }); }
+    const fields = contract.fields ?? {}, bindings = instance.bindings ?? {};
+    for (const target of Object.keys(bindings)) {
+      const fieldId = target.split(".")[0];
+      if (!(fieldId in fields)) diagnostics.push({ severity: "error", code: "unknown-ui-field-binding", message: `Component Instance "${instanceId}" が未定義Field "${fieldId}" へbindingしています。`, where: instanceId });
+    }
+    const contractEvents = new Set(Object.values(fields).map((field) => asString(field.eventId)).filter((event): event is string => !!event));
+    for (const [event, target] of Object.entries(instance.events ?? {})) {
+      const targetId = asString(target);
+      if (!contractEvents.has(event)) diagnostics.push({ severity: "error", code: "unknown-ui-event", message: `Component Instance "${instanceId}" が内部Fieldに存在しないEvent "${event}" を接続しています。`, where: instanceId });
+      if (targetId && !(targetId in (s.events ?? {}))) diagnostics.push({ severity: "error", code: "unknown-ui-screen-event", message: `Component Instance "${instanceId}" が未定義Screen Event "${targetId}" を指しています。`, where: instanceId });
+    }
     const count = placements.get(instanceId) ?? 0;
     if (count === 0) diagnostics.push({ severity: "warning", code: "component-instance-not-in-layout", message: `Component Instance "${instanceId}" はlayoutに配置されていません。`, where: instanceId });
     if (count > 1) diagnostics.push({ severity: "error", code: "component-instance-multiple-placement", message: `Component Instance "${instanceId}" はlayoutへ複数回配置されています。`, where: instanceId });

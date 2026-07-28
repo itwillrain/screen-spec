@@ -37,46 +37,46 @@ screen:
     appHeader:
       component: { $ref: "./common.yaml#/components/ui/AppHeader" }
       bindings:
-        currentUserName: { value: 山田 太郎 }
-        notificationCount: { value: 3 }
+        currentUserName.text: { value: 山田 太郎 }
+        notifications.value: { value: 3 }
       events: { logout: logout }
     adminSidebar:
       component: { $ref: "./common.yaml#/components/ui/AdminSidebar" }
       bindings:
-        items:
+        navigationItems.value:
           value:
             - { id: dashboard, label: ダッシュボード }
             - { id: users, label: ユーザー管理 }
             - { id: audit, label: 監査ログ }
-        activeItem: { value: audit }
+        navigationItems.activeItem: { value: audit }
       events: { navigate: navigateFromSidebar }
     auditTable:
       component: { $ref: "./common.yaml#/components/ui/DataTable" }
       bindings:
-        rows: { source: data.auditRows }
-        columns:
+        rows.value: { source: data.auditRows }
+        header.value:
           value:
             - { key: occurredAt, label: 日時 }
             - { key: actor, label: 操作者 }
             - { key: action, label: 操作 }
             - { key: target, label: 対象 }
-        rowKey: { value: id }
-        loading: { source: api.listAuditLogs.loading }
-        emptyText: { value: 監査ログはありません }
+        rows.rowKey: { value: id }
+        rows.loading: { source: api.listAuditLogs.loading }
+        emptyState.text: { value: 監査ログはありません }
       events: { sortChange: sortAuditLogs }
     auditPagination:
       component: { $ref: "./common.yaml#/components/ui/Pagination" }
       bindings:
-        currentPage: { source: data.auditPage }
-        pageSize: { source: data.auditPageSize }
-        totalCount: { source: data.auditTotal }
-        loading: { source: api.listAuditLogs.loading }
-        showPageSizeSelector: { value: false }
+        summary.currentPage: { source: data.auditPage }
+        summary.pageSize: { source: data.auditPageSize }
+        summary.totalCount: { source: data.auditTotal }
+        pageNumbers.loading: { source: api.listAuditLogs.loading }
+        pageSizeSelector.visible: { value: false }
       events: { pageChange: changePage }
     appFooter:
       component: { $ref: "./common.yaml#/components/ui/AppFooter" }
       bindings:
-        copyright: { value: "© 2026 Example Inc." }
+        copyright.text: { value: "© 2026 Example Inc." }
   states:
     loading: { name: 読み込み中, initial: true }
     loaded: { name: 表示中 }

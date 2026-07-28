@@ -37,16 +37,16 @@ Authored Specificationの`$ref`から導出される、Component Identity、Dire
 _Avoid_: Component Registry, Component Catalog
 
 **UI Component**:
-複数の表示要素と操作を一体として扱う、取得元と実装に依存しない再利用可能なComponent。
-_Avoid_: Composite Field, React Component
+複数のFieldを名前付きでまとめた、取得元と実装に依存しない再利用可能なField集合。専用のInput、Event、semantic partは持たず、各Fieldが通常のField契約と`eventId`を持つ。
+_Avoid_: Composite Field, Widget, React Component
 
 **Component Instance**:
-UI Componentを特定Screenへ配置し、InputsとEventsを画面固有の契約へ接続した利用実体。
+UI Componentを特定Screenへ配置し、内部Fieldの値・属性と`eventId`を画面固有のData・Eventへ接続した利用実体。
 _Avoid_: Component Usage, Widget
 
-**Screen Outline**:
-Layoutの定義順にFieldとComponent Instanceを並べた、画面構造の読み取り表現。
-_Avoid_: Field List（Component Instanceを含む場合）
+**Screen Elements**:
+Layoutの定義順にScreen直下のFieldとComponent Instance、その内部Fieldを並べた画面構造の読み取り表現。
+_Avoid_: Field List（Component Instanceを含む場合）, Screen Outline
 
 **Impacted Component Instance**:
 UI Componentの変更によって影響を受ける、Screen上のComponent Instance。
@@ -57,7 +57,7 @@ APIレスポンスから作られ、Fieldへ読み取り用データを供給す
 _Avoid_: Domain Model, View Model, Store
 
 **Field Binding**:
-Screen DataまたはAPIの実行状態を、Field型が定める追加Inputへ明示的に接続する画面固有の契約。
+Screen直下またはComponent Instance内のFieldの値・属性を、Screen Data、APIの実行状態、固定値のいずれかへ明示的に接続する画面固有の契約。
 _Avoid_: Component Binding, Prop Binding
 
 **Event**:
@@ -89,5 +89,5 @@ API実行後のHTTP statusやエラーコードに応じた`onError`内の分岐
 _Avoid_: Branch
 
 **Field Review Workspace**:
-デザインを参照しながらFieldと直接関連するEvent、Branch、API、診断を確認する、エンジニア向けの読み取り専用Viewer領域。
+デザインを参照しながらScreen Elementsと直接関連するEvent、Branch、API、診断を確認する、エンジニア向けの読み取り専用Viewer領域。
 _Avoid_: Editor, Design preview
