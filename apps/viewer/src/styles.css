@@ -747,6 +747,10 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 html[data-theme="dark"] .component-chunk-row { background: #1d2638; }
 html[data-theme="dark"] .component-field-row { background: #171e2a; }
 .field-copy { display: block; margin-top: .2rem; color: #6b7280; font-size: .85rem; }
+.copyable-text { display: inline-flex; align-items: baseline; gap: .45rem; min-width: 0; }
+.copyable-text.field-copy { display: flex; }
+.copy-text-button { padding: 0; border: 0; background: transparent; color: #4f46e5; font: inherit; font-size: .75rem; cursor: pointer; white-space: nowrap; }
+.copy-text-button:hover { text-decoration: underline; }
 .badge-warning { background: #fef3c7; color: #854d0e; }
 .field-detail { margin-top: 1rem; padding: 1rem; border: 1px solid #c7d2fe; border-radius: 8px; background: #fff; box-shadow: 0 -4px 16px rgb(15 23 42 / .06); }
 .field-detail > header { padding-bottom: .75rem; border-bottom: 1px solid #e5e7eb; }
