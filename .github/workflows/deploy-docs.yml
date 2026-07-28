@@ -70,11 +70,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Repository Pages source が branch build のままでも、そちらの自動公開が
-      # Actions artifact を後から上書きしないよう、branch build の完了を待つ。
-      # 恒久対応は Settings > Pages > Source を GitHub Actions に統一すること。
-      - name: Wait for legacy Pages build
-        run: sleep 30
 
       - name: Deploy to GitHub Pages
         id: deployment
