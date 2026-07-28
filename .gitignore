@@ -13,6 +13,8 @@
 node_modules/
 dist/
 coverage/
+playwright-report/
+test-results/
 .vite/
 
 # ログ・OS 生成物

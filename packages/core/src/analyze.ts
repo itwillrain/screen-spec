@@ -64,7 +64,7 @@ interface LayoutLike {
   sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown; items?: unknown }>;
 }
 
-interface UIComponentLike { fields?: Record<string, { eventId?: unknown }> }
+interface UIComponentLike { fields?: Record<string, { type?: unknown; eventId?: unknown; eventContext?: unknown }> }
 interface UIInstanceLike { component?: UIComponentLike; bindings?: Record<string, { source?: unknown; value?: unknown }>; events?: Record<string, unknown>; visibleWhen?: unknown }
 
 interface DataSchemaLike {
@@ -198,7 +198,7 @@ interface RefContext {
 
 /** 参照（fields.X / screen.route.Y / screen.query.Y）が実在するか検査する。 */
 function checkRefPart(ref: RefExpr, ctx: RefContext, where: string, diagnostics: Diagnostic[]): void {
-  if (ref.root === "event" && ref.path[0] === "payload" && ref.path.length >= 2) return;
+  if (ref.root === "event" && ref.path.length === 1) return;
   if (ref.root === "fields") {
     const f = ref.path[0];
     if (ref.path.length !== 1 || !f || !ctx.fieldKeys.has(f)) {
@@ -781,10 +781,31 @@ function analyzeUIComponents(s: ScreenLike, diagnostics: Diagnostic[]): void {
     if (!contract || typeof contract !== "object") continue;
     const fields = contract.fields ?? {}, bindings = instance.bindings ?? {};
     for (const target of Object.keys(bindings)) {
-      const fieldId = target.split(".")[0];
-      if (!(fieldId in fields)) diagnostics.push({ severity: "error", code: "unknown-ui-field-binding", message: `Component Instance "${instanceId}" が未定義Field "${fieldId}" へbindingしています。`, where: instanceId });
+      const [fieldId, property, nested] = target.split(".");
+      const field = fields[fieldId];
+      if (!field) {
+        diagnostics.push({ severity: "error", code: "unknown-ui-field-binding", message: `Component Instance "${instanceId}" が未定義Field "${fieldId}" へbindingしています。`, where: instanceId });
+        continue;
+      }
+      if (!property) continue;
+      const type = asString(field.type) ?? "";
+      const allowed = new Set(["value", "visible", "enabled", ...(type === "button" || type === "label" ? ["text"] : []), ...(type === "select" || type === "radio" ? ["options", "loading"] : []), ...(type === "list" ? ["activeItem", "loading"] : []), ...(type === "table" ? ["rowKey", "loading"] : [])]);
+      if (!allowed.has(property) || (nested && property !== "value")) diagnostics.push({ severity: "error", code: "unknown-ui-field-property", message: `Component Instance "${instanceId}" がField "${fieldId}" の未定義property "${target.slice(fieldId.length + 1)}" へbindingしています。`, where: instanceId });
     }
-    const contractEvents = new Set(Object.values(fields).map((field) => asString(field.eventId)).filter((event): event is string => !!event));
+    const eventContexts = new Map<string, string>();
+    for (const field of Object.values(fields)) {
+      const eventId = asString(field.eventId);
+      if (!eventId) continue;
+      const context =
+        field.eventContext && typeof field.eventContext === "object" && !Array.isArray(field.eventContext)
+          ? field.eventContext
+          : {};
+      const signature = JSON.stringify(Object.entries(context).sort(([left], [right]) => left.localeCompare(right)));
+      const previous = eventContexts.get(eventId);
+      if (previous !== undefined && previous !== signature) diagnostics.push({ severity: "error", code: "inconsistent-ui-event-context", message: `Component Instance "${instanceId}" のEvent "${eventId}" を発火するField間でEvent Contextが一致していません。`, where: instanceId });
+      else eventContexts.set(eventId, signature);
+    }
+    const contractEvents = new Set(eventContexts.keys());
     for (const [event, target] of Object.entries(instance.events ?? {})) {
       const targetId = asString(target);
       if (!contractEvents.has(event)) diagnostics.push({ severity: "error", code: "unknown-ui-event", message: `Component Instance "${instanceId}" が内部Fieldに存在しないEvent "${event}" を接続しています。`, where: instanceId });

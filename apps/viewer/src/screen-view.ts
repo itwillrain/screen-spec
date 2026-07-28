@@ -128,10 +128,13 @@ export interface EventBranchView extends EventOutcomeView {
   onError?: EventOutcomeView & { cases: ErrorCaseView[] };
 }
 
+export interface EventContextView { name: string; type: string; description?: string }
+
 export interface EventView {
   key: string;
   trigger?: string;
   target?: string;
+  context: EventContextView[];
   from?: string;
   to?: string;
   apiCall?: string;
@@ -243,6 +246,7 @@ interface RawField {
   label?: string;
   text?: string;
   eventId?: string;
+  eventContext?: Record<string, { type?: string; description?: string }>;
   type?: string;
   required?: boolean;
   width?: string;
@@ -267,7 +271,7 @@ interface RawLayout {
 }
 
 interface RawUIInstance {
-  component?: { $ref?: string };
+  component?: { $ref?: string; name?: string; fields?: Record<string, RawField> };
   bindings?: Record<string, { source?: string; value?: unknown }>;
   events?: Record<string, string>;
   visibleWhen?: string;
@@ -547,9 +551,24 @@ function buildErrorOutcome(raw: (RawEventOutcome & { cases?: RawErrorCase[] }) |
   };
 }
 
+function buildEventContext(screen: SpecDoc["screen"], event: RawEvent): EventContextView[] {
+  let fields: RawField[] = [];
+  if (event.target) {
+    const field = screen?.fields?.[event.target];
+    if (field) fields = [field];
+  } else if (typeof event.trigger === "object" && event.trigger.component && event.trigger.event) {
+    const component = screen?.ui?.[event.trigger.component]?.component;
+    fields = Object.values(component?.fields ?? {}).filter((field) => field.eventId === (typeof event.trigger === "object" ? event.trigger.event : undefined));
+  }
+  const context = new Map<string, EventContextView>();
+  for (const field of fields) for (const [name, value] of Object.entries(field.eventContext ?? {})) context.set(name, { name, type: value.type ?? "unknown", description: value.description });
+  return [...context.values()];
+}
+
 function buildEvents(screen: SpecDoc["screen"]): EventView[] {
   return Object.entries(screen?.events ?? {}).map(([key, event]) => ({
     key,
+    context: buildEventContext(screen, event),
     trigger: typeof event.trigger === "string" ? event.trigger : event.trigger?.component && event.trigger.event ? event.trigger.component + "." + event.trigger.event : undefined,
     target: event.target,
     from: event.from,

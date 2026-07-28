@@ -7,7 +7,7 @@ description: 線形イベントと条件分岐イベント。
 
 `screen.events` は状態間の遷移を定義します。イベントキーと Branch の `id` は camelCase です。
 
-共通項目は `from`（必須）、`trigger`、`target` です。結果は、単一の結果を持つ **Linear Event** と、条件付き結果を持つ **Branched Event** のどちらかで記述します。
+共通項目は `from`（必須）、`trigger`、`target` です。Trigger Fieldが`eventContext`を持つ場合、その値をEvent実行中に`event.<name>`で参照できます。結果は、単一の結果を持つ **Linear Event** と、条件付き結果を持つ **Branched Event** のどちらかで記述します。
 
 ## フィールド
 
@@ -68,7 +68,7 @@ events:
 - 状態を変えない結果も、現在状態を `to` に指定する自己遷移として明示します。
 - fallback がなく全条件が偽なら **No Match** です。状態遷移、API呼び出し、副作用は発生しません。
 
-`when` はイベント実行前の `fields.*`、`screen.route.*`、`screen.query.*` を参照する条件式です。APIレスポンスによる分岐は `onSuccess` / `onError.cases` で表します。
+`when` はイベント実行前の `fields.*`、`screen.route.*`、`screen.query.*`、`event.*`を参照する条件式です。APIレスポンスによる分岐は `onSuccess` / `onError.cases` で表します。
 
 ## 期待結果とAPIエラー
 

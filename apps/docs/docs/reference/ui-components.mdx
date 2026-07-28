@@ -52,8 +52,8 @@ screen:
       component:
         $ref: "./common.yaml#/components/ui/Pagination"
       bindings:
-        summary.currentPage: { source: data.userPage }
-        summary.totalCount: { source: data.userTotal }
+        summary.value.currentPage: { source: data.userPage }
+        summary.value.totalCount: { source: data.userTotal }
         pageSizeSelector.options: { value: [20, 50, 100] }
         pageNumbers.loading: { source: api.listUsers.loading }
       events:
@@ -63,7 +63,7 @@ screen:
 
 全画面で共通の固定値はComponent内Fieldの`default`へ定義し、ScreenのBindingには画面固有の値だけを記述します。
 
-Binding keyは`fieldId`または`fieldId.property`です。値には`source`または固定`value`の一方を指定します。先頭の`fieldId`はComponentの`fields`に存在する必要があります。Event Mapping keyは内部Fieldに定義された`eventId`、値はScreen Event IDです。同じ`eventId`を複数Fieldで共有できます。
+Binding keyは`fieldId`または`fieldId.property`です。propertyはField型の標準Binding Propertyに限定され、objectの部分入力だけ`fieldId.value.path`を使えます。値には`source`または固定`value`の一方を指定します。先頭の`fieldId`はComponentの`fields`に存在する必要があります。Event Mapping keyは内部Fieldに定義された`eventId`、値はScreen Event IDです。同じ`eventId`を複数Fieldで共有できますが、各Fieldの`eventContext`は同じ名前と型に揃えます。`default`はBinding値が未定義の場合だけ使い、`null`は明示値として扱います。
 
 ## 画面要素の配置と表示
 

@@ -118,12 +118,13 @@ components:
     Pagination:
       name: Pagination
       fields:
-        pageNumbers: { label: Page numbers, type: list, eventId: pageChange }
+        pageNumbers: { label: Page numbers, type: list, eventId: pageChange, eventContext: { page: { type: integer } } }
 `;
     const view = await buildScreenView("https://example.test/users.yaml", async (uri) => uri.endsWith("/common.yaml") ? common : screen)
     expect(view.valid).toBe(true)
     expect(view.uiInstances[0]).toMatchObject({ key: "pagination", componentRef: "./common.yaml#/components/ui/Pagination", bindings: [{ target: "pageNumbers.value", value: 1 }], events: [{ fieldEvent: "pageChange", screenEvent: "changePage" }] })
     expect(view.layout?.sections[0].items).toEqual([{ kind: "field", key: "keyword" }, { kind: "component", key: "pagination" }])
     expect(view.events[0].trigger).toBe("pagination.pageChange")
+    expect(view.events[0].context).toEqual([{ name: "page", type: "integer" }])
   })
 })

@@ -108,9 +108,9 @@ screen:
       component:
         $ref: "./common.yaml#/components/ui/Pagination"
       bindings:
-        summary.currentPage: { source: data.userPage }
-        summary.pageSize: { source: data.userPageSize }
-        summary.totalCount: { source: data.userTotal }
+        summary.value.currentPage: { source: data.userPage }
+        summary.value.pageSize: { source: data.userPageSize }
+        summary.value.totalCount: { source: data.userTotal }
         pageNumbers.loading: { source: api.listUsers.loading }
         pageSizeSelector.options: { value: [20, 50, 100] }
       events:
@@ -181,8 +181,8 @@ screen:
         query:
           keyword: "{fields.keyword}"
           role: "{fields.role}"
-          page: "{event.payload.page}"
-          pageSize: "{event.payload.pageSize}"
+          page: "{event.page}"
+          pageSize: "{event.pageSize}"
       response:
         mapping:
           data.userRows: data

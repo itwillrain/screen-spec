@@ -200,13 +200,10 @@ function StatesTab({ screen }: { screen: ScreenView }) {
             <article key={event.key} className="event-card">
               <header>
                 <h3><code>{event.key}</code></h3>
-                {event.trigger ? <span className="badge badge-region">{event.trigger}</span> : null}
-                {event.target ? <span className="muted">target: <code>{event.target}</code></span> : null}
               </header>
-              <p className="event-route">
-                <code>{event.from ?? '?'}</code> → {event.branches.length > 0 ? <span>{event.branches.length} branches</span> : <code>{event.to ?? '?'}</code>}
-                {event.apiCall ? <> · API <code>{event.apiCall}</code></> : null}
-              </p>
+              <div className="event-flow-step"><strong>1. Trigger</strong><p>{event.target ? <>Field <code>{event.target}</code></> : event.trigger ? <code>{event.trigger}</code> : <span className="muted">未定義</span>}</p></div>
+              {event.context.length ? <div className="event-flow-step"><strong>2. Event Context</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}
+              <p className="event-route"><strong>{event.branches.length ? "3. Branches" : "3. Action"}</strong> · <code>{event.from ?? '?'}</code> → {event.branches.length > 0 ? <span>{event.branches.length} branches</span> : <code>{event.to ?? '?'}</code>}{event.apiCall ? <> · API <code>{event.apiCall}</code></> : null}</p>
               {event.branches.length > 0 ? (
                 <div className="event-branches">
                   {event.branches.map((branch) => (

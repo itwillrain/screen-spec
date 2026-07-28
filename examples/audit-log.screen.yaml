@@ -62,9 +62,9 @@ screen:
     auditPagination:
       component: { $ref: "./common.yaml#/components/ui/Pagination" }
       bindings:
-        summary.currentPage: { source: data.auditPage }
-        summary.pageSize: { source: data.auditPageSize }
-        summary.totalCount: { source: data.auditTotal }
+        summary.value.currentPage: { source: data.auditPage }
+        summary.value.pageSize: { source: data.auditPageSize }
+        summary.value.totalCount: { source: data.auditTotal }
         pageNumbers.loading: { source: api.listAuditLogs.loading }
         pageSizeSelector.visible: { value: false }
       events: { pageChange: changePage }
@@ -91,7 +91,7 @@ screen:
         query:
           actor: "{fields.actor}"
           dateFrom: "{fields.dateFrom}"
-          page: "{event.payload.page}"
+          page: "{event.page}"
       response:
         mapping:
           data.auditRows: data

@@ -66,6 +66,7 @@ Primaryは選択、link、focus、主要操作に限定する。状態色は意�
 ## フォーム項目と状態
 
 - 項目はlabel/key、type/required/default、validation、visible/enabled条件、layout、由来の順に読む。
+- Event詳細はTrigger、Event Context、BranchまたはAction、Result、Success・Errorの順に縦方向で読む。空の段階は表示しない。
 - 条件式と長い値はcode表示し、折り返しまたは詳細展開を提供する。
 - Valid、Warning、Error、Deprecated、Required、許可/拒否/未定義は文字でも示す。
 - badgeは短い状態・分類だけに使う。inputは高さ36px、touch環境44px、6px radius、2px focus ring。

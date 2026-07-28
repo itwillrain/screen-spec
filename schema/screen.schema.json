@@ -432,11 +432,13 @@
     "Field": {
       "type": "object",
       "required": ["label", "type"],
+      "dependentRequired": { "eventContext": ["eventId"] },
       "additionalProperties": false,
       "properties": {
         "label": { "type": "string" },
         "text": { "type": "string", "minLength": 1, "description": "ボタンやラベルなどに表示する文言" },
         "eventId": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "このUI要素が発火するscreen.eventsのキー" },
+        "eventContext": { "$ref": "#/$defs/EventContextMap" },
         "type": {
           "type": "string",
           "enum": [
@@ -483,6 +485,22 @@
           "description": "旧形式。新規仕様は screen.accessControl を使用する。",
           "$ref": "#/$defs/Permission"
         }
+      }
+    },
+
+    "EventContextMap": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$" },
+      "additionalProperties": { "$ref": "#/$defs/EventContextValue" }
+    },
+    "EventContextValue": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["string", "number", "integer", "boolean", "object", "array"] },
+        "description": { "type": "string" }
       }
     },
 

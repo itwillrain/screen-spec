@@ -14,6 +14,7 @@ description: 画面上の項目定義。
 | `label` | string | ✔ | 表示ラベル |
 | `text` | string | | ボタンやラベルなどに表示する文言 |
 | `eventId` | string | | このUI要素が発火する`screen.events`のキー |
+| `eventContext` | object | | Eventへ渡す名前付きの値と型 |
 | `type` | enum | ✔ | 項目型（下記） |
 | `required` | boolean | | 必須かどうか |
 | `default` | any | | 既定値（`type` / `options` に整合。不一致は warning） |
@@ -40,9 +41,18 @@ altEmail:
 - 参照は `fields.X` / `screen.route.Y`、リテラルは文字列/数値/`true`/`false`/`null`
 - 構文エラー・未定義参照は **warning**
 
-## 標準Input Contract
+## Binding Property
 
-FieldのvalueはField自身の標準状態です。`select`と`radio`は追加Inputとして動的`options`と`loading`を受け取れます。取得元との接続は[Field Bindings](/reference/field-bindings)で記述します。Componentごとの`inputs`宣言はありません。
+Field型が受け取れるBinding Propertyを定めます。全Fieldは`value`、`visible`、`enabled`を持ちます。
+
+| Field型 | 追加property |
+|---|---|
+| `button` / `label` | `text` |
+| `select` / `radio` | `options` / `loading` |
+| `list` | `activeItem` / `loading` |
+| `table` | `rowKey` / `loading` |
+
+`value.*`はobject値の一部を接続する場合だけ使用できます。それ以外の未知propertyはerrorです。Componentごとの`inputs`宣言はありません。
 
 ## `type` の値
 
@@ -70,6 +80,17 @@ events:
     target: submitButton
     from: editing
     to: submitting
+```
+
+`eventContext`は操作がEventへ渡す値を定義します。接続先Eventでは`event.<name>`で参照します。
+
+```yaml
+rows:
+  label: データ行
+  type: table
+  eventId: rowSelect
+  eventContext:
+    rowId: { type: string, description: 選択した行ID }
 ```
 
 未定義の`eventId`、またはfieldキーと`event.target`の不一致はwarningです。

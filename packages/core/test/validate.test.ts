@@ -1060,6 +1060,7 @@ describe("UI Component Field集合", () => {
     };
     const codes = analyzeScreen(screen).map((diagnostic) => diagnostic.code);
     expect(codes).not.toContain("unknown-ui-field-binding");
+    expect(codes).not.toContain("unknown-ui-field-property");
     expect(codes).not.toContain("unknown-ui-event");
     expect(codes).not.toContain("unknown-ui-screen-event");
   });
@@ -1070,7 +1071,7 @@ describe("UI Component Field集合", () => {
       ui: {
         pagination: {
           component: { name: "Pagination", fields: { pageNumbers: { type: "list", eventId: "pageChange" } } },
-          bindings: { "missing.value": { value: 1 } },
+          bindings: { "missing.value": { value: 1 }, "pageNumbers.text": { value: "invalid" } },
           events: { missingEvent: "missingScreenEvent" },
         },
       },
@@ -1078,6 +1079,7 @@ describe("UI Component Field集合", () => {
     };
     const codes = analyzeScreen(screen).map((diagnostic) => diagnostic.code);
     expect(codes).toContain("unknown-ui-field-binding");
+    expect(codes).toContain("unknown-ui-field-property");
     expect(codes).toContain("unknown-ui-event");
     expect(codes).toContain("unknown-ui-screen-event");
   });

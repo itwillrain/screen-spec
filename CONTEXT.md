@@ -60,6 +60,18 @@ _Avoid_: Domain Model, View Model, Store
 Screen直下またはComponent Instance内のFieldの値・属性を、Screen Data、APIの実行状態、固定値のいずれかへ明示的に接続する画面固有の契約。
 _Avoid_: Component Binding, Prop Binding
 
+**Binding Property**:
+Component Instance内のFieldへ接続できる標準属性。Field型が語彙を定め、任意の実装固有propsは含まない。
+_Avoid_: Prop, Component Input
+
+**Event Context**:
+Field操作がEventへ渡し、Event実行中に`event.<name>`で参照できる名前付きの値。
+_Avoid_: Component Event Payload, Props
+
+**Effective Field Value**:
+実行時Binding、Fieldの`default`の順で解決されるFieldの実効値。`null`は明示値でありfallbackを起こさない。
+_Avoid_: Merged Props, Initial Props
+
 **Event**:
 画面上の契機と、それによる状態変化・処理・期待結果をまとめた振る舞いの単位。
 _Avoid_: Action（event内の副作用定義と区別する）

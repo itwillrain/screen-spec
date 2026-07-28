@@ -12,12 +12,14 @@
     "validate": "tsx packages/cli/src/index.ts validate",
     "testgen": "tsx packages/cli/src/index.ts testgen",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.2",

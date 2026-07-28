@@ -43,25 +43,65 @@ components:
             - { id: users, label: ユーザー管理 }
             - { id: audit, label: 監査ログ }
           eventId: navigate
+          eventContext:
+            itemId: { type: string, description: 選択したメニューID }
     AppFooter:
       name: アプリケーションフッター
       description: 管理画面共通の補助リンクと著作権表示をまとめたField集合
       fields:
-        legalLinks: { label: 補助リンク, type: list, eventId: openLink }
+        legalLinks:
+          label: 補助リンク
+          type: list
+          eventId: openLink
+          eventContext:
+            linkId: { type: string, description: 選択したリンクID }
         copyright: { label: 著作権表示, type: label }
     DataTable:
       name: データテーブル
       description: 一覧の見出し、行、空表示をまとめたField集合
       fields:
-        header: { label: 列見出し, type: list, eventId: sortChange }
-        rows: { label: データ行, type: table, eventId: rowSelect }
+        header:
+          label: 列見出し
+          type: list
+          eventId: sortChange
+          eventContext:
+            column: { type: string, description: 並び替え対象の列キー }
+            direction: { type: string, description: ascまたはdesc }
+        rows:
+          label: データ行
+          type: table
+          eventId: rowSelect
+          eventContext:
+            rowId: { type: string, description: 選択した行ID }
         emptyState: { label: 空表示, type: label, text: データがありません }
     Pagination:
       name: ページネーション
       description: ページ移動と件数表示をまとめたField集合
       fields:
-        previous: { label: 前へ, type: button, text: 前へ, eventId: pageChange }
-        pageNumbers: { label: ページ番号, type: list, eventId: pageChange }
-        next: { label: 次へ, type: button, text: 次へ, eventId: pageChange }
-        pageSizeSelector: { label: 表示件数, type: select, eventId: pageSizeChange }
+        previous:
+          label: 前へ
+          type: button
+          text: 前へ
+          eventId: pageChange
+          eventContext:
+            page: { type: integer, description: 移動先ページ番号 }
+        pageNumbers:
+          label: ページ番号
+          type: list
+          eventId: pageChange
+          eventContext:
+            page: { type: integer, description: 移動先ページ番号 }
+        next:
+          label: 次へ
+          type: button
+          text: 次へ
+          eventId: pageChange
+          eventContext:
+            page: { type: integer, description: 移動先ページ番号 }
+        pageSizeSelector:
+          label: 表示件数
+          type: select
+          eventId: pageSizeChange
+          eventContext:
+            pageSize: { type: integer, description: 選択した表示件数 }
         summary: { label: 件数表示, type: label }
