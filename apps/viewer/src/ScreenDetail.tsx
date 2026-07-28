@@ -120,7 +120,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }:
         <AccessTab screen={screen} accessControl={screen.accessControl} />
       ) : null}
       {active === 'states' && screen.stateMachine ? (
-        <StatesTab screen={screen} selectedEvent={selectedEvent} />
+        <StatesTab screen={screen} selectedEvent={selectedEvent} onBackToFields={() => selectTab("fields")} />
       ) : null}
       {active === 'api' ? <ApiTab screen={screen} /> : null}
       {active === 'transitions' ? (
@@ -218,14 +218,14 @@ function EventTriggerDescription({ screen, event }: { screen: ScreenView; event:
   return event.trigger ? <><code>{event.trigger}</code> が発生したとき</> : <span className="muted">きっかけは未定義です</span>
 }
 
-function StatesTab({ screen, selectedEvent }: { screen: ScreenView; selectedEvent?: string }) {
+function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenView; selectedEvent?: string; onBackToFields: () => void }) {
   return (
     <section>
       <p className="muted">states / events から生成した状態遷移図と、分岐ごとの期待結果です。</p>
       <StateDiagram sm={screen.stateMachine!} />
       {screen.events.length > 0 ? (
         <div className="events">
-          <h2>イベントの動作</h2>
+          <div className="detail-section-head events-head"><h2>イベントの動作</h2>{selectedEvent ? <button type="button" className="link" onClick={onBackToFields}>項目へ戻る</button> : null}</div>
           {screen.events.map((event) => (
             <article key={event.key} className={selectedEvent === event.key ? "event-card selected-event" : "event-card"} data-event-id={event.key} tabIndex={-1}>
               <header>

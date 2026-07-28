@@ -58,7 +58,9 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await page.goForward();
   await expect(page.getByRole("tab", { name: "状態遷移" })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".event-card.selected-event")).toHaveAttribute("data-event-id", eventId);
-  await page.getByRole("tab", { name: "項目" }).click();
+  await page.getByRole("button", { name: "項目へ戻る" }).click();
+  await expect(page.getByRole("tab", { name: "項目" })).toHaveAttribute("aria-selected", "true");
+  await expect(page).not.toHaveURL(/event=/);
 
   await page.getByText("userTable.rows", { exact: true }).click();
   await expect(page.getByRole("heading", { name: /userTable.rows/ })).toBeVisible();
