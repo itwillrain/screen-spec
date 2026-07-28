@@ -345,7 +345,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
                   const isField = row.kind === "field"
                   const key = isField ? row.field.key : row.instance.key
                   const label = isField ? row.field.label : row.component?.name ?? componentName(row.instance.componentId ?? row.instance.componentRef ?? row.instance.key)
-                  const copy = isField ? row.field.text : row.instance.componentRef
+                  const copy = isField ? row.field.text : undefined
                   const type = isField ? row.field.type : "Component"
                   const selectedRow = isField ? selectedKey === key : selectedInstanceKey === key
                   const section = sections.get(`${row.kind}:${key}`)
@@ -363,7 +363,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
                       {showSection ? <tr className="section-group-row"><th colSpan={6} scope="rowgroup">{section ?? "未配置"}</th></tr> : null}
                       <tr tabIndex={0} data-screen-element={key} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${hoveredDesignTarget === key ? "design-linked-hover " : ""}${tourFocusedTarget === key ? "tour-focused " : ""}${isField ? "" : "component-chunk-row"}`} onMouseEnter={() => setHoveredDesignTarget(key)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
                         <td>{tourFocusedTarget !== undefined ? designTourNumbers.get(key)?.map((number) => <span key={number} className="tour-row-number" aria-label={`Design Tour ${number}`}>{number}</span>) : null}{!isField ? <button type="button" className="component-toggle" aria-label={`${label}を${expanded ? "閉じる" : "開く"}`} aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); toggleExpanded() }}>{expanded ? "▾" : "▸"}</button> : null}<code className="element-id">{key}</code></td>
-                        <td><strong>{label}</strong>{isField && copy ? <CopyableText className="field-copy" value={copy} /> : copy ? <span className="field-copy">{copy}</span> : null}</td>
+                        <td><strong>{label}</strong>{isField && copy ? <CopyableText className="field-copy" value={copy} /> : null}</td>
                         <td><TypeLabel value={type} /></td>
                         <td>{isField && INPUT_FIELD_TYPES.has(row.field.type) ? row.field.required ? "必須" : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
                         <td>{row.events.length ? row.events.map((event) => <EventIdLink key={event.key} eventId={event.key} onOpen={onOpenEvent} />) : <span className="muted">—</span>}</td>
