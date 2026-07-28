@@ -8,6 +8,23 @@ screen:
     images:
       - url: wireframes/user-list.svg
         caption: ユーザー一覧
+        mappings:
+          - target: appHeader
+            regions: [{ x: 0, y: 0, width: 1, height: 0.085 }]
+          - target: adminSidebar
+            regions: [{ x: 0, y: 0.085, width: 0.192, height: 0.853 }]
+          - target: keyword
+            regions: [{ x: 0.246, y: 0.282, width: 0.279, height: 0.053 }]
+          - target: role
+            regions: [{ x: 0.546, y: 0.282, width: 0.192, height: 0.053 }]
+          - target: searchButton
+            regions: [{ x: 0.858, y: 0.282, width: 0.087, height: 0.053 }]
+          - target: userTable.rows
+            regions: [{ x: 0.246, y: 0.459, width: 0.7, height: 0.236 }]
+          - target: userPagination
+            regions: [{ x: 0.66, y: 0.768, width: 0.272, height: 0.06 }]
+          - target: appFooter
+            regions: [{ x: 0, y: 0.938, width: 1, height: 0.062 }]
 
   layout:
     sections:

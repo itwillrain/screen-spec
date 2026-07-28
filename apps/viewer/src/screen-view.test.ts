@@ -91,6 +91,14 @@ describe("UI Component Screen Elements view model", () => {
 screen:
   id: users
   name: Users
+  design:
+    images:
+      - url: wireframe.svg
+        mappings:
+          - target: keyword
+            regions: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.1 }]
+          - target: pagination.pageNumbers
+            regions: [{ x: 0.5, y: 0.7, width: 0.4, height: 0.1 }]
   layout:
     sections:
       - id: results
@@ -124,6 +132,7 @@ components:
     expect(view.valid).toBe(true)
     expect(view.uiInstances[0]).toMatchObject({ key: "pagination", componentRef: "./common.yaml#/components/ui/Pagination", bindings: [{ target: "pageNumbers.value", value: 1 }], events: [{ fieldEvent: "pageChange", screenEvent: "changePage" }] })
     expect(view.layout?.sections[0].items).toEqual([{ kind: "field", key: "keyword" }, { kind: "component", key: "pagination" }])
+    expect(view.design?.images[0].mappings).toEqual([{ target: "keyword", regions: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.1 }] }, { target: "pagination.pageNumbers", regions: [{ x: 0.5, y: 0.7, width: 0.4, height: 0.1 }] }])
     expect(view.events[0].trigger).toBe("pagination.pageChange")
     expect(view.events[0].context).toEqual([{ name: "page", type: "integer" }])
   })

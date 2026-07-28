@@ -100,6 +100,18 @@ _Avoid_: Error, failure
 API実行後のHTTP statusやエラーコードに応じた`onError`内の分岐。実行前のBranchとは異なる。
 _Avoid_: Branch
 
+**Design Mapping**:
+ひとつのScreen Elementとデザイン画像上の一つ以上の正規化領域を対応付ける契約。
+_Avoid_: Hotspot（表示実装だけを指す場合）, Annotation（対応先を持たない注釈）
+
+**Design Region**:
+Design Mappingに属する、画像サイズに対して0から1で表す矩形領域。
+_Avoid_: Pixel Coordinates, Bounding Box
+
+**Design Tour**:
+画像順とDesign Mappingの定義順にScreen Elementsを巡回し、デザインと仕様詳細を一緒に読むViewer体験。仕様へ別のstep定義は持たない。
+_Avoid_: Tutorial Definition, Slideshow
+
 **Field Review Workspace**:
 デザインを参照しながらScreen Elementsと直接関連するEvent、Branch、API、診断を確認する、エンジニア向けの読み取り専用Viewer領域。
 _Avoid_: Editor, Design preview

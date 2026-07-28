@@ -680,6 +680,32 @@
       }
     },
 
+    "DesignMapping": {
+      "type": "object",
+      "required": ["target", "regions"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "type": "string", "minLength": 1, "description": "Field、Component Instance、またはinstance.field形式のComponent内部Field ID" },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/DesignRegion" }
+        }
+      }
+    },
+
+    "DesignRegion": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+      }
+    },
+
     "Design": {
       "title": "デザイン参照",
       "description": "画面のデザイン資産への参照（Figma・モックアップ画像・関連リンク）。UI 実装は伴わない。",
@@ -695,7 +721,12 @@
             "additionalProperties": false,
             "properties": {
               "url": { "type": "string", "format": "uri-reference", "description": "モックアップ画像の絶対または相対 URL" },
-              "caption": { "type": "string" }
+              "caption": { "type": "string" },
+              "mappings": {
+                "type": "array",
+                "description": "画像領域とScreen Elementの対応。定義順がDesign Tourの順序になる。",
+                "items": { "$ref": "#/$defs/DesignMapping" }
+              }
             }
           }
         },

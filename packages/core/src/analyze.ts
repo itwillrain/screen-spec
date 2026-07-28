@@ -77,6 +77,10 @@ interface ScreenDataLike {
   schema?: DataSchemaLike;
 }
 
+interface DesignRegionLike { x?: unknown; y?: unknown; width?: unknown; height?: unknown }
+interface DesignMappingLike { target?: unknown; regions?: DesignRegionLike[] }
+interface DesignLike { images?: Array<{ mappings?: DesignMappingLike[] }> }
+
 interface FieldBindingLike {
   options?: { source?: unknown; item?: { value?: unknown; label?: unknown } };
   loading?: { source?: unknown };
@@ -90,6 +94,7 @@ interface ScreenLike {
   data?: Record<string, ScreenDataLike>;
   fieldBindings?: Record<string, FieldBindingLike>;
   layout?: LayoutLike;
+  design?: DesignLike;
   states?: Record<string, { initial?: unknown }>;
   events?: Record<string, EventLike>;
   apiBindings?: Record<string, ApiBindingLike>;
@@ -817,12 +822,35 @@ function analyzeUIComponents(s: ScreenLike, diagnostics: Diagnostic[]): void {
   }
 }
 
+function analyzeDesignMappings(s: ScreenLike, diagnostics: Diagnostic[]): void {
+  const fields = s.fields ?? {};
+  const instances = s.ui ?? {};
+  for (const [imageIndex, image] of (s.design?.images ?? []).entries()) {
+    for (const [mappingIndex, mapping] of (image.mappings ?? []).entries()) {
+      const target = asString(mapping.target);
+      if (!target) continue;
+      const [root, ...rest] = target.split(".");
+      const instance = instances[root];
+      const valid = root in fields || (!!instance && (rest.length === 0 || (rest.length === 1 && !!instance.component?.fields?.[rest[0]])));
+      if (!valid) diagnostics.push({ severity: "error", code: "unknown-design-mapping-target", message: `Design Mappingが未定義Screen Element "${target}" を参照しています。`, where: target });
+      for (const [regionIndex, region] of (mapping.regions ?? []).entries()) {
+        const x = typeof region.x === "number" ? region.x : 0;
+        const y = typeof region.y === "number" ? region.y : 0;
+        const width = typeof region.width === "number" ? region.width : 0;
+        const height = typeof region.height === "number" ? region.height : 0;
+        if (x + width > 1 || y + height > 1) diagnostics.push({ severity: "error", code: "design-region-out-of-bounds", message: `Design Mapping "${target}" の領域が画像範囲を超えています（image ${imageIndex + 1}, mapping ${mappingIndex + 1}, region ${regionIndex + 1}）。`, where: target });
+      }
+    }
+  }
+}
+
 export function analyzeScreen(screen: unknown): Diagnostic[] {
   if (screen === null || typeof screen !== "object") return [];
   const s = screen as ScreenLike;
   const diagnostics: Diagnostic[] = [];
   analyzeParams(s, diagnostics);
   analyzeLayout(s, diagnostics);
+  analyzeDesignMappings(s, diagnostics);
   analyzeValidations(s, diagnostics);
   analyzeVisibility(s, diagnostics);
   analyzeFieldDefaults(s, diagnostics);

@@ -168,9 +168,15 @@ export interface TransitionView {
   trigger?: string;
 }
 
+export interface DesignRegionView { x: number; y: number; width: number; height: number }
+
+export interface DesignMappingView { target: string; regions: DesignRegionView[] }
+
+export interface DesignImageView { url: string; caption?: string; mappings: DesignMappingView[] }
+
 export interface DesignView {
   figma?: string;
-  images: Array<{ url: string; caption?: string }>;
+  images: DesignImageView[];
   links: Array<{ label?: string; url: string }>;
 }
 
@@ -351,7 +357,7 @@ interface RawTransition {
 
 interface RawDesign {
   figma?: string;
-  images?: Array<{ url?: string; caption?: string }>;
+  images?: Array<{ url?: string; caption?: string; mappings?: Array<{ target?: string; regions?: Array<{ x?: number; y?: number; width?: number; height?: number }> }> }>;
   links?: Array<{ label?: string; url?: string }>;
 }
 
@@ -480,7 +486,13 @@ function buildDesign(design: RawDesign | undefined): DesignView | undefined {
   if (!design) return undefined;
   const images = (design.images ?? [])
     .filter((i) => typeof i.url === "string")
-    .map((i) => ({ url: String(i.url), caption: i.caption }));
+    .map((i) => ({
+      url: String(i.url), caption: i.caption,
+      mappings: (i.mappings ?? []).filter((mapping) => typeof mapping.target === "string").map((mapping) => ({
+        target: String(mapping.target),
+        regions: (mapping.regions ?? []).filter((region) => [region.x, region.y, region.width, region.height].every((value) => typeof value === "number")).map((region) => ({ x: region.x!, y: region.y!, width: region.width!, height: region.height! })),
+      })),
+    }));
   const links = (design.links ?? [])
     .filter((l) => typeof l.url === "string")
     .map((l) => ({ label: l.label, url: String(l.url) }));

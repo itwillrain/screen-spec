@@ -13,6 +13,14 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
 
   await expect(page.getByRole("heading", { level: 1, name: "ユーザー一覧画面" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "読み込みエラー" })).toHaveCount(0);
+  await page.getByRole("button", { name: /Design Tourを開始/ }).click();
+  await expect(page.getByLabel("Design Tour")).toContainText("Design Tour 1 / 8");
+  await expect(page.getByRole("heading", { name: /appHeader/ })).toBeVisible();
+  await page.getByRole("button", { name: "次の項目" }).click();
+  await expect(page.getByLabel("Design Tour")).toContainText("adminSidebar");
+  await expect(page.getByRole("heading", { name: /adminSidebar/ })).toBeVisible();
+  await page.getByRole("button", { name: "終了" }).click();
+  await page.locator(".field-detail").getByRole("button", { name: "閉じる" }).click();
   await page.getByRole("button", { name: "「検索する」をコピー" }).click();
   await expect(page.getByRole("button", { name: "「検索する」をコピー" })).toHaveAttribute("data-copied", "true");
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("検索する");

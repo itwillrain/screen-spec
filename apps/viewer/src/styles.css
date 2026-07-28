@@ -714,6 +714,19 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .design-tools output { min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; }
 .design-viewport { height: 31rem; overflow: auto; overscroll-behavior: contain; border: 1px solid #dbe3ee; border-radius: 7px; background: #eef1f5; cursor: grab; }
 .design-viewport img { display: block; max-width: none; height: auto; }
+.design-canvas { position: relative; min-width: 100%; }
+.design-canvas > img { width: 100%; }
+.design-region { position: absolute; z-index: 2; min-width: 1.25rem; min-height: 1.25rem; padding: 0; border: 2px solid rgb(79 70 229 / .65); border-radius: 5px; background: rgb(99 102 241 / .1); color: #3730a3; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; }
+.design-region > span { position: absolute; top: -.65rem; left: -.65rem; display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 999px; background: #4f46e5; color: #fff; font-size: .7rem; font-weight: 700; box-shadow: 0 1px 4px rgb(15 23 42 / .25); }
+.design-region:hover, .design-region:focus-visible, .design-region.active { z-index: 3; border-color: #4338ca; background: rgb(99 102 241 / .22); box-shadow: 0 0 0 3px rgb(99 102 241 / .2); }
+.design-region.tour-current { animation: design-pulse 1.4s ease-in-out infinite; }
+@keyframes design-pulse { 50% { box-shadow: 0 0 0 7px rgb(99 102 241 / .16); } }
+.tour-start { display: flex; align-items: center; justify-content: space-between; width: 100%; margin: 0 0 .75rem; padding: .65rem .75rem; border: 1px solid #a5b4fc; border-radius: 7px; background: #eef2ff; color: #3730a3; font: inherit; font-weight: 700; cursor: pointer; }
+.tour-start span { font-size: .75rem; font-weight: 500; }
+.design-tour { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; padding: .65rem .75rem; border: 1px solid #a5b4fc; border-radius: 7px; background: #eef2ff; }
+.design-tour > div:first-child { display: grid; gap: .2rem; min-width: 0; }
+.design-tour-actions { display: flex; align-items: center; gap: .35rem; }
+.design-tour-actions button { min-width: 2rem; min-height: 2rem; padding: .25rem .45rem; border: 1px solid #c7d2fe; border-radius: 5px; background: #fff; color: #3730a3; font: inherit; cursor: pointer; }
 .design-caption { margin: .5rem 0; }
 .design-thumbnails { display: flex; gap: .5rem; overflow-x: auto; padding: .25rem 0; }
 .design-thumbnails button { flex: 0 0 5rem; height: 4rem; padding: .2rem; overflow: hidden; border: 2px solid transparent; border-radius: 5px; background: #fff; cursor: pointer; }
@@ -732,6 +745,7 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .review-fields tbody tr:not(.section-group-row) { cursor: pointer; }
 .review-fields tbody tr:not(.section-group-row):hover { background: #eef2ff; }
 .review-fields tbody tr.selected { background: #e0e7ff; box-shadow: inset 4px 0 #4f46e5; }
+.review-fields tbody tr.design-linked-hover { background: #eef2ff; box-shadow: inset 4px 0 #818cf8; }
 .review-fields td:last-child .badge + .badge { margin-left: .3rem; }
 .review-fields .event-id + .event-id { margin-left: .35rem; }
 .section-group-row { cursor: default; background: var(--surface, #f8fafc); }
@@ -781,6 +795,8 @@ html[data-theme="dark"] .event-flow-step > strong { color: #cbd5e1; }
 html[data-theme="dark"] :where(.field-detail, .design-tools button, .design-thumbnails button, .field-filters select) { color: #f2f5f8; background: #141a23; border-color: #3a4656; }
 html[data-theme="dark"] :where(.field-detail-grid div, .branch-list li, .related-event) { background: #202a36; border-color: #3a4656; }
 html[data-theme="dark"] .design-viewport { background: #0f141c; border-color: #3a4656; }
+html[data-theme="dark"] :where(.tour-start, .design-tour) { background: #1d2638; border-color: #4f46e5; color: #e0e7ff; }
+html[data-theme="dark"] .design-tour-actions button { background: #141a23; border-color: #4f46e5; color: #e0e7ff; }
 html[data-theme="dark"] .review-fields tbody tr.selected { background: #27324a; }
 html[data-theme="dark"] .section-group-row { background: #151b27; }
 html[data-theme="dark"] .section-group-row th { color: #cbd5e1; }
@@ -801,6 +817,8 @@ html[data-theme="dark"] .section-group-row th { color: #cbd5e1; }
 }
 @media (forced-colors: active) {
   .review-fields tbody tr.selected, .design-thumbnails button.active { outline: 3px solid Highlight; }
+  .design-region { border-color: ButtonText; background: Canvas; color: CanvasText; }
+  .design-region.active, .design-region.tour-current { outline: 3px solid Highlight; }
   .pane-resizer::before { background: ButtonText; }
 }
 

@@ -72,6 +72,7 @@ function relatedEvents(screen: ScreenView, field: FieldView): EventView[] {
 
 export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { screen: ScreenView; onOpenTab: (tab: string) => void; onNavigateField: (screenId: string, fieldId: string) => void }) {
   const [filter, setFilter] = useState('')
+  const [hoveredDesignTarget, setHoveredDesignTarget] = useState<string>()
   const [typeFilter, setTypeFilter] = useState('all')
   const [eventFilter, setEventFilter] = useState('all')
   const [conditionFilter, setConditionFilter] = useState(false)
@@ -146,20 +147,28 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
 
   const selected = enriched.find(({ field }) => field.key === selectedKey)
   const selectedInstance = screen.uiInstances.find((instance) => instance.key === selectedInstanceKey)
-  const selectField = (key: string) => {
+  const selectField = (key: string, focusDetail = true) => {
     setSelectedInstanceKey(undefined)
     setSelectedKey(key)
     setComponentTrail([])
     setQuery({ field: key, instance: undefined, component: undefined })
-    requestAnimationFrame(() => detailHeading.current?.focus())
+    if (focusDetail) requestAnimationFrame(() => detailHeading.current?.focus())
   }
-  const selectInstance = (key: string, fieldKey?: string) => {
+  const selectInstance = (key: string, fieldKey?: string, focusDetail = true) => {
     setSelectedKey(undefined)
     setSelectedInstanceKey(key)
     setSelectedInstanceFieldKey(fieldKey)
     setComponentTrail([])
     setQuery({ field: undefined, instance: key, instanceField: fieldKey, component: undefined })
-    requestAnimationFrame(() => detailHeading.current?.focus())
+    if (focusDetail) requestAnimationFrame(() => detailHeading.current?.focus())
+  }
+  const selectedDesignTarget = selectedKey ?? (selectedInstanceKey ? selectedInstanceFieldKey ? `${selectedInstanceKey}.${selectedInstanceFieldKey}` : selectedInstanceKey : undefined)
+  const selectDesignTarget = (target: string) => {
+    if (screen.fields.some((field) => field.key === target)) selectField(target, false)
+    else {
+      const [instanceKey, fieldKey] = target.split(".")
+      if (screen.uiInstances.some((instance) => instance.key === instanceKey)) selectInstance(instanceKey, fieldKey, false)
+    }
   }
   const closeDetail = () => {
     setSelectedInstanceKey(undefined)
@@ -265,7 +274,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
         </button>
       ) : null}
       <div className={`field-review-workspace${designCollapsed || !hasDesign ? ' design-collapsed' : ''}`} style={{ '--design-pane': `${panePercent}%` } as React.CSSProperties}>
-        {hasDesign && !designCollapsed ? <DesignReference screen={screen} /> : null}
+        {hasDesign && !designCollapsed ? <DesignReference screen={screen} selectedTarget={selectedDesignTarget} hoveredTarget={hoveredDesignTarget} onSelectTarget={selectDesignTarget} onHoverTarget={setHoveredDesignTarget} /> : null}
         {hasDesign && !designCollapsed ? <div className="pane-resizer" role="separator" tabIndex={0} aria-label="デザインペインの幅" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={60} aria-valuenow={Math.round(panePercent)} onPointerDown={startResize} onKeyDown={onResizeKeyDown} /> : null}
         <div className="field-review-main">
           <div className="detail-section-head element-list-head"><div><h2>画面要素</h2><span className="muted">FieldとComponentを定義順に表示</span></div><div className="detail-actions"><button type="button" className="link" onClick={() => setExpandedInstances(new Set(screen.uiInstances.map((instance) => instance.key)))}>すべて開く</button><button type="button" className="link" onClick={() => setExpandedInstances(new Set())}>すべて閉じる</button></div></div>
@@ -300,7 +309,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
                   return (
                     <Fragment key={`${row.kind}:${key}`}>
                       {showSection ? <tr className="section-group-row"><th colSpan={6} scope="rowgroup">{section ?? "未配置"}</th></tr> : null}
-                      <tr tabIndex={0} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${isField ? "" : "component-chunk-row"}`} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
+                      <tr tabIndex={0} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${hoveredDesignTarget === key ? "design-linked-hover " : ""}${isField ? "" : "component-chunk-row"}`} onMouseEnter={() => setHoveredDesignTarget(key)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
                         <td>{!isField ? <button type="button" className="component-toggle" aria-label={`${label}を${expanded ? "閉じる" : "開く"}`} aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); toggleExpanded() }}>{expanded ? "▾" : "▸"}</button> : null}<code className="element-id">{key}</code></td>
                         <td><strong>{label}</strong>{isField && copy ? <CopyableText className="field-copy" value={copy} /> : copy ? <span className="field-copy">{copy}</span> : null}</td>
                         <td><code>{type}</code></td>
@@ -308,7 +317,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
                         <td>{row.events.length ? row.events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
                         <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!row.diagnostics.length ? <span className="muted">—</span> : null}</td>
                       </tr>
-                      {expanded ? componentFields.map(([fieldKey, rawField]) => { const field = asRecord(rawField); const eventId = typeof field?.eventId === "string" ? field.eventId : undefined; const mappedEvents = eventId ? row.instance.events.filter((mapping) => mapping.fieldEvent === eventId) : []; return <tr key={`${key}.${fieldKey}`} className="component-field-row" tabIndex={0} onClick={() => selectInstance(key, fieldKey)} onKeyDown={(event) => onRowKeyDown(event, "component", key, fieldKey)}><td><span className="component-field-branch" aria-hidden="true">└</span><code className="element-id">{key}.{fieldKey}</code></td><td><strong>{String(field?.label ?? fieldKey)}</strong>{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><code>{String(field?.type ?? "unknown")}</code></td><td>{field?.required === true ? "必須" : <span className="muted">—</span>}</td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : eventId ? <code className="event-id">{eventId}</code> : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
+                      {expanded ? componentFields.map(([fieldKey, rawField]) => { const field = asRecord(rawField); const eventId = typeof field?.eventId === "string" ? field.eventId : undefined; const mappedEvents = eventId ? row.instance.events.filter((mapping) => mapping.fieldEvent === eventId) : []; return <tr key={`${key}.${fieldKey}`} className={`component-field-row${hoveredDesignTarget === `${key}.${fieldKey}` ? " design-linked-hover" : ""}`} tabIndex={0} onMouseEnter={() => setHoveredDesignTarget(`${key}.${fieldKey}`)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => selectInstance(key, fieldKey)} onKeyDown={(event) => onRowKeyDown(event, "component", key, fieldKey)}><td><span className="component-field-branch" aria-hidden="true">└</span><code className="element-id">{key}.{fieldKey}</code></td><td><strong>{String(field?.label ?? fieldKey)}</strong>{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><code>{String(field?.type ?? "unknown")}</code></td><td>{field?.required === true ? "必須" : <span className="muted">—</span>}</td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : eventId ? <code className="event-id">{eventId}</code> : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
                     </Fragment>
                   )
                 })}
@@ -337,21 +346,50 @@ function FieldFilters(props: {
   </div>
 }
 
-function DesignReference({ screen }: { screen: ScreenView }) {
+function DesignReference({ screen, selectedTarget, hoveredTarget, onSelectTarget, onHoverTarget }: { screen: ScreenView; selectedTarget?: string; hoveredTarget?: string; onSelectTarget: (target: string) => void; onHoverTarget: (target?: string) => void }) {
   const design = screen.design!
-  const initialImage = Math.max(0, Math.min(Number(queryValue('design')) || 0, Math.max(0, design.images.length - 1)))
+  const initialImage = Math.max(0, Math.min(Number(queryValue("design")) || 0, Math.max(0, design.images.length - 1)))
   const [index, setIndex] = useState(initialImage)
   const [zoom, setZoom] = useState(() => Number(localStorage.getItem(ZOOM_KEY)) || 100)
+  const [tourStep, setTourStep] = useState<number>()
   const viewport = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; y: number; left: number; top: number }>()
   const [naturalWidth, setNaturalWidth] = useState(0)
   const image = design.images[index]
+  const steps = design.images.flatMap((item, imageIndex) => item.mappings.map((mapping, mappingIndex) => ({ imageIndex, mappingIndex, mapping })))
   const setImage = (next: number) => { setIndex(next); setQuery({ design: String(next) }) }
+  const targetLabel = (target: string) => {
+    const directField = screen.fields.find((field) => field.key === target)
+    if (directField) return directField.label
+    const [instanceKey, fieldKey] = target.split(".")
+    const instance = screen.uiInstances.find((item) => item.key === instanceKey)
+    const component = screen.componentGraph.components.find((item) => item.id === instance?.componentId)
+    if (!fieldKey) return component?.name ?? instanceKey
+    const field = asRecord(asRecord(component?.contract)?.fields)?.[fieldKey]
+    return String(asRecord(field)?.label ?? fieldKey)
+  }
   const setZoomValue = (next: number) => { const value = Math.round(Math.min(300, Math.max(10, next))); setZoom(value); localStorage.setItem(ZOOM_KEY, String(value)) }
   const fit = () => {
     if (viewport.current && naturalWidth) setZoomValue((viewport.current.clientWidth / naturalWidth) * 100)
   }
   const reset = () => { setZoomValue(100); viewport.current?.scrollTo({ top: 0, left: 0 }) }
+  const activateStep = (next: number) => {
+    const normalized = (next + steps.length) % steps.length
+    const step = steps[normalized]
+    if (!step) return
+    setTourStep(normalized)
+    setImage(step.imageIndex)
+    onSelectTarget(step.mapping.target)
+  }
+  useEffect(() => {
+    if (!selectedTarget) return
+    const selectedStep = steps.findIndex((step) => step.mapping.target === selectedTarget)
+    if (selectedStep >= 0 && steps[selectedStep].imageIndex !== index) setImage(steps[selectedStep].imageIndex)
+  }, [selectedTarget])
+  useEffect(() => {
+    if (tourStep === undefined || steps[tourStep]?.imageIndex !== index) return
+    requestAnimationFrame(() => viewport.current?.querySelector(`[data-tour-step="${tourStep}"]`)?.scrollIntoView({ block: "center", inline: "center" }))
+  }, [index, tourStep])
   const startPan = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!viewport.current) return
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -362,8 +400,9 @@ function DesignReference({ screen }: { screen: ScreenView }) {
     viewport.current.scrollLeft = drag.current.left - (event.clientX - drag.current.x)
     viewport.current.scrollTop = drag.current.top - (event.clientY - drag.current.y)
   }
+  const activeTarget = hoveredTarget ?? selectedTarget
   return <aside className="design-reference" aria-label="デザイン参照">
-    <header><h2>デザイン</h2><span className="muted">{image ? `${index + 1} / ${design.images.length}` : '画像なし'}</span></header>
+    <header><h2>デザイン</h2><span className="muted">{image ? `${index + 1} / ${design.images.length}` : "画像なし"}</span></header>
     <div className="design-tools" role="toolbar" aria-label="デザイン画像の表示操作">
       <button type="button" onClick={fit}>幅に合わせる</button>
       <button type="button" onClick={() => setZoomValue(100)}>100%</button>
@@ -373,9 +412,10 @@ function DesignReference({ screen }: { screen: ScreenView }) {
       <button type="button" onClick={reset}>リセット</button>
       {image ? <a href={image.url} target="_blank" rel="noreferrer">別タブ ↗</a> : null}
     </div>
-    {image ? <div className="design-viewport" ref={viewport} onPointerDown={startPan} onPointerMove={movePan} onPointerUp={() => { drag.current = undefined }} onPointerCancel={() => { drag.current = undefined }}><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} onLoad={(event) => setNaturalWidth(event.currentTarget.naturalWidth)} style={{ width: naturalWidth ? `${naturalWidth * zoom / 100}px` : "auto" }} /></div> : <p className="empty">デザイン画像はありません。</p>}
+    {steps.length ? tourStep === undefined ? <button type="button" className="tour-start" onClick={() => activateStep(0)}>Design Tourを開始 <span>{steps.length}項目</span></button> : <div className="design-tour" aria-label="Design Tour"><div><span className="eyebrow">Design Tour {tourStep + 1} / {steps.length}</span><strong>{targetLabel(steps[tourStep].mapping.target)}</strong><code>{steps[tourStep].mapping.target}</code></div><div className="design-tour-actions"><button type="button" aria-label="前の項目" onClick={() => activateStep(tourStep - 1)}>←</button><button type="button" aria-label="次の項目" onClick={() => activateStep(tourStep + 1)}>→</button><button type="button" className="link" onClick={() => setTourStep(undefined)}>終了</button></div></div> : null}
+    {image ? <div className="design-viewport" ref={viewport} onPointerDown={startPan} onPointerMove={movePan} onPointerUp={() => { drag.current = undefined }} onPointerCancel={() => { drag.current = undefined }}><div className="design-canvas" style={{ width: naturalWidth ? `${naturalWidth * zoom / 100}px` : "auto" }}><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} onLoad={(event) => setNaturalWidth(event.currentTarget.naturalWidth)} />{image.mappings.flatMap((mapping, mappingIndex) => { const stepIndex = steps.findIndex((step) => step.imageIndex === index && step.mappingIndex === mappingIndex); return mapping.regions.map((region, regionIndex) => <button key={`${mapping.target}:${regionIndex}`} type="button" className={`design-region${activeTarget === mapping.target ? " active" : ""}${tourStep === stepIndex ? " tour-current" : ""}`} data-tour-step={stepIndex} aria-label={`${targetLabel(mapping.target)}（${mapping.target}）を開く`} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} onPointerDown={(event) => event.stopPropagation()} onMouseEnter={() => onHoverTarget(mapping.target)} onMouseLeave={() => onHoverTarget(undefined)} onFocus={() => onHoverTarget(mapping.target)} onBlur={() => onHoverTarget(undefined)} onClick={() => { setTourStep(stepIndex); onSelectTarget(mapping.target) }}><span>{stepIndex + 1}</span></button>) })}</div></div> : <p className="empty">デザイン画像はありません。</p>}
     {image?.caption ? <p className="muted design-caption">{image.caption}</p> : null}
-    {design.images.length > 1 ? <div className="design-thumbnails" aria-label="デザイン画像を選択">{design.images.map((item, itemIndex) => <button key={`${item.url}:${itemIndex}`} type="button" className={index === itemIndex ? 'active' : ''} aria-pressed={index === itemIndex} onClick={() => setImage(itemIndex)}><img src={item.url} alt={item.caption ?? `デザイン ${itemIndex + 1}`} /></button>)}</div> : null}
+    {design.images.length > 1 ? <div className="design-thumbnails" aria-label="デザイン画像を選択">{design.images.map((item, itemIndex) => <button key={`${item.url}:${itemIndex}`} type="button" className={index === itemIndex ? "active" : ""} aria-pressed={index === itemIndex} onClick={() => { setImage(itemIndex); setTourStep(undefined) }}><img src={item.url} alt={item.caption ?? `デザイン ${itemIndex + 1}`} /></button>)}</div> : null}
     <div className="design-links">{design.figma ? <a href={design.figma} target="_blank" rel="noreferrer">Figmaを開く ↗</a> : null}{design.links.map((link, linkIndex) => <a key={`${link.url}:${linkIndex}`} href={link.url} target="_blank" rel="noreferrer">{link.label ?? link.url} ↗</a>)}</div>
   </aside>
 }

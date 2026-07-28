@@ -13,7 +13,9 @@ description: 画面のデザイン参照（Figma・モックアップ画像・�
 | キー | 型 | 説明 |
 |---|---|---|
 | `figma` | string (uri) | Figma などデザインファイルの URL |
-| `images` | `{ url, caption? }[]` | モックアップ画像の絶対または相対 URL と説明 |
+| `images` | `{ url, caption?, mappings? }[]` | モックアップ画像とDesign Mapping |
+| `images[].mappings` | `{ target, regions }[]` | Screen Elementと画像領域の対応。定義順がDesign Tourの順序 |
+| `regions` | `{ x, y, width, height }[]` | 画像サイズに対する0〜1の正規化矩形 |
 | `links` | `{ label?, url }[]` | 関連リンク（デザインガイド等） |
 
 外部の `http(s)` URLに加え、Viewerへ同梱した画像を相対URLで指定できます（`$ref` の「ローカル相対のみ」とは別の仕組みです）。
@@ -29,6 +31,13 @@ screen:
     images:
       - url: https://.../user-edit-viewing.png
         caption: 初期表示（閲覧中）
+        mappings:
+          - target: name
+            regions:
+              - { x: 0.12, y: 0.2, width: 0.36, height: 0.08 }
+          - target: roleSelector.options
+            regions:
+              - { x: 0.12, y: 0.34, width: 0.36, height: 0.12 }
       - url: https://.../user-edit-editing.png
         caption: 編集中
     links:
@@ -36,4 +45,10 @@ screen:
         url: https://example.com/design-guide
 ```
 
-ビューアでは各画面の「デザイン」セクションに Figma リンク・画像・関連リンクを表示します。
+ViewerではDesign RegionとScreen Elementsが双方向にハイライトされます。領域を選ぶと対象の詳細が開き、項目を選ぶと対応画像へ移動します。
+
+「Design Tourを開始」では、画像の定義順と各画像の`mappings`定義順で項目を巡回します。Tour専用のstepは定義せず、表示名・文言・詳細は常に対象Screen Elementから取得します。
+
+`target`にはScreen直下のField ID、Component Instance ID、または`instance.field`形式のComponent内部Field IDを指定します。ひとつの要素が画像上の複数箇所に現れる場合は、同じMappingの`regions`へ複数矩形を定義します。
+
+領域は画像内に収まる必要があります。未知の`target`と、`x + width`または`y + height`が1を超える領域はerrorになります。

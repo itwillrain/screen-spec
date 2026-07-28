@@ -1085,6 +1085,25 @@ describe("UI Component Field集合", () => {
   });
 });
 
+describe("Design Mapping", () => {
+  it("FieldとComponent内部Fieldを参照できる", () => {
+    const diagnostics = analyzeScreen({
+      fields: { keyword: { type: "text" } },
+      ui: { pagination: { component: { fields: { pageNumbers: { type: "list" } } } } },
+      design: { images: [{ mappings: [
+        { target: "keyword", regions: [{ x: 0.1, y: 0.1, width: 0.2, height: 0.2 }] },
+        { target: "pagination.pageNumbers", regions: [{ x: 0.5, y: 0.5, width: 0.4, height: 0.4 }] },
+      ] }] },
+    });
+    expect(diagnostics.map((item) => item.code)).not.toContain("unknown-design-mapping-target");
+  });
+
+  it("未知のtargetと画像外の領域をerrorにする", () => {
+    const diagnostics = analyzeScreen({ design: { images: [{ mappings: [{ target: "missing", regions: [{ x: 0.8, y: 0.8, width: 0.3, height: 0.3 }] }] }] } });
+    expect(diagnostics.map((item) => item.code)).toEqual(expect.arrayContaining(["unknown-design-mapping-target", "design-region-out-of-bounds"]));
+  });
+});
+
 describe("Component Usage Graph", () => {
   const commonUri = "https://example.test/specs/common.yaml";
   const screenUri = "https://example.test/specs/user.screen.yaml";

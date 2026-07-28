@@ -106,6 +106,7 @@ Primaryは選択、link、focus、主要操作に限定する。状態色は意�
 
 - 情報密度を高く、視覚ノイズを低くする。
 - ID、条件式、API mappingをmonoで明確にし、診断を対象の近くに置く。
+- Design Mappingは画像上の領域とScreen Elementを双方向にハイライトし、Design Tourでは定義順を保って前後移動できるようにする。
 - 色、icon、文字を併用し、表の比較可能性を維持する。
 - borderとsurfaceで階層を作り、light/darkで意味を維持する。
 
