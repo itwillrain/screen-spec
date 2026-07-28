@@ -14,7 +14,10 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(page.getByRole("heading", { level: 1, name: "ユーザー一覧画面" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "読み込みエラー" })).toHaveCount(0);
   await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
-  await expect.poll(() => page.locator(".design-viewport").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
+  await expect.poll(() => page.locator(".design-viewport").evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
+  await expect(page.getByRole("button", { name: "拡大" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /別タブで開く/ })).toBeVisible();
+  await expect.poll(() => page.locator(".design-canvas").evaluate((canvas) => Math.abs(canvas.getBoundingClientRect().width - canvas.querySelector("img")!.getBoundingClientRect().width))).toBeLessThan(1);
   await expect.poll(() => page.locator(".field-review-main").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
   await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
   await expect.poll(() => page.locator(".review-fields thead th").first().evaluate((element) => getComputedStyle(element).position)).toBe("static");
@@ -65,6 +68,10 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await page.getByText("userTable.rows", { exact: true }).click();
   await expect(page.getByRole("heading", { name: /userTable.rows/ })).toBeVisible();
   await expect(page.getByText("data.userRows", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "次の項目" }).click();
+  await expect(page.locator(".field-detail > header h2")).not.toContainText("userTable.rows");
+  await page.getByRole("button", { name: "詳細ペインの外側をクリックして閉じる" }).click({ position: { x: 10, y: 10 } });
+  await expect(page.locator(".field-detail")).toHaveCount(0);
 
   await page.getByRole("searchbox", { name: "要素ID、名称、文言、セクションで検索" }).fill("検索結果");
   await expect(page.locator(".section-group-row").filter({ hasText: "検索結果" })).toBeVisible();

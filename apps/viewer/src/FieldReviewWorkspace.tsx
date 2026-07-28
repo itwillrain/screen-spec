@@ -4,7 +4,6 @@ import type { DiagnosticView, EventBranchView, EventView, FieldView, ScreenView,
 
 const PANE_KEY = 'screen-spec-field-review-pane'
 const COLLAPSED_KEY = 'screen-spec-field-review-design-collapsed'
-const ZOOM_KEY = 'screen-spec-field-review-zoom'
 const DRAWER_KEY = 'screen-spec-field-review-drawer-width'
 
 function queryValue(key: string): string | undefined {
@@ -188,6 +187,16 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
 
   const selected = enriched.find(({ field }) => field.key === selectedKey)
   const selectedInstance = screen.uiInstances.find((instance) => instance.key === selectedInstanceKey)
+  const detailTargets = rows.flatMap((row) => {
+    if (row.kind === "field") return [{ kind: "field" as const, key: row.field.key }]
+    const targets: Array<{ kind: "component"; key: string; fieldKey?: string }> = [{ kind: "component", key: row.instance.key }]
+    if (expandedInstances.has(row.instance.key)) {
+      const fields = Object.keys(asRecord(asRecord(row.component?.contract)?.fields) ?? {})
+      targets.push(...fields.map((fieldKey) => ({ kind: "component" as const, key: row.instance.key, fieldKey })))
+    }
+    return targets
+  })
+  const currentDetailIndex = detailTargets.findIndex((target) => target.kind === "field" ? target.key === selectedKey : target.key === selectedInstanceKey && target.fieldKey === selectedInstanceFieldKey)
   const selectField = (key: string, focusDetail = true) => {
     setSelectedInstanceKey(undefined)
     setSelectedKey(key)
@@ -232,6 +241,12 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
       return next
     })
     requestAnimationFrame(() => detailHeading.current?.focus())
+  }
+  const navigateDetail = (offset: number) => {
+    const target = detailTargets[currentDetailIndex + offset]
+    if (!target) return
+    target.kind === "field" ? selectField(target.key) : selectInstance(target.key, target.fieldKey)
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-screen-element="` + (target.fieldKey ? target.key + "." + target.fieldKey : target.key) + `"]`)?.scrollIntoView({ block: "center" }))
   }
   const onRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, kind: "field" | "component", key: string, fieldKey?: string) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -362,6 +377,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
             </table>
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致する画面要素はありません。</p> : null}
+          {selected || selectedInstance ? <><button type="button" className="field-detail-backdrop" aria-label="詳細ペインの外側をクリックして閉じる" onClick={closeDetail} /><nav className="field-detail-navigation" aria-label="項目間の移動" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}><button type="button" disabled={currentDetailIndex <= 0} onClick={() => navigateDetail(-1)}>← 前の項目</button><span>{currentDetailIndex + 1} / {detailTargets.length}</span><button type="button" disabled={currentDetailIndex < 0 || currentDetailIndex >= detailTargets.length - 1} onClick={() => navigateDetail(1)}>次の項目 →</button></nav></> : null}
           {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(`field:${selected.field.key}`)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} fieldKey={selectedInstanceFieldKey} screen={screen} headingRef={detailHeading} onClose={closeDetail} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
@@ -387,11 +403,8 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
   const design = screen.design!
   const initialImage = Math.max(0, Math.min(Number(queryValue("design")) || 0, Math.max(0, design.images.length - 1)))
   const [index, setIndex] = useState(initialImage)
-  const [zoom, setZoom] = useState(() => Number(localStorage.getItem(ZOOM_KEY)) || 100)
   const [tourStep, setTourStep] = useState<number>()
   const viewport = useRef<HTMLDivElement>(null)
-  const drag = useRef<{ x: number; y: number; left: number; top: number }>()
-  const [naturalWidth, setNaturalWidth] = useState(0)
   const image = design.images[index]
   const steps = design.images.flatMap((item, imageIndex) => item.mappings.map((mapping, mappingIndex) => ({ imageIndex, mappingIndex, mapping })))
   const setImage = (next: number) => { setIndex(next); setQuery({ design: String(next) }) }
@@ -405,11 +418,6 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
     const field = asRecord(asRecord(component?.contract)?.fields)?.[fieldKey]
     return String(asRecord(field)?.label ?? fieldKey)
   }
-  const setZoomValue = (next: number) => { const value = Math.round(Math.min(300, Math.max(10, next))); setZoom(value); localStorage.setItem(ZOOM_KEY, String(value)) }
-  const fit = () => {
-    if (viewport.current && naturalWidth) setZoomValue((viewport.current.clientWidth / naturalWidth) * 100)
-  }
-  const reset = () => { setZoomValue(100); viewport.current?.scrollTo({ top: 0, left: 0 }) }
   const activateStep = (next: number) => {
     const normalized = (next + steps.length) % steps.length
     const step = steps[normalized]
@@ -427,32 +435,16 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
     if (tourStep === undefined || steps[tourStep]?.imageIndex !== index) return
     requestAnimationFrame(() => viewport.current?.querySelector(`[data-tour-step="${tourStep}"]`)?.scrollIntoView({ block: "center", inline: "center" }))
   }, [index, tourStep])
-  const startPan = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!viewport.current) return
-    event.currentTarget.setPointerCapture(event.pointerId)
-    drag.current = { x: event.clientX, y: event.clientY, left: viewport.current.scrollLeft, top: viewport.current.scrollTop }
-  }
-  const movePan = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!viewport.current || !drag.current) return
-    viewport.current.scrollLeft = drag.current.left - (event.clientX - drag.current.x)
-    viewport.current.scrollTop = drag.current.top - (event.clientY - drag.current.y)
-  }
   const activeTarget = hoveredTarget ?? selectedTarget
   return <aside className="design-reference" aria-label="デザイン参照">
     <div className="design-pane-sticky">
     <header><h2>デザイン</h2><span className="muted">{image ? `${index + 1} / ${design.images.length}` : "画像なし"}</span></header>
-    <div className="design-tools" role="toolbar" aria-label="デザイン画像の表示操作">
-      <button type="button" onClick={fit}>幅に合わせる</button>
-      <button type="button" onClick={() => setZoomValue(100)}>100%</button>
-      <button type="button" aria-label="縮小" onClick={() => setZoomValue(zoom - 25)}>−</button>
-      <output aria-live="polite">{zoom}%</output>
-      <button type="button" aria-label="拡大" onClick={() => setZoomValue(zoom + 25)}>＋</button>
-      <button type="button" onClick={reset}>リセット</button>
-      {image ? <a href={image.url} target="_blank" rel="noreferrer">別タブ ↗</a> : null}
+    <div className="design-tools">
+      {image ? <a href={image.url} target="_blank" rel="noreferrer">別タブで開く ↗</a> : null}
     </div>
     {steps.length ? tourStep === undefined ? <button type="button" className="tour-start" onClick={() => activateStep(0)}>Design Tourを開始 <span>{steps.length}項目</span></button> : <div className="design-tour" aria-label="Design Tour"><div><span className="eyebrow">Design Tour {tourStep + 1} / {steps.length}</span><strong>{targetLabel(steps[tourStep].mapping.target)}</strong><code>{steps[tourStep].mapping.target}</code></div><div className="design-tour-actions"><button type="button" aria-label="前の項目" onClick={() => activateStep(tourStep - 1)}>←</button><button type="button" aria-label="次の項目" onClick={() => activateStep(tourStep + 1)}>→</button><button type="button" className="link" onClick={() => { setTourStep(undefined); onTourEnd() }}>終了</button></div></div> : null}
     </div>
-    {image ? <div className="design-viewport" ref={viewport} onPointerDown={startPan} onPointerMove={movePan} onPointerUp={() => { drag.current = undefined }} onPointerCancel={() => { drag.current = undefined }}><div className="design-canvas" style={{ width: naturalWidth ? `${naturalWidth * zoom / 100}px` : "auto" }}><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} onLoad={(event) => setNaturalWidth(event.currentTarget.naturalWidth)} />{tourStep !== undefined ? image.mappings.flatMap((mapping, mappingIndex) => { const stepIndex = steps.findIndex((step) => step.imageIndex === index && step.mappingIndex === mappingIndex); return mapping.regions.map((region, regionIndex) => <button key={`${mapping.target}:${regionIndex}`} type="button" className={`design-region${activeTarget === mapping.target ? " active" : ""}${tourStep === stepIndex ? " tour-current" : ""}`} data-tour-step={stepIndex} aria-label={`${targetLabel(mapping.target)}（${mapping.target}）を開く`} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} onPointerDown={(event) => event.stopPropagation()} onMouseEnter={() => onHoverTarget(mapping.target)} onMouseLeave={() => onHoverTarget(undefined)} onFocus={() => onHoverTarget(mapping.target)} onBlur={() => onHoverTarget(undefined)} onClick={() => { setTourStep(stepIndex); onTourTarget(mapping.target) }}><span>{stepIndex + 1}</span></button>) }) : null}</div></div> : <p className="empty">デザイン画像はありません。</p>}
+    {image ? <div className="design-viewport" ref={viewport}><div className="design-canvas"><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} />{tourStep !== undefined ? image.mappings.flatMap((mapping, mappingIndex) => { const stepIndex = steps.findIndex((step) => step.imageIndex === index && step.mappingIndex === mappingIndex); return mapping.regions.map((region, regionIndex) => <button key={`${mapping.target}:${regionIndex}`} type="button" className={`design-region${activeTarget === mapping.target ? " active" : ""}${tourStep === stepIndex ? " tour-current" : ""}`} data-tour-step={stepIndex} aria-label={`${targetLabel(mapping.target)}（${mapping.target}）を開く`} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} onPointerDown={(event) => event.stopPropagation()} onMouseEnter={() => onHoverTarget(mapping.target)} onMouseLeave={() => onHoverTarget(undefined)} onFocus={() => onHoverTarget(mapping.target)} onBlur={() => onHoverTarget(undefined)} onClick={() => { setTourStep(stepIndex); onTourTarget(mapping.target) }}><span>{stepIndex + 1}</span></button>) }) : null}</div></div> : <p className="empty">デザイン画像はありません。</p>}
     {image?.caption ? <p className="muted design-caption">{image.caption}</p> : null}
     {design.images.length > 1 ? <div className="design-thumbnails" aria-label="デザイン画像を選択">{design.images.map((item, itemIndex) => <button key={`${item.url}:${itemIndex}`} type="button" className={index === itemIndex ? "active" : ""} aria-pressed={index === itemIndex} onClick={() => { setImage(itemIndex); setTourStep(undefined) }}><img src={item.url} alt={item.caption ?? `デザイン ${itemIndex + 1}`} /></button>)}</div> : null}
     <div className="design-links">{design.figma ? <a href={design.figma} target="_blank" rel="noreferrer">Figmaを開く ↗</a> : null}{design.links.map((link, linkIndex) => <a key={`${link.url}:${linkIndex}`} href={link.url} target="_blank" rel="noreferrer">{link.label ?? link.url} ↗</a>)}</div>
