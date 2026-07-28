@@ -82,25 +82,45 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     const result = new Map<string, string>()
     screen.layout?.sections.forEach((section, index) => {
       const label = section.title ?? section.id ?? `section ${index + 1}`
-      section.fieldKeys.forEach((key) => result.set(key, label))
+      section.items.forEach((item) => result.set(`${item.kind}:${item.key}`, label))
     })
     return result
   }, [screen.layout])
 
   const enriched = useMemo(() => screen.fields.map((field) => {
     const events = relatedEvents(screen, field)
-    return { field, events, diagnostics: fieldDiagnostics(screen, field, events) }
+    return { kind: "field" as const, field, events, diagnostics: fieldDiagnostics(screen, field, events) }
+  }), [screen])
+  const enrichedInstances = useMemo(() => screen.uiInstances.map((instance) => {
+    const events = instance.events.map((mapping) => screen.events.find((event) => event.key === mapping.screenEvent)).filter((event): event is EventView => !!event)
+    const diagnostics = screen.diagnostics.filter((diagnostic) => diagnostic.path.includes(`/ui/${instance.key}`) || diagnostic.message.includes(`"${instance.key}"`))
+    const component = screen.componentGraph.components.find((item) => item.id === instance.componentId)
+    return { kind: "component" as const, instance, component, events, diagnostics }
   }), [screen])
 
-  const types = [...new Set(screen.fields.map((field) => field.type).filter(Boolean))]
+  const elements = useMemo(() => {
+    const fields = new Map(enriched.map((row) => [row.field.key, row]))
+    const instances = new Map(enrichedInstances.map((row) => [row.instance.key, row]))
+    const ordered = screen.layout?.sections.flatMap((section) => section.items.map((item) => item.kind === "field" ? fields.get(item.key) : instances.get(item.key)).filter((row): row is NonNullable<typeof row> => !!row)) ?? []
+    const placed = new Set(ordered.map((row) => `${row.kind}:${row.kind === "field" ? row.field.key : row.instance.key}`))
+    return [...ordered, ...enriched.filter((row) => !placed.has(`field:${row.field.key}`)), ...enrichedInstances.filter((row) => !placed.has(`component:${row.instance.key}`))]
+  }, [screen.layout, enriched, enrichedInstances])
+
+  const types = [...new Set([...screen.fields.map((field) => field.type).filter(Boolean), "component"])]
   const q = filter.trim().toLowerCase()
-  const rows = enriched.filter(({ field, events, diagnostics }) => {
-    if (q && ![field.key, field.label, field.text ?? ''].some((value) => value.toLowerCase().includes(q))) return false
-    if (typeFilter !== 'all' && field.type !== typeFilter) return false
-    if (eventFilter === 'linked' && events.length === 0) return false
-    if (eventFilter === 'unlinked' && events.length > 0) return false
-    if (conditionFilter && !field.visibleWhen && !field.enabledWhen) return false
-    if (diagnosticFilter && diagnostics.length === 0) return false
+  const rows = elements.filter((row) => {
+    const isField = row.kind === "field"
+    const key = isField ? row.field.key : row.instance.key
+    const label = isField ? row.field.label : row.component?.name ?? componentName(row.instance.componentId ?? row.instance.componentRef ?? row.instance.key)
+    const copy = isField ? row.field.text ?? "" : row.instance.componentRef ?? ""
+    const type = isField ? row.field.type : "component"
+    const hasCondition = isField ? !!row.field.visibleWhen || !!row.field.enabledWhen : !!row.instance.visibleWhen
+    if (q && ![key, label, copy].some((value) => value.toLowerCase().includes(q))) return false
+    if (typeFilter !== "all" && type !== typeFilter) return false
+    if (eventFilter === "linked" && row.events.length === 0) return false
+    if (eventFilter === "unlinked" && row.events.length > 0) return false
+    if (conditionFilter && !hasCondition) return false
+    if (diagnosticFilter && row.diagnostics.length === 0) return false
     return true
   })
 
@@ -147,10 +167,10 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     })
     requestAnimationFrame(() => detailHeading.current?.focus())
   }
-  const onRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, key: string) => {
-    if (event.key === 'Enter' || event.key === ' ') {
+  const onRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, kind: "field" | "component", key: string) => {
+    if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
-      selectField(key)
+      kind === "field" ? selectField(key) : selectInstance(key)
     }
   }
   useEffect(() => {
@@ -226,7 +246,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
         {hasDesign && !designCollapsed ? <DesignReference screen={screen} /> : null}
         {hasDesign && !designCollapsed ? <div className="pane-resizer" role="separator" tabIndex={0} aria-label="デザインペインの幅" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={60} aria-valuenow={Math.round(panePercent)} onPointerDown={startResize} onKeyDown={onResizeKeyDown} /> : null}
         <div className="field-review-main">
-          {screen.layout ? <section className="screen-outline" aria-labelledby="screen-outline-title"><div className="detail-section-head"><h2 id="screen-outline-title">Screen Outline</h2><span className="muted">定義順</span></div><ol>{screen.layout.sections.map((section, sectionIndex) => <li key={section.id ?? sectionIndex}><div className="screen-outline-section"><span className="badge badge-region">{section.region ?? "body"}</span><strong>{section.title ?? section.id ?? `Section ${sectionIndex + 1}`}</strong></div><ol>{section.items.map((item) => <li key={item.kind + item.key}>{item.kind === "field" ? <button type="button" className="screen-outline-item" onClick={() => selectField(item.key)}><span>Field</span><code>{item.key}</code><span>{screen.fields.find((field) => field.key === item.key)?.label}</span></button> : <button type="button" className="screen-outline-item" onClick={() => selectInstance(item.key)}><span>UI Component</span><code>{item.key}</code><span>{componentName(screen.uiInstances.find((instance) => instance.key === item.key)?.componentId ?? item.key)}</span></button>}</li>)}</ol></li>)}</ol></section> : null}
+          <div className="detail-section-head element-list-head"><h2>画面要素</h2><span className="muted">FieldとComponentを定義順に表示</span></div>
           <FieldFilters
             filter={filter} setFilter={setFilter}
             types={types} typeFilter={typeFilter} setTypeFilter={setTypeFilter}
@@ -236,31 +256,39 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
           />
           <div className="table-scroll">
             <table className="fields review-fields">
-              <thead><tr><th>Field ID</th><th>セクション</th><th>ラベル／文言</th><th>型</th><th>必須</th><th>Event ID</th><th>診断</th></tr></thead>
+              <thead><tr><th>要素ID</th><th>セクション</th><th>名称／文言</th><th>種別</th><th>必須</th><th>Event ID</th><th>診断</th></tr></thead>
               <tbody>
-                {rows.map(({ field, events, diagnostics }, index) => {
-                  const errors = diagnostics.filter((item) => item.severity === 'error').length
-                  const warnings = diagnostics.length - errors
-                  const section = sections.get(field.key)
-                  const previousSection = index > 0 ? sections.get(rows[index - 1].field.key) : undefined
+                {rows.map((row, index) => {
+                  const isField = row.kind === "field"
+                  const key = isField ? row.field.key : row.instance.key
+                  const label = isField ? row.field.label : row.component?.name ?? componentName(row.instance.componentId ?? row.instance.componentRef ?? row.instance.key)
+                  const copy = isField ? row.field.text : row.instance.componentRef
+                  const type = isField ? row.field.type : "Component"
+                  const selectedRow = isField ? selectedKey === key : selectedInstanceKey === key
+                  const section = sections.get(`${row.kind}:${key}`)
+                  const previous = rows[index - 1]
+                  const previousKey = previous ? previous.kind === "field" ? previous.field.key : previous.instance.key : undefined
+                  const previousSection = previous && previousKey ? sections.get(`${previous.kind}:${previousKey}`) : undefined
                   const showSection = index === 0 || section !== previousSection
+                  const errors = row.diagnostics.filter((item) => item.severity === "error").length
+                  const warnings = row.diagnostics.length - errors
                   return (
-                    <tr key={field.key} tabIndex={0} aria-selected={selectedKey === field.key} className={selectedKey === field.key ? 'selected' : ''} onClick={() => selectField(field.key)} onKeyDown={(event) => onRowKeyDown(event, field.key)}>
-                      <td><code>{field.key}</code></td>
+                    <tr key={`${row.kind}:${key}`} tabIndex={0} aria-selected={selectedRow} className={selectedRow ? "selected" : ""} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
+                      <td><span className={`badge ${isField ? "badge-region" : "badge-ok"}`}>{isField ? "Field" : "Component"}</span><code className="element-id">{key}</code></td>
                       <td className="field-section">{showSection ? section ? <span className="section-label">{section}</span> : <span className="badge badge-warning">未配置</span> : null}</td>
-                      <td><strong>{field.label}</strong>{field.text ? <span className="field-copy">{field.text}</span> : null}</td>
-                      <td><code>{field.type}</code></td>
-                      <td>{INPUT_FIELD_TYPES.has(field.type) ? field.required ? '必須' : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
-                      <td>{events.length ? events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
-                      <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!diagnostics.length ? <span className="muted">—</span> : null}</td>
+                      <td><strong>{label}</strong>{copy ? <span className="field-copy">{copy}</span> : null}</td>
+                      <td><code>{type}</code></td>
+                      <td>{isField && INPUT_FIELD_TYPES.has(row.field.type) ? row.field.required ? "必須" : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
+                      <td>{row.events.length ? row.events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
+                      <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!row.diagnostics.length ? <span className="muted">—</span> : null}</td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
-          {rows.length === 0 ? <p className="empty" role="status">条件に一致するFieldはありません。</p> : null}
-          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} screen={screen} headingRef={detailHeading} onClose={closeDetail} onOpenComponent={openComponent} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
+          {rows.length === 0 ? <p className="empty" role="status">条件に一致する画面要素はありません。</p> : null}
+          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(`field:${selected.field.key}`)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} screen={screen} headingRef={detailHeading} onClose={closeDetail} onOpenComponent={openComponent} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -272,8 +300,8 @@ function FieldFilters(props: {
   eventFilter: string; setEventFilter: (value: string) => void; conditionFilter: boolean; setConditionFilter: (value: boolean) => void
   diagnosticFilter: boolean; setDiagnosticFilter: (value: boolean) => void
 }) {
-  return <div className="field-filters" aria-label="Fieldの絞り込み">
-    <input className="filter" type="search" aria-label="Field ID、ラベル、文言で検索" placeholder="Field ID・ラベル・文言を検索" value={props.filter} onChange={(event) => props.setFilter(event.target.value)} />
+  return <div className="field-filters" aria-label="画面要素の絞り込み">
+    <input className="filter" type="search" aria-label="要素ID、名称、文言で検索" placeholder="要素ID・名称・文言を検索" value={props.filter} onChange={(event) => props.setFilter(event.target.value)} />
     <select aria-label="型で絞り込み" value={props.typeFilter} onChange={(event) => props.setTypeFilter(event.target.value)}><option value="all">すべての型</option>{props.types.map((type) => <option key={type}>{type}</option>)}</select>
     <select aria-label="Event連携で絞り込み" value={props.eventFilter} onChange={(event) => props.setEventFilter(event.target.value)}><option value="all">Event連携: すべて</option><option value="linked">連携あり</option><option value="unlinked">連携なし</option></select>
     <label><input type="checkbox" checked={props.conditionFilter} onChange={(event) => props.setConditionFilter(event.target.checked)} /> 条件あり</label>
