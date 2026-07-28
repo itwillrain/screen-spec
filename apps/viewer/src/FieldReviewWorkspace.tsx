@@ -137,6 +137,15 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     return [...ordered, ...enriched.filter((row) => !placed.has(`field:${row.field.key}`)), ...enrichedInstances.filter((row) => !placed.has(`component:${row.instance.key}`))]
   }, [screen.layout, enriched, enrichedInstances])
 
+  const designTourNumbers = useMemo(() => {
+    const result = new Map<string, number[]>()
+    let step = 0
+    for (const image of screen.design?.images ?? []) for (const mapping of image.mappings) {
+      step += 1
+      result.set(mapping.target, [...(result.get(mapping.target) ?? []), step])
+    }
+    return result
+  }, [screen.design])
   const types = [...new Set([...screen.fields.map((field) => field.type).filter(Boolean), "component"])]
   const q = filter.trim().toLowerCase()
   const rows = elements.filter((row) => {
@@ -282,6 +291,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
         {hasDesign && !designCollapsed ? <DesignReference screen={screen} selectedTarget={selectedDesignTarget} hoveredTarget={hoveredDesignTarget} onTourTarget={focusTourTarget} onTourEnd={() => setTourFocusedTarget(undefined)} onHoverTarget={setHoveredDesignTarget} /> : null}
         {hasDesign && !designCollapsed ? <div className="pane-resizer" role="separator" tabIndex={0} aria-label="デザインペインの幅" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={60} aria-valuenow={Math.round(panePercent)} onPointerDown={startResize} onKeyDown={onResizeKeyDown} /> : null}
         <div className="field-review-main">
+          <div className="field-list-sticky">
           <div className="detail-section-head element-list-head"><div><h2>画面要素</h2><span className="muted">FieldとComponentを定義順に表示</span></div><div className="detail-actions"><button type="button" className="link" onClick={() => setExpandedInstances(new Set(screen.uiInstances.map((instance) => instance.key)))}>すべて開く</button><button type="button" className="link" onClick={() => setExpandedInstances(new Set())}>すべて閉じる</button></div></div>
           <FieldFilters
             filter={filter} setFilter={setFilter}
@@ -290,6 +300,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
             conditionFilter={conditionFilter} setConditionFilter={setConditionFilter}
             diagnosticFilter={diagnosticFilter} setDiagnosticFilter={setDiagnosticFilter}
           />
+          </div>
           <div className="table-scroll">
             <table className="fields review-fields">
               <thead><tr><th>要素ID</th><th>名称／文言</th><th>種別</th><th>必須</th><th>Event ID</th><th>診断</th></tr></thead>
@@ -315,14 +326,14 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
                     <Fragment key={`${row.kind}:${key}`}>
                       {showSection ? <tr className="section-group-row"><th colSpan={6} scope="rowgroup">{section ?? "未配置"}</th></tr> : null}
                       <tr tabIndex={0} data-screen-element={key} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${hoveredDesignTarget === key ? "design-linked-hover " : ""}${tourFocusedTarget === key ? "tour-focused " : ""}${isField ? "" : "component-chunk-row"}`} onMouseEnter={() => setHoveredDesignTarget(key)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
-                        <td>{!isField ? <button type="button" className="component-toggle" aria-label={`${label}を${expanded ? "閉じる" : "開く"}`} aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); toggleExpanded() }}>{expanded ? "▾" : "▸"}</button> : null}<code className="element-id">{key}</code></td>
+                        <td>{tourFocusedTarget !== undefined ? designTourNumbers.get(key)?.map((number) => <span key={number} className="tour-row-number" aria-label={`Design Tour ${number}`}>{number}</span>) : null}{!isField ? <button type="button" className="component-toggle" aria-label={`${label}を${expanded ? "閉じる" : "開く"}`} aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); toggleExpanded() }}>{expanded ? "▾" : "▸"}</button> : null}<code className="element-id">{key}</code></td>
                         <td><strong>{label}</strong>{isField && copy ? <CopyableText className="field-copy" value={copy} /> : copy ? <span className="field-copy">{copy}</span> : null}</td>
                         <td><code>{type}</code></td>
                         <td>{isField && INPUT_FIELD_TYPES.has(row.field.type) ? row.field.required ? "必須" : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
                         <td>{row.events.length ? row.events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
                         <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!row.diagnostics.length ? <span className="muted">—</span> : null}</td>
                       </tr>
-                      {expanded ? componentFields.map(([fieldKey, rawField]) => { const field = asRecord(rawField); const eventId = typeof field?.eventId === "string" ? field.eventId : undefined; const mappedEvents = eventId ? row.instance.events.filter((mapping) => mapping.fieldEvent === eventId) : []; return <tr key={`${key}.${fieldKey}`} className={`component-field-row${hoveredDesignTarget === `${key}.${fieldKey}` ? " design-linked-hover" : ""}${tourFocusedTarget === `${key}.${fieldKey}` ? " tour-focused" : ""}`} data-screen-element={`${key}.${fieldKey}`} tabIndex={0} onMouseEnter={() => setHoveredDesignTarget(`${key}.${fieldKey}`)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => selectInstance(key, fieldKey)} onKeyDown={(event) => onRowKeyDown(event, "component", key, fieldKey)}><td><span className="component-field-branch" aria-hidden="true">└</span><code className="element-id">{key}.{fieldKey}</code></td><td><strong>{String(field?.label ?? fieldKey)}</strong>{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><code>{String(field?.type ?? "unknown")}</code></td><td>{field?.required === true ? "必須" : <span className="muted">—</span>}</td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : eventId ? <code className="event-id">{eventId}</code> : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
+                      {expanded ? componentFields.map(([fieldKey, rawField]) => { const field = asRecord(rawField); const eventId = typeof field?.eventId === "string" ? field.eventId : undefined; const mappedEvents = eventId ? row.instance.events.filter((mapping) => mapping.fieldEvent === eventId) : []; return <tr key={`${key}.${fieldKey}`} className={`component-field-row${hoveredDesignTarget === `${key}.${fieldKey}` ? " design-linked-hover" : ""}${tourFocusedTarget === `${key}.${fieldKey}` ? " tour-focused" : ""}`} data-screen-element={`${key}.${fieldKey}`} tabIndex={0} onMouseEnter={() => setHoveredDesignTarget(`${key}.${fieldKey}`)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => selectInstance(key, fieldKey)} onKeyDown={(event) => onRowKeyDown(event, "component", key, fieldKey)}><td>{tourFocusedTarget !== undefined ? designTourNumbers.get(`${key}.${fieldKey}`)?.map((number) => <span key={number} className="tour-row-number" aria-label={`Design Tour ${number}`}>{number}</span>) : null}<span className="component-field-branch" aria-hidden="true">└</span><code className="element-id">{key}.{fieldKey}</code></td><td><strong>{String(field?.label ?? fieldKey)}</strong>{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><code>{String(field?.type ?? "unknown")}</code></td><td>{field?.required === true ? "必須" : <span className="muted">—</span>}</td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : eventId ? <code className="event-id">{eventId}</code> : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
                     </Fragment>
                   )
                 })}
@@ -407,6 +418,7 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
   }
   const activeTarget = hoveredTarget ?? selectedTarget
   return <aside className="design-reference" aria-label="デザイン参照">
+    <div className="design-pane-sticky">
     <header><h2>デザイン</h2><span className="muted">{image ? `${index + 1} / ${design.images.length}` : "画像なし"}</span></header>
     <div className="design-tools" role="toolbar" aria-label="デザイン画像の表示操作">
       <button type="button" onClick={fit}>幅に合わせる</button>
@@ -418,6 +430,7 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
       {image ? <a href={image.url} target="_blank" rel="noreferrer">別タブ ↗</a> : null}
     </div>
     {steps.length ? tourStep === undefined ? <button type="button" className="tour-start" onClick={() => activateStep(0)}>Design Tourを開始 <span>{steps.length}項目</span></button> : <div className="design-tour" aria-label="Design Tour"><div><span className="eyebrow">Design Tour {tourStep + 1} / {steps.length}</span><strong>{targetLabel(steps[tourStep].mapping.target)}</strong><code>{steps[tourStep].mapping.target}</code></div><div className="design-tour-actions"><button type="button" aria-label="前の項目" onClick={() => activateStep(tourStep - 1)}>←</button><button type="button" aria-label="次の項目" onClick={() => activateStep(tourStep + 1)}>→</button><button type="button" className="link" onClick={() => { setTourStep(undefined); onTourEnd() }}>終了</button></div></div> : null}
+    </div>
     {image ? <div className="design-viewport" ref={viewport} onPointerDown={startPan} onPointerMove={movePan} onPointerUp={() => { drag.current = undefined }} onPointerCancel={() => { drag.current = undefined }}><div className="design-canvas" style={{ width: naturalWidth ? `${naturalWidth * zoom / 100}px` : "auto" }}><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} onLoad={(event) => setNaturalWidth(event.currentTarget.naturalWidth)} />{tourStep !== undefined ? image.mappings.flatMap((mapping, mappingIndex) => { const stepIndex = steps.findIndex((step) => step.imageIndex === index && step.mappingIndex === mappingIndex); return mapping.regions.map((region, regionIndex) => <button key={`${mapping.target}:${regionIndex}`} type="button" className={`design-region${activeTarget === mapping.target ? " active" : ""}${tourStep === stepIndex ? " tour-current" : ""}`} data-tour-step={stepIndex} aria-label={`${targetLabel(mapping.target)}（${mapping.target}）を開く`} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} onPointerDown={(event) => event.stopPropagation()} onMouseEnter={() => onHoverTarget(mapping.target)} onMouseLeave={() => onHoverTarget(undefined)} onFocus={() => onHoverTarget(mapping.target)} onBlur={() => onHoverTarget(undefined)} onClick={() => { setTourStep(stepIndex); onTourTarget(mapping.target) }}><span>{stepIndex + 1}</span></button>) }) : null}</div></div> : <p className="empty">デザイン画像はありません。</p>}
     {image?.caption ? <p className="muted design-caption">{image.caption}</p> : null}
     {design.images.length > 1 ? <div className="design-thumbnails" aria-label="デザイン画像を選択">{design.images.map((item, itemIndex) => <button key={`${item.url}:${itemIndex}`} type="button" className={index === itemIndex ? "active" : ""} aria-pressed={index === itemIndex} onClick={() => { setImage(itemIndex); setTourStep(undefined) }}><img src={item.url} alt={item.caption ?? `デザイン ${itemIndex + 1}`} /></button>)}</div> : null}

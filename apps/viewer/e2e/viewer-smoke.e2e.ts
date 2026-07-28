@@ -15,11 +15,15 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(page.getByRole("heading", { name: "読み込みエラー" })).toHaveCount(0);
   await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
   await expect.poll(() => page.locator(".field-review-main").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
+  await expect.poll(() => page.locator(".design-pane-sticky").evaluate((element) => getComputedStyle(element).position)).toBe("sticky");
+  await expect.poll(() => page.locator(".field-list-sticky").evaluate((element) => getComputedStyle(element).position)).toBe("sticky");
   await page.getByRole("button", { name: /Design Tourを開始/ }).click();
   await expect(page.getByLabel("Design Tour")).toContainText("Design Tour 1 / 8");
   const appHeaderRow = page.locator('[data-screen-element="appHeader"]');
   await expect(appHeaderRow).toBeFocused();
   await expect(appHeaderRow).toHaveClass(/tour-focused/);
+  await expect(appHeaderRow.getByLabel("Design Tour 1")).toHaveText("1");
+  await expect(page.locator('[data-screen-element="userPagination"]').getByLabel("Design Tour 7")).toHaveText("7");
   await expect(page.locator(".field-detail")).toHaveCount(0);
   await page.getByRole("button", { name: "次の項目" }).click();
   await expect(page.getByLabel("Design Tour")).toContainText("adminSidebar");
@@ -27,6 +31,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await page.getByRole("button", { name: "終了" }).click();
   await expect(page.locator(".design-region")).toHaveCount(0);
   await expect(page.locator(".tour-focused")).toHaveCount(0);
+  await expect(page.locator(".tour-row-number")).toHaveCount(0);
   await appHeaderRow.click();
   await expect(page.locator(".field-detail").getByRole("heading", { name: "Component定義" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Component定義を見る" })).toHaveCount(0);
