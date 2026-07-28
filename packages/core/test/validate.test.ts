@@ -1062,7 +1062,7 @@ describe("Component Usage Graph", () => {
   });
 
   it("UI Componentの利用と影響Instanceを追跡する", () => {
-    const common = { components: { ui: { Pagination: { name: "Pagination", inputs: {}, events: {}, accessibility: { requirements: "standard" } } } } };
+    const common = { components: { ui: { Pagination: { name: "Pagination", inputs: {}, events: {} } } } };
     const screen = { screen: { id: "users", ui: { pagination: { component: { ["$" + "ref"]: "./common.yaml#/components/ui/Pagination" } } } } };
     const graph = buildComponentUsageGraph([{ uri: screenUri, document: screen }, { uri: commonUri, document: common }]);
     const pagination = commonUri + "#/components/ui/Pagination";

@@ -39,14 +39,6 @@ components:
         brand: { kind: content }
         notifications: { kind: action }
         accountMenu: { kind: action }
-      accessibility:
-        landmark: banner
-        label: グローバルヘッダー
-        keyboard: { activation: [Enter, Space] }
-      responsive:
-        compact:
-          preserves: [brand, notifications, accountMenu]
-          omits: [currentUserName]
     AdminSidebar:
       name: 管理ナビゲーション
       description: 管理画面共通の主要ナビゲーション
@@ -63,13 +55,6 @@ components:
             itemId: { type: string, required: true }
       parts:
         navigationItems: { kind: navigation }
-      accessibility:
-        landmark: navigation
-        label: 管理メニュー
-      responsive:
-        compact:
-          preserves: [navigationItems]
-          omits: []
     AppFooter:
       name: アプリケーションフッター
       description: 管理画面共通の補助リンクと著作権表示
@@ -88,9 +73,6 @@ components:
       parts:
         legalLinks: { kind: navigation }
         copyright: { kind: content }
-      accessibility:
-        landmark: contentinfo
-        label: フッター
     DataTable:
       name: データテーブル
       description: 列定義に従って一覧データを表示し、行選択と並び替えを通知する
@@ -127,14 +109,6 @@ components:
         - when: inputs.rows.length == 0
           target: parts.emptyState
           visible: true
-      accessibility:
-        requirements: table
-        label: データ一覧
-        keyboard: { rowActivation: [Enter, Space] }
-      responsive:
-        compact:
-          preserves: [rows]
-          omits: [header]
     Pagination:
       name: ページネーション
       description: 総件数とページサイズからページ移動を提供する
@@ -181,13 +155,3 @@ components:
         - when: inputs.loading == true
           target: component
           enabled: false
-      accessibility:
-        landmark: navigation
-        label: ページネーション
-        currentItem: page
-        keyboard: { activation: [Enter, Space] }
-        announcements: { pageChanged: "{page}ページ目を表示" }
-      responsive:
-        compact:
-          preserves: [previous, next, summary]
-          omits: [pageNumbers, pageSizeSelector]

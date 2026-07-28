@@ -121,7 +121,6 @@ components:
         currentPage: { type: integer, required: true }
       events:
         pageChange: { required: true }
-      accessibility: { requirements: standard }
 `;
     const view = await buildScreenView("https://example.test/users.yaml", async (uri) => uri.endsWith("/common.yaml") ? common : screen)
     expect(view.valid).toBe(true)

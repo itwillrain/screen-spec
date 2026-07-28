@@ -1,15 +1,15 @@
 ---
 title: Field Review Workspace
-description: デザインとField仕様を並べてレビューするViewerの項目画面。
+description: デザインと画面要素仕様を並べてレビューするViewerの項目画面。
 ---
 
 # Field Review Workspace
 
-Viewerの「項目」タブは、エンジニア向けの読み取り専用レビュー領域です。デザイン画像を左、Field一覧と選択Fieldの詳細を右に表示します。デザインが未登録ならField領域を全幅で使用します。
+Viewerの「項目」タブは、エンジニア向けの読み取り専用レビュー領域です。デザイン画像を左、FieldとUI Componentを統合した画面要素一覧と選択要素の詳細を右に表示します。デザインが未登録なら画面要素領域を全幅で使用します。
 
-## Fieldを探す
+## 画面要素を探す
 
-Screen OutlineはFieldとUI Component InstanceをHeader、Sidebar、Body、Footerの定義順に表示します。Field ID、ラベル、文言の検索に加え、型、Event連携、表示・有効条件、診断の有無で絞り込めます。一覧はFieldの定義順を維持し、Field ID、セクション、ラベル／文言、型、必須、Event ID、error／warning件数を表示します。連続する同一セクションは先頭行だけに表示し、Layout未配置のFieldは「未配置」と示します。
+画面要素一覧はFieldとUI Component InstanceをHeader、Sidebar、Body、Footerの定義順に表示します。要素ID、名称、文言の検索に加え、型、Event連携、条件、診断の有無で絞り込めます。Componentは開閉可能なチャンクで、展開するとsemantic partsを `instanceId.partId` のField相当行としてフラットに表示します。連続する同一セクションは先頭行だけに表示し、Layout未配置の要素は「未配置」と示します。
 
 ## Fieldを追跡する
 
@@ -19,9 +19,9 @@ Screen OutlineはFieldとUI Component InstanceをHeader、Sidebar、Body、Foote
 
 ## Componentを追跡する
 
-Field Componentは見出し付近のOrigin、Validation ComponentはValidation欄、Options ComponentはOptions欄に表示します。汎用のComponent一覧にはまとめません。Component名を選ぶと同じ右ドロワー内で種別別のComponent ContractとDependencyを開き、パンくずと戻る操作で1階層ずつFieldへ戻れます。現在画面の利用Fieldを先に表示し、プロジェクト内の他画面にある利用箇所とImpacted Fieldへ移動できます。
+Field ComponentはOrigin、Validation ComponentはValidation欄、Options ComponentはOptions欄に表示します。UI Component Instanceは画面要素一覧へ直接表示し、semantic partsを同じチャンク内で確認できます。Component名を選ぶと右ドロワーでContractとDependencyを開きますが、Dependencyをパンくず状にはネストしません。
 
-Component操作はbuttonで提供し、詳細を開いたら見出しへフォーカスを移します。パンくずはnavとして表現し、URL共有、キーボード操作、狭幅での全幅ドロワーに対応します。独立したComponent Catalogは設けません。詳しくは[Component Usage](/concepts/component-usage)を参照してください。
+Component操作はbuttonで提供し、詳細を開いたら見出しへフォーカスを移します。チャンクの一括開閉、URL共有、キーボード操作、狭幅での全幅ドロワーに対応します。独立したComponent Catalogは設けません。詳しくは[Component Usage](/concepts/component-usage)を参照してください。
 
 ## デザイン参照
 

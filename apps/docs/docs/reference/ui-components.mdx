@@ -38,16 +38,9 @@ components:
         - when: inputs.currentPage == 1
           target: parts.previous
           enabled: false
-      accessibility:
-        landmark: navigation
-        label: ページネーション
-      responsive:
-        compact:
-          preserves: [previous, next]
-          omits: [pageNumbers]
 ```
 
-Inputsは値の型、必須性、任意のdefaultを定義します。EventsはComponentが通知する契機とPayloadです。PartsはFieldではなく、Rules・Accessibility・Responsiveから参照するsemantic partです。Derivedは宣言済みInputだけから求める副作用のない値です。
+Inputsは値の型、必須性、任意のdefaultを定義します。EventsはComponentが通知する契機とPayloadです。PartsはFieldではなく、RulesとViewerのフラット表示から参照するsemantic partです。Derivedは宣言済みInputだけから求める副作用のない値です。
 
 ## Component Instance
 
@@ -71,7 +64,7 @@ screen:
 
 Bindingは`source`または固定`value`の一方です。必須Inputと必須Eventは接続が必要です。Component EventのPayloadは接続先Screen Eventで`event.payload`として参照できます。
 
-## Screen Outline
+## 画面要素の配置と表示
 
 `layout.sections[].items`へFieldとComponent Instanceを定義順に配置します。Sectionは平坦で、`region`に`header`、`sidebar`、`body`、`footer`を指定します。入れ子Regionは扱いません。
 
@@ -89,3 +82,4 @@ layout:
 ```
 
 同じInstanceを複数配置せず、配置ごとに別Instance IDを定義します。既存の`sections[].fields`はv0.1の互換形式として受理します。
+ViewerではComponent Instanceを開閉可能なチャンクとして表示し、semantic partsを `instanceId.partId` の行へフラットに展開します。

@@ -578,9 +578,7 @@
         "inputs": { "$ref": "#/$defs/UIInputMap" }, "events": { "$ref": "#/$defs/UIContractEventMap" },
         "parts": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UISemanticPart" } },
         "rules": { "type": "array", "items": { "$ref": "#/$defs/UIRule" } },
-        "derived": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIDerivedValue" } },
-        "accessibility": { "type": "object", "minProperties": 1, "additionalProperties": true },
-        "responsive": { "type": "object", "additionalProperties": true }
+        "derived": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIDerivedValue" } }
       }
     },
     "UIInputMap": { "type": "object", "additionalProperties": { "$ref": "#/$defs/UIInput" } },

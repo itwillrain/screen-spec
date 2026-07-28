@@ -64,7 +64,7 @@ interface LayoutLike {
   sections?: Array<{ id?: unknown; title?: unknown; fields?: unknown; items?: unknown }>;
 }
 
-interface UIComponentLike { inputs?: Record<string, { required?: unknown; default?: unknown }>; events?: Record<string, { required?: unknown }>; accessibility?: unknown }
+interface UIComponentLike { inputs?: Record<string, { required?: unknown; default?: unknown }>; events?: Record<string, { required?: unknown }> }
 interface UIInstanceLike { component?: UIComponentLike; bindings?: Record<string, { source?: unknown; value?: unknown }>; events?: Record<string, unknown>; visibleWhen?: unknown }
 
 interface DataSchemaLike {
@@ -785,7 +785,6 @@ function analyzeUIComponents(s: ScreenLike, diagnostics: Diagnostic[]): void {
     const contractEvents = contract.events ?? {}, mappings = instance.events ?? {};
     for (const [event, spec] of Object.entries(contractEvents)) if (spec.required === true && !(event in mappings)) diagnostics.push({ severity: "error", code: "missing-ui-event-mapping", message: `Component Instance "${instanceId}" の必須Event "${event}" が接続されていません。`, where: instanceId });
     for (const [event, target] of Object.entries(mappings)) { const targetId = asString(target); if (!(event in contractEvents)) diagnostics.push({ severity: "error", code: "unknown-ui-event", message: `Component Instance "${instanceId}" が未定義Event "${event}" を接続しています。`, where: instanceId }); if (targetId && !(targetId in (s.events ?? {}))) diagnostics.push({ severity: "error", code: "unknown-ui-screen-event", message: `Component Instance "${instanceId}" が未定義Screen Event "${targetId}" を指しています。`, where: instanceId }); }
-    if (!contract.accessibility) diagnostics.push({ severity: "warning", code: "missing-ui-accessibility", message: `Component Instance "${instanceId}" のUI Componentにaccessibility契約がありません。`, where: instanceId });
     const count = placements.get(instanceId) ?? 0;
     if (count === 0) diagnostics.push({ severity: "warning", code: "component-instance-not-in-layout", message: `Component Instance "${instanceId}" はlayoutに配置されていません。`, where: instanceId });
     if (count > 1) diagnostics.push({ severity: "error", code: "component-instance-multiple-placement", message: `Component Instance "${instanceId}" はlayoutへ複数回配置されています。`, where: instanceId });
