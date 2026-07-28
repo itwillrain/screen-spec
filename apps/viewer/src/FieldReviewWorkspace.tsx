@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { stringifyYaml } from "@screen-spec/core"
 import type { DiagnosticView, EventBranchView, EventView, FieldView, ScreenView } from './screen-view'
 
 const PANE_KEY = 'screen-spec-field-review-pane'
@@ -33,6 +34,21 @@ function fieldDiagnostics(screen: ScreenView, field: FieldView, events: EventVie
   })
 }
 
+function shortestComponentPath(screen: ScreenView, fieldId: string, targetId: string): string[] {
+  const direct = screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === fieldId).map((usage) => usage.componentId)
+  const queue = direct.map((id) => [id])
+  const visited = new Set<string>()
+  while (queue.length) {
+    const path = queue.shift()!
+    const current = path[path.length - 1]
+    if (current === targetId) return path
+    if (visited.has(current)) continue
+    visited.add(current)
+    for (const dependency of screen.componentGraph.usages.filter((usage) => usage.referrerComponentId === current)) queue.push([...path, dependency.componentId])
+  }
+  return [targetId]
+}
+
 function relatedEvents(screen: ScreenView, field: FieldView): EventView[] {
   return screen.events.filter((event) => event.key === field.eventId || event.target === field.key)
 }
@@ -49,7 +65,10 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   })
   const initialField = queryValue('field')
   const [selectedKey, setSelectedKey] = useState(() => screen.fields.some((field) => field.key === initialField) ? initialField : undefined)
-  const [componentId, setComponentId] = useState(() => queryValue("component"))
+  const [componentTrail, setComponentTrail] = useState<string[]>(() => {
+    const target = queryValue("component")
+    return target && initialField ? shortestComponentPath(screen, initialField, target) : []
+  })
   const detailHeading = useRef<HTMLHeadingElement>(null)
   const [panePercent, setPanePercent] = useState(() => Number(localStorage.getItem(PANE_KEY)) || 40)
   const [designCollapsed, setDesignCollapsed] = useState(() => {
@@ -87,14 +106,35 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   const selected = enriched.find(({ field }) => field.key === selectedKey)
   const selectField = (key: string) => {
     setSelectedKey(key)
-    setComponentId(undefined)
+    setComponentTrail([])
     setQuery({ field: key, component: undefined })
     requestAnimationFrame(() => detailHeading.current?.focus())
   }
   const closeDetail = () => {
     setSelectedKey(undefined)
-    setComponentId(undefined)
+    setComponentTrail([])
     setQuery({ field: undefined, component: undefined })
+  }
+  const openComponent = (id: string) => {
+    setComponentTrail((trail) => trail.length ? [...trail, id] : [id])
+    setQuery({ component: id })
+    requestAnimationFrame(() => detailHeading.current?.focus())
+  }
+  const backDetail = () => {
+    setComponentTrail((trail) => {
+      const next = trail.slice(0, -1)
+      setQuery({ component: next.at(-1) })
+      return next
+    })
+    requestAnimationFrame(() => detailHeading.current?.focus())
+  }
+  const backToComponent = (index: number) => {
+    setComponentTrail((trail) => {
+      const next = trail.slice(0, index + 1)
+      setQuery({ component: next.at(-1) })
+      return next
+    })
+    requestAnimationFrame(() => detailHeading.current?.focus())
   }
   const onRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, key: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -104,11 +144,12 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   }
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && selectedKey) closeDetail()
+      if (event.key === 'Escape' && componentTrail.length) backDetail()
+      else if (event.key === 'Escape' && selectedKey) closeDetail()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedKey])
+  }, [selectedKey, componentTrail])
 
   const startResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -207,7 +248,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
             </table>
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致するFieldはありません。</p> : null}
-          {selected ? componentId ? <ComponentDetail componentId={componentId} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={() => { setComponentId(undefined); setQuery({ component: undefined }) }} onClose={closeDetail} onOpenComponent={(id) => { setComponentId(id); setQuery({ component: id }); requestAnimationFrame(() => detailHeading.current?.focus()) }} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={(id) => { setComponentId(id); setQuery({ component: id }); requestAnimationFrame(() => detailHeading.current?.focus()) }} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
+          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(selected.field.key)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -292,40 +333,60 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenComp
       {section ? <Detail label="セクション" value={section} /> : null}
       {field.width ? <Detail label="幅" value={field.width} code /> : null}
     </dl>
-    {componentUsages.length ? <section><h3>Component</h3><div className="component-links">{componentUsages.map((usage) => { return <button key={`:`} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>{usage.location === "field-origin" ? "Field" : usage.location === "validation" ? "Validation" : "Options"}</span><code>{usage.componentId.split("/").pop()}</code></button> })}</div></section> : null}
-    {INPUT_FIELD_TYPES.has(field.type) && field.validations.length ? <DetailList title="Validation" empty="なし" items={field.validations.map((validation) => <span><code>{validation.rule}</code>{validation.message ? ` — ${validation.message}` : ""}</span>)} /> : null}
-    {OPTION_FIELD_TYPES.has(field.type) && field.options.length ? <DetailList title="Options" empty="なし" items={field.options.map((option) => <span><code>{displayValue(option.value)}</code> — {option.label}</span>)} /> : null}
+    {componentUsages.some((usage) => usage.location === "field-origin") ? <section><h3>Origin</h3><div className="component-links">{componentUsages.filter((usage) => usage.location === "field-origin").map((usage) => <button key={usage.componentId + usage.sourcePath} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>Field Component</span><code>{componentName(usage.componentId)}</code></button>)}</div></section> : <p className="muted">Origin: Inline</p>}
+    {INPUT_FIELD_TYPES.has(field.type) && (field.validations.length || componentUsages.some((usage) => usage.location === "validation")) ? <section><h3>Validation</h3><div className="component-links">{componentUsages.filter((usage) => usage.location === "validation").map((usage) => <button key={usage.componentId + usage.sourcePath} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>Validation Component</span><code>{componentName(usage.componentId)}</code></button>)}</div>{field.validations.length ? <ul className="rules">{field.validations.map((validation, index) => <li key={validation.rule + index}><code>{validation.rule}</code>{validation.message ? " — " + validation.message : ""}</li>)}</ul> : null}</section> : null}
+    {OPTION_FIELD_TYPES.has(field.type) && (field.options.length || componentUsages.some((usage) => usage.location === "options")) ? <section><h3>Options</h3><div className="component-links">{componentUsages.filter((usage) => usage.location === "options").map((usage) => <button key={usage.componentId + usage.sourcePath} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>Options Component</span><code>{componentName(usage.componentId)}</code></button>)}</div>{field.options.length ? <ul className="rules">{field.options.map((option, index) => <li key={String(option.value) + index}><code>{displayValue(option.value)}</code> — {option.label}</li>)}</ul> : null}</section> : null}
     {field.binding ? <section><h3>データ入力</h3>{field.binding.options ? <div className="data-route"><p>{field.binding.options.apiBinding ? <><code>api.{field.binding.options.apiBinding}</code><span aria-hidden="true"> → </span></> : null}<code>{field.binding.options.source}</code><span aria-hidden="true"> → </span><code>{field.key}.options</code></p>{field.binding.options.responsePath ? <p className="muted">response <code>{field.binding.options.responsePath}</code>{" "}{field.binding.options.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}{field.binding.options.pathStatus === "invalid" ? <span className="badge badge-ng">path不正</span> : null}{field.binding.options.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}</p> : null}<p className="muted">value: <code>{field.binding.options.valuePath}</code> / label: <code>{field.binding.options.labelPath}</code></p></div> : null}{field.binding.loading ? <p>loading: <code>{field.binding.loading.source}</code>（読込中は無効化、既存Optionsを保持）</p> : null}</section> : null}
     {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
     {events.length ? <section><div className="detail-section-head"><h3>関連Event</h3><button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button></div>{events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />)}</section> : null}
   </section>
 }
 
-function ComponentDetail({ componentId, screen, fieldId, headingRef, onBack, onClose, onOpenComponent, onNavigateField, drawerWidth, onResizeStart, onResizeKeyDown }: {
-  componentId: string; screen: ScreenView; fieldId: string; headingRef: React.RefObject<HTMLHeadingElement | null>; onBack: () => void; onClose: () => void;
-  onOpenComponent: (id: string) => void; onNavigateField: (screenId: string, fieldId: string) => void; drawerWidth: number;
-  onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+function componentName(id: string): string { return decodeURIComponent(id.split("/").pop() ?? id) }
+
+function asRecord(value: unknown): Record<string, unknown> | undefined { return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined }
+
+function ComponentDetail({ componentId, componentTrail, screen, fieldId, headingRef, onBack, onBackTo, onClose, onOpenComponent, onNavigateField, drawerWidth, onResizeStart, onResizeKeyDown }: {
+  componentId: string; componentTrail: string[]; screen: ScreenView; fieldId: string; headingRef: React.RefObject<HTMLHeadingElement | null>; onBack: () => void; onBackTo: (index: number) => void; onClose: () => void
+  onOpenComponent: (id: string) => void; onNavigateField: (screenId: string, fieldId: string) => void; drawerWidth: number
+  onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
+  const [optionQuery, setOptionQuery] = useState("")
   const component = screen.componentGraph.components.find((item) => item.id === componentId)
   if (!component) return <section className="field-detail" role="complementary" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}><header><div><p className="eyebrow">component</p><h2 ref={headingRef} tabIndex={-1}>Componentが見つかりません</h2></div><button type="button" onClick={onClose}>閉じる</button></header><p><code>{componentId}</code></p></section>
+  const usages = screen.componentGraph.usages.filter((usage) => usage.componentId === componentId)
   const dependencies = screen.componentGraph.usages.filter((usage) => usage.referrerComponentId === componentId)
+  const dependencyIds = [...new Set(dependencies.map((usage) => usage.componentId))]
   const impacts = screen.componentGraph.impacts.filter((impact) => impact.componentId === componentId)
+  const directFields = new Set(usages.filter((usage) => usage.screenId && usage.fieldId).map((usage) => usage.screenId + ":" + usage.fieldId))
   const current = impacts.filter((impact) => impact.screenId === screen.id)
-  const others = impacts.filter((impact) => impact.screenId !== screen.id)
+  const otherGroups = new Map<string, typeof impacts>()
+  for (const impact of impacts.filter((item) => item.screenId !== screen.id)) otherGroups.set(impact.screenId, [...(otherGroups.get(impact.screenId) ?? []), impact])
+  const diagnostics = screen.componentGraph.diagnostics.filter((item) => item.where === component.id || item.where?.includes(component.uri + component.pointer) || item.message.includes(component.id))
+  const contract = asRecord(component.contract)
+  const validations = Array.isArray(contract?.validations) ? contract.validations : []
+  const options = component.kind === "options" && Array.isArray(component.contract) ? component.contract : Array.isArray(contract?.options) ? contract.options : []
+  const filteredOptions = options.filter((item) => { const row = asRecord(item); const query = optionQuery.toLowerCase(); return !query || String(row?.value ?? "").toLowerCase().includes(query) || String(row?.label ?? "").toLowerCase().includes(query) })
+  const dependencyButton = (id: string, label = "dependency") => <button key={id + label} type="button" className="component-link" onClick={() => onOpenComponent(id)}><span>{label}</span><code>{componentName(id)}</code></button>
+  const usageList = (items: typeof impacts) => <ul className="component-usage-list">{items.map((impact) => { const direct = directFields.has(impact.screenId + ":" + impact.fieldId); return <li key={impact.screenId + impact.fieldId}><button className="link" type="button" onClick={() => impact.screenId === screen.id && impact.fieldId === fieldId ? onBack() : onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.fieldId}</code></button><span className={"badge " + (direct ? "badge-ok" : "badge-region")}>{direct ? "直接利用" : "依存経由"}</span></li> })}</ul>
   return <section className="field-detail" role="complementary" aria-labelledby="component-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
-    <header><div><nav aria-label="詳細のパンくず"><button type="button" className="link" onClick={onBack}><code>{fieldId}</code></button><span aria-hidden="true"> / </span><span>Component</span></nav><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2></div><button type="button" onClick={onClose}>閉じる</button></header>
-    <dl className="field-detail-grid"><Detail label="種別" value={component.kind} code /><Detail label="文書" value={component.uri.split("/").pop()} code /><Detail label="Pointer" value={component.pointer} code /><Detail label="影響Field" value={String(impacts.length)} /></dl>
-    <section><h3>Contract</h3><pre className="component-contract"><code>{JSON.stringify(component.contract, null, 2)}</code></pre></section>
-    {dependencies.length ? <section><h3>依存Component</h3><div className="component-links">{dependencies.map((usage) => <button key={`:`} type="button" className="component-link" onClick={() => onOpenComponent(usage.componentId)}><span>{usage.location}</span><code>{usage.componentId.split("/").pop()}</code></button>)}</div></section> : null}
-    <section><h3>この画面での利用</h3>{current.length ? <ul>{current.map((impact) => <li key={impact.fieldId}><button className="link" type="button" onClick={() => impact.fieldId === fieldId ? onBack() : onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.fieldId}</code></button></li>)}</ul> : <p className="muted">なし</p>}</section>
-    {others.length ? <section><h3>他の画面での利用</h3><ul>{others.map((impact) => <li key={`:`}><button className="link" type="button" onClick={() => onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.screenId}</code> / <code>{impact.fieldId}</code></button></li>)}</ul></section> : null}
+    <header><div><nav aria-label="詳細のパンくず"><button type="button" className="link" onClick={() => onBackTo(-1)}><code>{fieldId}</code></button>{componentTrail.map((id, index) => <span key={id + index}><span aria-hidden="true"> / </span>{index === componentTrail.length - 1 ? <span aria-current="page">{componentName(id)}</span> : <button type="button" className="link" onClick={() => onBackTo(index)}>{componentName(id)}</button>}</span>)}</nav><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <button type="button" className="link" onClick={() => void navigator.clipboard?.writeText(component.id)}>参照をコピー</button></p></div><div className="detail-actions"><button type="button" onClick={onBack}>戻る</button><button type="button" onClick={onClose}>閉じる</button></div></header>
+    <dl className="component-metrics"><Detail label="直接参照" value={String(usages.length)} /><Detail label="影響Field" value={String(impacts.length)} /><Detail label="依存Component" value={String(dependencyIds.length)} /></dl>
+    <section><h3>Contract</h3>
+      {component.kind === "field" && contract ? <><dl className="field-detail-grid">{typeof contract.label === "string" ? <Detail label="ラベル" value={contract.label} /> : null}{typeof contract.type === "string" ? <Detail label="型" value={contract.type} code /> : null}{typeof contract.text === "string" ? <Detail label="文言" value={contract.text} /> : null}{typeof contract.required === "boolean" ? <Detail label="必須" value={contract.required ? "必須" : "任意"} /> : null}{contract.default !== undefined ? <Detail label="既定値" value={displayValue(contract.default)} code /> : null}{typeof contract.placeholder === "string" ? <Detail label="プレースホルダー" value={contract.placeholder} /> : null}</dl>{validations.length ? <section><h4>Validation</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "validation").map((usage) => dependencyButton(usage.componentId, "validation"))}</div>{validations.filter((item) => !asRecord(item)?.$ref).map((item, index) => <pre key={index} className="contract-inline"><code>{stringifyYaml(item)}</code></pre>)}</section> : null}{contract.options !== undefined ? <section><h4>Options</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "options").map((usage) => dependencyButton(usage.componentId, "options"))}</div></section> : null}</> : null}
+      {component.kind === "validation" && contract ? <dl className="field-detail-grid"><Detail label="rule" value={typeof contract.rule === "string" ? contract.rule : undefined} code /><Detail label="value" value={contract.value === undefined ? undefined : displayValue(contract.value)} code /><Detail label="message" value={typeof contract.message === "string" ? contract.message : undefined} /></dl> : null}
+      {component.kind === "options" ? <><p className="muted">{options.length} options</p>{options.length > 10 ? <details><summary>Optionsを表示 ({options.length})</summary><input type="search" className="filter" aria-label="Optionsを検索" placeholder="value・labelを検索" value={optionQuery} onChange={(event) => setOptionQuery(event.target.value)} /><div className="options-contract-scroll"><table className="fields"><thead><tr><th>value</th><th>label</th></tr></thead><tbody>{filteredOptions.map((item, index) => { const row = asRecord(item); return <tr key={String(row?.value) + index}><td><code>{displayValue(row?.value)}</code></td><td>{String(row?.label ?? "")}</td></tr> })}</tbody></table></div></details> : <table className="fields"><thead><tr><th>value</th><th>label</th></tr></thead><tbody>{filteredOptions.map((item, index) => { const row = asRecord(item); return <tr key={String(row?.value) + index}><td><code>{displayValue(row?.value)}</code></td><td>{String(row?.label ?? "")}</td></tr> })}</tbody></table>}</> : null}
+    </section>
+    {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((item, index) => <li key={item.code + index}><span className={"badge " + (item.severity === "error" ? "badge-ng" : "badge-warning")}>{item.severity}</span> {item.message}</li>)}</ul></section> : null}
+    {dependencies.length ? <section><h3>依存Component</h3><div className="component-links">{dependencyIds.map((id) => dependencyButton(id))}</div></section> : null}
+    <details><summary>Authored YAML</summary><pre className="component-contract"><code>{stringifyYaml(component.contract)}</code></pre></details>
+    <section><h3>この画面での利用 <span className="muted">({current.length})</span></h3>{current.length ? usageList(current) : <p className="muted">なし</p>}</section>
+    {otherGroups.size ? <section><h3>他の画面での利用 <span className="muted">({impacts.length - current.length})</span></h3>{[...otherGroups].map(([screenId, items]) => <details key={screenId}><summary><code>{screenId}</code> ({items.length})</summary>{usageList(items)}</details>)}</section> : null}
   </section>
 }
 
 function Detail({ label, value, code }: { label: string; value?: string; code?: boolean }) { return <div><dt>{label}</dt><dd>{value === undefined || value === '' ? <span className="muted">—</span> : code ? <code>{value}</code> : value}</dd></div> }
-function DetailList({ title, items, empty }: { title: string; items: React.ReactNode[]; empty: string }) { return <section><h3>{title}</h3>{items.length ? <ul className="rules">{items.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="muted">{empty}</p>}</section> }
-
 function EventDetail({ event, onOpenApi }: { event: EventView; onOpenApi: () => void }) {
   return <article className="related-event"><header><h4><code>{event.key}</code></h4>{event.trigger ? <span className="badge badge-region">{event.trigger}</span> : null}</header><p><code>{event.from ?? '?'}</code> → {event.branches.length ? `${event.branches.length} Branches` : <code>{event.to ?? '?'}</code>}</p>{event.apiCall ? <button type="button" className="link" onClick={onOpenApi}>API <code>{event.apiCall}</code></button> : null}{event.branches.length ? <ol className="branch-list">{event.branches.map((branch) => <BranchDetail key={branch.id} branch={branch} onOpenApi={onOpenApi} />)}</ol> : null}</article>
 }

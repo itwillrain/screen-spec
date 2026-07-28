@@ -955,3 +955,19 @@ html[data-theme="dark"] .field-detail > header {
 .component-link > span { color: var(--muted); font-size: .8rem; text-transform: capitalize; }
 .component-contract { max-height: 22rem; overflow: auto; padding: .75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface, rgb(127 127 127 / .06)); white-space: pre-wrap; overflow-wrap: anywhere; }
 .field-detail nav[aria-label="詳細のパンくず"] { margin-bottom: .4rem; color: var(--muted); font-size: .85rem; }
+
+
+.component-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 0; }
+.component-metrics > div { padding: .75rem; border: 1px solid var(--border); border-radius: .5rem; }
+.component-metrics dt { color: var(--muted); font-size: .78rem; }
+.component-metrics dd { margin: .25rem 0 0; font-size: 1.15rem; font-weight: 700; }
+.component-identity { margin: .35rem 0 0; color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+.detail-actions { display: flex; gap: .5rem; align-items: flex-start; }
+.component-usage-list { display: grid; gap: .45rem; padding: 0; list-style: none; }
+.component-usage-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid var(--border); }
+.contract-inline { padding: .65rem; border: 1px solid var(--border); border-radius: .5rem; white-space: pre-wrap; }
+.options-contract-scroll { max-height: 22rem; overflow: auto; margin-top: .75rem; }
+.field-detail details { margin-top: .75rem; }
+.field-detail summary { cursor: pointer; font-weight: 600; }
+.field-origin { margin: .35rem 0 0; }
+@media (max-width: 520px) { .component-metrics { grid-template-columns: 1fr; } .field-detail > header { align-items: flex-start; } .detail-actions { flex-direction: column; } }

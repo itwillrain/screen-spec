@@ -7,3 +7,7 @@ import yaml from "js-yaml";
 export function parseYaml(text: string): unknown {
   return yaml.load(text);
 }
+
+export function stringifyYaml(value: unknown): string {
+  return yaml.dump(value, { noRefs: true, lineWidth: 100, sortKeys: false });
+}

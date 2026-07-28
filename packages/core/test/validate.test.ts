@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import {
   resolveRefs,
   parseYaml,
+  stringifyYaml,
   validateSpec,
   analyzeScreen,
   analyzeProject,
@@ -27,6 +28,14 @@ const examples = resolve(here, "../../../examples");
 function example(name: string): string {
   return resolve(examples, name);
 }
+
+describe("YAML serialization", () => {
+  it("構造化されたContractをYAMLへ整形できる", () => {
+    const yaml = stringifyYaml({ label: "メールアドレス", validations: [{ ["$" + "ref"]: "./common.yaml#/validations/Required" }] });
+    expect(yaml).toContain("label: メールアドレス");
+    expect(yaml).toContain("$ref: ./common.yaml#/validations/Required");
+  });
+});
 
 describe("validateDocument", () => {
   it("画面ファイル（$ref 参照つき）が妥当", async () => {
