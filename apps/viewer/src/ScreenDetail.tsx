@@ -1,4 +1,4 @@
-import { Fragment, useState, type KeyboardEvent } from 'react'
+import { Fragment, useEffect, useState, type KeyboardEvent } from 'react'
 import { FieldReviewWorkspace } from './FieldReviewWorkspace'
 import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
@@ -32,6 +32,23 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }:
     window.history.replaceState(null, "", url)
   }
   const active = tabs.some((t) => t.id === tab) ? tab : 'fields'
+  const [selectedEvent, setSelectedEvent] = useState(() => new URLSearchParams(window.location.search).get("event") ?? undefined)
+  const openEvent = (eventId: string) => {
+    setSelectedEvent(eventId)
+    setTab("states")
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", "states")
+    url.searchParams.set("event", eventId)
+    window.history.replaceState(null, "", url)
+  }
+  useEffect(() => {
+    if (active !== "states" || !selectedEvent) return
+    requestAnimationFrame(() => {
+      const card = document.querySelector<HTMLElement>(`[data-event-id="` + CSS.escape(selectedEvent) + `"]`)
+      card?.scrollIntoView({ block: "start" })
+      card?.focus({ preventScroll: true })
+    })
+  }, [active, selectedEvent])
 
   const moveTab = (index: number) => {
     const next = tabs[(index + tabs.length) % tabs.length]
@@ -48,31 +65,15 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }:
   }
   return (
     <>
-      <header className="page-head">
-        <p className="eyebrow">screen</p>
-        <h1>{screen.name}</h1>
-        {screen.description ? <p className="muted">{screen.description}</p> : null}
-        <dl className="meta">
-          <div>
-            <dt>id</dt>
-            <dd><code>{screen.id}</code></dd>
-          </div>
-          {screen.route ? (
-            <div>
-              <dt>route</dt>
-              <dd><code>{screen.route}</code></dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>検証</dt>
-            <dd>
-              {screen.valid ? (
-                <span className="badge badge-ok">valid</span>
-              ) : (
-                <span className="badge badge-ng">{screen.issueCount} issue(s)</span>
-              )}
-            </dd>
-          </div>
+      <header className="page-head screen-page-head">
+        <div className="screen-title-row">
+          <h1>{screen.name}</h1>
+          {screen.valid ? <span className="badge badge-ok">valid</span> : <span className="badge badge-ng">{screen.issueCount} issue(s)</span>}
+        </div>
+        {screen.description ? <p className="muted screen-description">{screen.description}</p> : null}
+        <dl className="screen-meta">
+          <div><dt>id</dt><dd><code>{screen.id}</code></dd></div>
+          {screen.route ? <div><dt>route</dt><dd><code>{screen.route}</code></dd></div> : null}
         </dl>
       </header>
 
@@ -102,13 +103,13 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }:
       </nav>
 
       <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
-      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} onNavigateField={onNavigateField} /> : null}
+      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} onOpenEvent={openEvent} onNavigateField={onNavigateField} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'access' && screen.accessControl ? (
         <AccessTab screen={screen} accessControl={screen.accessControl} />
       ) : null}
       {active === 'states' && screen.stateMachine ? (
-        <StatesTab screen={screen} />
+        <StatesTab screen={screen} selectedEvent={selectedEvent} />
       ) : null}
       {active === 'api' ? <ApiTab screen={screen} /> : null}
       {active === 'transitions' ? (
@@ -188,7 +189,7 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
   )
 }
 
-function StatesTab({ screen }: { screen: ScreenView }) {
+function StatesTab({ screen, selectedEvent }: { screen: ScreenView; selectedEvent?: string }) {
   return (
     <section>
       <p className="muted">states / events から生成した状態遷移図と、分岐ごとの期待結果です。</p>
@@ -197,7 +198,7 @@ function StatesTab({ screen }: { screen: ScreenView }) {
         <div className="events">
           <h2>イベント詳細</h2>
           {screen.events.map((event) => (
-            <article key={event.key} className="event-card">
+            <article key={event.key} className={selectedEvent === event.key ? "event-card selected-event" : "event-card"} data-event-id={event.key} tabIndex={-1}>
               <header>
                 <h3><code>{event.key}</code></h3>
               </header>

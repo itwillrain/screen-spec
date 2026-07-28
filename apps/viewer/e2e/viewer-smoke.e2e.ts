@@ -13,14 +13,11 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
 
   await expect(page.getByRole("heading", { level: 1, name: "ユーザー一覧画面" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "読み込みエラー" })).toHaveCount(0);
-  await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
+  await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
   await expect.poll(() => page.locator(".design-viewport").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
-  await expect.poll(() => page.locator(".field-review-main").evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
-  await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
-  await expect.poll(() => page.locator(".field-review-main").evaluate((element) => getComputedStyle(element).paddingBottom)).toBe("0px");
-  await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).scrollbarGutter)).toBe("auto");
-  await expect.poll(() => page.locator(".design-pane-sticky").evaluate((element) => getComputedStyle(element).position)).toBe("relative");
-  await expect.poll(() => page.locator(".review-fields thead th").first().evaluate((element) => getComputedStyle(element).position)).toBe("sticky");
+  await expect.poll(() => page.locator(".field-review-main").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
+  await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
+  await expect.poll(() => page.locator(".review-fields thead th").first().evaluate((element) => getComputedStyle(element).position)).toBe("static");
   await page.getByRole("button", { name: /Design Tourを開始/ }).click();
   await expect(page.getByLabel("Design Tour")).toContainText("Design Tour 1 / 8");
   const appHeaderRow = page.locator('[data-screen-element="appHeader"]');
@@ -48,6 +45,15 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   const longElementId = page.locator(".element-id", { hasText: "userTable.columnHeaders" });
   await expect.poll(() => longElementId.evaluate((element) => getComputedStyle(element).whiteSpace)).toBe("nowrap");
   await expect.poll(() => longElementId.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(30);
+
+  const eventLink = page.locator(".review-fields .event-id").first();
+  const eventId = (await eventLink.textContent())!;
+  await eventLink.click();
+  await expect(page.getByRole("tab", { name: "状態遷移" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".event-card.selected-event")).toHaveAttribute("data-event-id", eventId);
+  await expect(page.locator(".event-card.selected-event")).toBeFocused();
+  await expect(page).toHaveURL(new RegExp(`event=`));
+  await page.getByRole("tab", { name: "項目" }).click();
 
   await page.getByText("userTable.rows", { exact: true }).click();
   await expect(page.getByRole("heading", { name: /userTable.rows/ })).toBeVisible();
