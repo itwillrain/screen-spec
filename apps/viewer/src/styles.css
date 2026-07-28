@@ -729,13 +729,13 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .field-filters select { min-height: 2.55rem; padding: .45rem; border: 1px solid #c7d2fe; border-radius: 6px; background: #fff; font: inherit; }
 .field-filters label { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
 .review-fields { min-width: 52rem; }
-.review-fields tbody tr { cursor: pointer; }
-.review-fields tbody tr:hover { background: #eef2ff; }
+.review-fields tbody tr:not(.section-group-row) { cursor: pointer; }
+.review-fields tbody tr:not(.section-group-row):hover { background: #eef2ff; }
 .review-fields tbody tr.selected { background: #e0e7ff; box-shadow: inset 4px 0 #4f46e5; }
 .review-fields td:last-child .badge + .badge { margin-left: .3rem; }
 .review-fields .event-id + .event-id { margin-left: .35rem; }
-.review-fields .field-section { width: 9rem; vertical-align: top; }
-.section-label { color: #475569; font-size: .8rem; font-weight: 700; }
+.section-group-row { cursor: default; background: var(--surface, #f8fafc); }
+.section-group-row th { padding: .65rem .75rem .45rem; border-top: 1px solid var(--border); color: #475569; font-size: .8rem; font-weight: 700; letter-spacing: .02em; text-align: left; }
 .element-list-head h2 { margin: 0; }
 .element-list-head > div:first-child { display: grid; gap: .2rem; }
 .element-id { margin-left: .45rem; }
@@ -767,7 +767,8 @@ html[data-theme="dark"] :where(.field-detail, .design-tools button, .design-thum
 html[data-theme="dark"] :where(.field-detail-grid div, .branch-list li, .related-event) { background: #202a36; border-color: #3a4656; }
 html[data-theme="dark"] .design-viewport { background: #0f141c; border-color: #3a4656; }
 html[data-theme="dark"] .review-fields tbody tr.selected { background: #27324a; }
-html[data-theme="dark"] .section-label { color: #cbd5e1; }
+html[data-theme="dark"] .section-group-row { background: #151b27; }
+html[data-theme="dark"] .section-group-row th { color: #cbd5e1; }
 
 @media (max-width: 1024px) {
   .field-review-workspace { grid-template-columns: minmax(18rem, 35%) .55rem minmax(28rem, 1fr); }

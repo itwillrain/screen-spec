@@ -35,7 +35,14 @@ components:
       name: 管理ナビゲーション
       description: 管理画面共通の主要ナビゲーションをまとめたField集合
       fields:
-        navigationItems: { label: 管理メニュー, type: list, eventId: navigate }
+        navigationItems:
+          label: 管理メニュー
+          type: list
+          default:
+            - { id: dashboard, label: ダッシュボード }
+            - { id: users, label: ユーザー管理 }
+            - { id: audit, label: 監査ログ }
+          eventId: navigate
     AppFooter:
       name: アプリケーションフッター
       description: 管理画面共通の補助リンクと著作権表示をまとめたField集合

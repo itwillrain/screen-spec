@@ -43,11 +43,6 @@ screen:
     adminSidebar:
       component: { $ref: "./common.yaml#/components/ui/AdminSidebar" }
       bindings:
-        navigationItems.value:
-          value:
-            - { id: dashboard, label: ダッシュボード }
-            - { id: users, label: ユーザー管理 }
-            - { id: audit, label: 監査ログ }
         navigationItems.activeItem: { value: audit }
       events: { navigate: navigateFromSidebar }
     auditTable:

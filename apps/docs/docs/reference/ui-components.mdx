@@ -61,6 +61,8 @@ screen:
         pageSizeChange: changePageSize
 ```
 
+全画面で共通の固定値はComponent内Fieldの`default`へ定義し、ScreenのBindingには画面固有の値だけを記述します。
+
 Binding keyは`fieldId`または`fieldId.property`です。値には`source`または固定`value`の一方を指定します。先頭の`fieldId`はComponentの`fields`に存在する必要があります。Event Mapping keyは内部Fieldに定義された`eventId`、値はScreen Event IDです。同じ`eventId`を複数Fieldで共有できます。
 
 ## 画面要素の配置と表示
