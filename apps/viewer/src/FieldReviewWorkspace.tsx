@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { stringifyYaml } from "@screen-spec/core"
 import type { DiagnosticView, EventBranchView, EventView, FieldView, ScreenView } from './screen-view'
 
@@ -64,6 +64,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     return Math.min(Math.max(360, window.innerWidth - 64), Math.max(320, saved))
   })
   const initialField = queryValue('field')
+  const [expandedInstances, setExpandedInstances] = useState<Set<string>>(() => new Set(screen.uiInstances.map((instance) => instance.key)))
   const [selectedKey, setSelectedKey] = useState(() => screen.fields.some((field) => field.key === initialField) ? initialField : undefined)
   const [selectedInstanceKey, setSelectedInstanceKey] = useState(() => queryValue("instance"))
   const [componentTrail, setComponentTrail] = useState<string[]>(() => {
@@ -112,7 +113,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     const isField = row.kind === "field"
     const key = isField ? row.field.key : row.instance.key
     const label = isField ? row.field.label : row.component?.name ?? componentName(row.instance.componentId ?? row.instance.componentRef ?? row.instance.key)
-    const copy = isField ? row.field.text ?? "" : row.instance.componentRef ?? ""
+    const copy = isField ? row.field.text ?? "" : JSON.stringify(asRecord(row.component?.contract)?.parts ?? {})
     const type = isField ? row.field.type : "component"
     const hasCondition = isField ? !!row.field.visibleWhen || !!row.field.enabledWhen : !!row.instance.visibleWhen
     if (q && ![key, label, copy].some((value) => value.toLowerCase().includes(q))) return false
@@ -147,7 +148,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     setQuery({ field: undefined, instance: undefined, component: undefined })
   }
   const openComponent = (id: string) => {
-    setComponentTrail((trail) => trail.length ? [...trail, id] : [id])
+    setComponentTrail([id])
     setQuery({ component: id })
     requestAnimationFrame(() => detailHeading.current?.focus())
   }
@@ -246,7 +247,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
         {hasDesign && !designCollapsed ? <DesignReference screen={screen} /> : null}
         {hasDesign && !designCollapsed ? <div className="pane-resizer" role="separator" tabIndex={0} aria-label="デザインペインの幅" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={60} aria-valuenow={Math.round(panePercent)} onPointerDown={startResize} onKeyDown={onResizeKeyDown} /> : null}
         <div className="field-review-main">
-          <div className="detail-section-head element-list-head"><h2>画面要素</h2><span className="muted">FieldとComponentを定義順に表示</span></div>
+          <div className="detail-section-head element-list-head"><div><h2>画面要素</h2><span className="muted">FieldとComponentを定義順に表示</span></div><div className="detail-actions"><button type="button" className="link" onClick={() => setExpandedInstances(new Set(screen.uiInstances.map((instance) => instance.key)))}>すべて開く</button><button type="button" className="link" onClick={() => setExpandedInstances(new Set())}>すべて閉じる</button></div></div>
           <FieldFilters
             filter={filter} setFilter={setFilter}
             types={types} typeFilter={typeFilter} setTypeFilter={setTypeFilter}
@@ -272,16 +273,22 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
                   const showSection = index === 0 || section !== previousSection
                   const errors = row.diagnostics.filter((item) => item.severity === "error").length
                   const warnings = row.diagnostics.length - errors
+                  const parts = isField ? [] : Object.entries(asRecord(asRecord(row.component?.contract)?.parts) ?? {})
+                  const expanded = !isField && expandedInstances.has(key)
+                  const toggleExpanded = () => setExpandedInstances((current) => { const next = new Set(current); next.has(key) ? next.delete(key) : next.add(key); return next })
                   return (
-                    <tr key={`${row.kind}:${key}`} tabIndex={0} aria-selected={selectedRow} className={selectedRow ? "selected" : ""} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
-                      <td><span className={`badge ${isField ? "badge-region" : "badge-ok"}`}>{isField ? "Field" : "Component"}</span><code className="element-id">{key}</code></td>
-                      <td className="field-section">{showSection ? section ? <span className="section-label">{section}</span> : <span className="badge badge-warning">未配置</span> : null}</td>
-                      <td><strong>{label}</strong>{copy ? <span className="field-copy">{copy}</span> : null}</td>
-                      <td><code>{type}</code></td>
-                      <td>{isField && INPUT_FIELD_TYPES.has(row.field.type) ? row.field.required ? "必須" : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
-                      <td>{row.events.length ? row.events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
-                      <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!row.diagnostics.length ? <span className="muted">—</span> : null}</td>
-                    </tr>
+                    <Fragment key={`${row.kind}:${key}`}>
+                      <tr tabIndex={0} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${isField ? "" : "component-chunk-row"}`} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
+                        <td>{!isField ? <button type="button" className="component-toggle" aria-label={`${label}を${expanded ? "閉じる" : "開く"}`} aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); toggleExpanded() }}>{expanded ? "▾" : "▸"}</button> : null}<span className={`badge ${isField ? "badge-region" : "badge-ok"}`}>{isField ? "Field" : "Component"}</span><code className="element-id">{key}</code></td>
+                        <td className="field-section">{showSection ? section ? <span className="section-label">{section}</span> : <span className="badge badge-warning">未配置</span> : null}</td>
+                        <td><strong>{label}</strong>{copy ? <span className="field-copy">{copy}</span> : null}</td>
+                        <td><code>{type}</code></td>
+                        <td>{isField && INPUT_FIELD_TYPES.has(row.field.type) ? row.field.required ? "必須" : <span className="muted">任意</span> : <span className="muted">—</span>}</td>
+                        <td>{row.events.length ? row.events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
+                        <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!row.diagnostics.length ? <span className="muted">—</span> : null}</td>
+                      </tr>
+                      {expanded ? parts.map(([partKey, rawPart]) => { const part = asRecord(rawPart); const mappedEvents = row.instance.events.filter((mapping) => mapping.contractEvent === partKey); return <tr key={`${key}.${partKey}`} className="component-part-row" tabIndex={0} onClick={() => selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, "component", key)}><td><span className="component-part-branch" aria-hidden="true">└</span><span className="badge badge-region">Part</span><code className="element-id">{key}.{partKey}</code></td><td></td><td><strong>{partKey}</strong>{typeof part?.description === "string" ? <span className="field-copy">{part.description}</span> : null}</td><td><code>{String(part?.kind ?? "part")}</code></td><td><span className="muted">—</span></td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
+                    </Fragment>
                   )
                 })}
               </tbody>
@@ -433,7 +440,7 @@ function ComponentDetail({ componentId, componentTrail, screen, fieldId, heading
   const usageList = (items: typeof impacts) => <ul className="component-usage-list">{items.map((impact) => { const direct = directFields.has(impact.screenId + ":" + impact.fieldId); return <li key={impact.screenId + impact.fieldId}><button className="link" type="button" onClick={() => impact.screenId === screen.id && impact.fieldId === fieldId ? onBack() : onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.fieldId}</code></button><span className={"badge " + (direct ? "badge-ok" : "badge-region")}>{direct ? "直接利用" : "依存経由"}</span></li> })}</ul>
   return <section className="field-detail" role="complementary" aria-labelledby="component-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
-    <header><div><nav aria-label="詳細のパンくず"><button type="button" className="link" onClick={() => onBackTo(-1)}><code>{fieldId}</code></button>{componentTrail.map((id, index) => <span key={id + index}><span aria-hidden="true"> / </span>{index === componentTrail.length - 1 ? <span aria-current="page">{componentName(id)}</span> : <button type="button" className="link" onClick={() => onBackTo(index)}>{componentName(id)}</button>}</span>)}</nav><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <button type="button" className="link" onClick={() => void navigator.clipboard?.writeText(component.id)}>参照をコピー</button></p></div><div className="detail-actions"><button type="button" onClick={onBack}>戻る</button><button type="button" onClick={onClose}>閉じる</button></div></header>
+    <header><div><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <button type="button" className="link" onClick={() => void navigator.clipboard?.writeText(component.id)}>参照をコピー</button></p></div><div className="detail-actions"><button type="button" onClick={onClose}>閉じる</button></div></header>
     <dl className="component-metrics"><Detail label="直接参照" value={String(usages.length)} /><Detail label={component.kind === "ui" ? "影響Instance" : "影響Field"} value={String(component.kind === "ui" ? instanceImpacts.length : impacts.length)} /><Detail label="依存Component" value={String(dependencyIds.length)} /></dl>
     <section><h3>Contract</h3>
       {component.kind === "field" && contract ? <><dl className="field-detail-grid">{typeof contract.label === "string" ? <Detail label="ラベル" value={contract.label} /> : null}{typeof contract.type === "string" ? <Detail label="型" value={contract.type} code /> : null}{typeof contract.text === "string" ? <Detail label="文言" value={contract.text} /> : null}{typeof contract.required === "boolean" ? <Detail label="必須" value={contract.required ? "必須" : "任意"} /> : null}{contract.default !== undefined ? <Detail label="既定値" value={displayValue(contract.default)} code /> : null}{typeof contract.placeholder === "string" ? <Detail label="プレースホルダー" value={contract.placeholder} /> : null}</dl>{validations.length ? <section><h4>Validation</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "validation").map((usage) => dependencyButton(usage.componentId, "validation"))}</div>{validations.filter((item) => !asRecord(item)?.$ref).map((item, index) => <pre key={index} className="contract-inline"><code>{stringifyYaml(item)}</code></pre>)}</section> : null}{contract.options !== undefined ? <section><h4>Options</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "options").map((usage) => dependencyButton(usage.componentId, "options"))}</div></section> : null}</> : null}
