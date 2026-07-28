@@ -45,9 +45,9 @@ screen:
         url: https://example.com/design-guide
 ```
 
-ViewerではDesign RegionとScreen Elementsが双方向にハイライトされます。領域を選ぶと対象の詳細が開き、項目を選ぶと対応画像へ移動します。
+ViewerではDesign RegionとScreen Elementsが双方向に連動します。Tour中に領域を選ぶと対応する画面要素行へスクロール・フォーカスし、項目を選ぶと対応画像へ移動します。詳細は画面要素行を明示的に選んだ場合だけ開きます。
 
-「Design Tourを開始」では、画像の定義順と各画像の`mappings`定義順で項目を巡回します。Tour専用のstepは定義せず、表示名・文言・詳細は常に対象Screen Elementから取得します。
+「Design Tourを開始」では、画像の定義順と各画像の`mappings`定義順で項目を巡回します。Tour専用のstepは定義せず、表示名とIDは常に対象Screen Elementから取得します。
 
 `target`にはScreen直下のField ID、Component Instance ID、または`instance.field`形式のComponent内部Field IDを指定します。ひとつの要素が画像上の複数箇所に現れる場合は、同じMappingの`regions`へ複数矩形を定義します。
 

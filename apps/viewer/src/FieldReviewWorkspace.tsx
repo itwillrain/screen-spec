@@ -40,6 +40,16 @@ function CopyableText({ value, className }: { value: string; className?: string 
   </span>
 }
 
+function DrawerIcon({ name }: { name: "back" | "close" | "copy" }) {
+  if (name === "back") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+  if (name === "close") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" /></svg>
+}
+
+function DrawerIconButton({ name, label, onClick }: { name: "back" | "close" | "copy"; label: string; onClick: () => void }) {
+  return <button type="button" className="drawer-icon-button" aria-label={label} title={label} onClick={onClick}><DrawerIcon name={name} /></button>
+}
+
 const INPUT_FIELD_TYPES = new Set(['text', 'textarea', 'email', 'number', 'date', 'select', 'checkbox', 'radio'])
 const OPTION_FIELD_TYPES = new Set(['select', 'radio'])
 
@@ -73,6 +83,7 @@ function relatedEvents(screen: ScreenView, field: FieldView): EventView[] {
 export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { screen: ScreenView; onOpenTab: (tab: string) => void; onNavigateField: (screenId: string, fieldId: string) => void }) {
   const [filter, setFilter] = useState('')
   const [hoveredDesignTarget, setHoveredDesignTarget] = useState<string>()
+  const [tourFocusedTarget, setTourFocusedTarget] = useState<string>()
   const [typeFilter, setTypeFilter] = useState('all')
   const [eventFilter, setEventFilter] = useState('all')
   const [conditionFilter, setConditionFilter] = useState(false)
@@ -163,12 +174,14 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
     if (focusDetail) requestAnimationFrame(() => detailHeading.current?.focus())
   }
   const selectedDesignTarget = selectedKey ?? (selectedInstanceKey ? selectedInstanceFieldKey ? `${selectedInstanceKey}.${selectedInstanceFieldKey}` : selectedInstanceKey : undefined)
-  const selectDesignTarget = (target: string) => {
-    if (screen.fields.some((field) => field.key === target)) selectField(target, false)
-    else {
-      const [instanceKey, fieldKey] = target.split(".")
-      if (screen.uiInstances.some((instance) => instance.key === instanceKey)) selectInstance(instanceKey, fieldKey, false)
-    }
+  const focusTourTarget = (target: string) => {
+    closeDetail()
+    setTourFocusedTarget(target)
+    requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(`[data-screen-element="${target}"]`)
+      row?.scrollIntoView({ block: "center", behavior: "smooth" })
+      row?.focus({ preventScroll: true })
+    })
   }
   const closeDetail = () => {
     setSelectedInstanceKey(undefined)
@@ -185,14 +198,6 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
   const backDetail = () => {
     setComponentTrail((trail) => {
       const next = trail.slice(0, -1)
-      setQuery({ component: next.at(-1) })
-      return next
-    })
-    requestAnimationFrame(() => detailHeading.current?.focus())
-  }
-  const backToComponent = (index: number) => {
-    setComponentTrail((trail) => {
-      const next = trail.slice(0, index + 1)
       setQuery({ component: next.at(-1) })
       return next
     })
@@ -274,7 +279,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
         </button>
       ) : null}
       <div className={`field-review-workspace${designCollapsed || !hasDesign ? ' design-collapsed' : ''}`} style={{ '--design-pane': `${panePercent}%` } as React.CSSProperties}>
-        {hasDesign && !designCollapsed ? <DesignReference screen={screen} selectedTarget={selectedDesignTarget} hoveredTarget={hoveredDesignTarget} onSelectTarget={selectDesignTarget} onHoverTarget={setHoveredDesignTarget} /> : null}
+        {hasDesign && !designCollapsed ? <DesignReference screen={screen} selectedTarget={selectedDesignTarget} hoveredTarget={hoveredDesignTarget} onTourTarget={focusTourTarget} onTourEnd={() => setTourFocusedTarget(undefined)} onHoverTarget={setHoveredDesignTarget} /> : null}
         {hasDesign && !designCollapsed ? <div className="pane-resizer" role="separator" tabIndex={0} aria-label="デザインペインの幅" aria-orientation="vertical" aria-valuemin={25} aria-valuemax={60} aria-valuenow={Math.round(panePercent)} onPointerDown={startResize} onKeyDown={onResizeKeyDown} /> : null}
         <div className="field-review-main">
           <div className="detail-section-head element-list-head"><div><h2>画面要素</h2><span className="muted">FieldとComponentを定義順に表示</span></div><div className="detail-actions"><button type="button" className="link" onClick={() => setExpandedInstances(new Set(screen.uiInstances.map((instance) => instance.key)))}>すべて開く</button><button type="button" className="link" onClick={() => setExpandedInstances(new Set())}>すべて閉じる</button></div></div>
@@ -309,7 +314,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
                   return (
                     <Fragment key={`${row.kind}:${key}`}>
                       {showSection ? <tr className="section-group-row"><th colSpan={6} scope="rowgroup">{section ?? "未配置"}</th></tr> : null}
-                      <tr tabIndex={0} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${hoveredDesignTarget === key ? "design-linked-hover " : ""}${isField ? "" : "component-chunk-row"}`} onMouseEnter={() => setHoveredDesignTarget(key)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
+                      <tr tabIndex={0} data-screen-element={key} aria-selected={selectedRow} className={`${selectedRow ? "selected " : ""}${hoveredDesignTarget === key ? "design-linked-hover " : ""}${tourFocusedTarget === key ? "tour-focused " : ""}${isField ? "" : "component-chunk-row"}`} onMouseEnter={() => setHoveredDesignTarget(key)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => isField ? selectField(key) : selectInstance(key)} onKeyDown={(event) => onRowKeyDown(event, row.kind, key)}>
                         <td>{!isField ? <button type="button" className="component-toggle" aria-label={`${label}を${expanded ? "閉じる" : "開く"}`} aria-expanded={expanded} onClick={(event) => { event.stopPropagation(); toggleExpanded() }}>{expanded ? "▾" : "▸"}</button> : null}<code className="element-id">{key}</code></td>
                         <td><strong>{label}</strong>{isField && copy ? <CopyableText className="field-copy" value={copy} /> : copy ? <span className="field-copy">{copy}</span> : null}</td>
                         <td><code>{type}</code></td>
@@ -317,7 +322,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
                         <td>{row.events.length ? row.events.map((event) => <code key={event.key} className="event-id">{event.key}</code>) : <span className="muted">—</span>}</td>
                         <td>{errors ? <span className="badge badge-ng">error {errors}</span> : null}{warnings ? <span className="badge badge-warning">warning {warnings}</span> : null}{!row.diagnostics.length ? <span className="muted">—</span> : null}</td>
                       </tr>
-                      {expanded ? componentFields.map(([fieldKey, rawField]) => { const field = asRecord(rawField); const eventId = typeof field?.eventId === "string" ? field.eventId : undefined; const mappedEvents = eventId ? row.instance.events.filter((mapping) => mapping.fieldEvent === eventId) : []; return <tr key={`${key}.${fieldKey}`} className={`component-field-row${hoveredDesignTarget === `${key}.${fieldKey}` ? " design-linked-hover" : ""}`} tabIndex={0} onMouseEnter={() => setHoveredDesignTarget(`${key}.${fieldKey}`)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => selectInstance(key, fieldKey)} onKeyDown={(event) => onRowKeyDown(event, "component", key, fieldKey)}><td><span className="component-field-branch" aria-hidden="true">└</span><code className="element-id">{key}.{fieldKey}</code></td><td><strong>{String(field?.label ?? fieldKey)}</strong>{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><code>{String(field?.type ?? "unknown")}</code></td><td>{field?.required === true ? "必須" : <span className="muted">—</span>}</td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : eventId ? <code className="event-id">{eventId}</code> : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
+                      {expanded ? componentFields.map(([fieldKey, rawField]) => { const field = asRecord(rawField); const eventId = typeof field?.eventId === "string" ? field.eventId : undefined; const mappedEvents = eventId ? row.instance.events.filter((mapping) => mapping.fieldEvent === eventId) : []; return <tr key={`${key}.${fieldKey}`} className={`component-field-row${hoveredDesignTarget === `${key}.${fieldKey}` ? " design-linked-hover" : ""}${tourFocusedTarget === `${key}.${fieldKey}` ? " tour-focused" : ""}`} data-screen-element={`${key}.${fieldKey}`} tabIndex={0} onMouseEnter={() => setHoveredDesignTarget(`${key}.${fieldKey}`)} onMouseLeave={() => setHoveredDesignTarget(undefined)} onClick={() => selectInstance(key, fieldKey)} onKeyDown={(event) => onRowKeyDown(event, "component", key, fieldKey)}><td><span className="component-field-branch" aria-hidden="true">└</span><code className="element-id">{key}.{fieldKey}</code></td><td><strong>{String(field?.label ?? fieldKey)}</strong>{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><code>{String(field?.type ?? "unknown")}</code></td><td>{field?.required === true ? "必須" : <span className="muted">—</span>}</td><td>{mappedEvents.length ? mappedEvents.map((mapping) => <code key={mapping.screenEvent} className="event-id">{mapping.screenEvent}</code>) : eventId ? <code className="event-id">{eventId}</code> : <span className="muted">—</span>}</td><td><span className="muted">—</span></td></tr> }) : null}
                     </Fragment>
                   )
                 })}
@@ -325,7 +330,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onNavigateField }: { s
             </table>
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致する画面要素はありません。</p> : null}
-          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(`field:${selected.field.key}`)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} componentTrail={componentTrail} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onBackTo={backToComponent} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} fieldKey={selectedInstanceFieldKey} screen={screen} headingRef={detailHeading} onClose={closeDetail} onOpenComponent={openComponent} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
+          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(`field:${selected.field.key}`)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} fieldKey={selectedInstanceFieldKey} screen={screen} headingRef={detailHeading} onClose={closeDetail} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -346,7 +351,7 @@ function FieldFilters(props: {
   </div>
 }
 
-function DesignReference({ screen, selectedTarget, hoveredTarget, onSelectTarget, onHoverTarget }: { screen: ScreenView; selectedTarget?: string; hoveredTarget?: string; onSelectTarget: (target: string) => void; onHoverTarget: (target?: string) => void }) {
+function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, onTourEnd, onHoverTarget }: { screen: ScreenView; selectedTarget?: string; hoveredTarget?: string; onTourTarget: (target: string) => void; onTourEnd: () => void; onHoverTarget: (target?: string) => void }) {
   const design = screen.design!
   const initialImage = Math.max(0, Math.min(Number(queryValue("design")) || 0, Math.max(0, design.images.length - 1)))
   const [index, setIndex] = useState(initialImage)
@@ -379,7 +384,7 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onSelectTarget
     if (!step) return
     setTourStep(normalized)
     setImage(step.imageIndex)
-    onSelectTarget(step.mapping.target)
+    onTourTarget(step.mapping.target)
   }
   useEffect(() => {
     if (!selectedTarget) return
@@ -412,18 +417,19 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onSelectTarget
       <button type="button" onClick={reset}>リセット</button>
       {image ? <a href={image.url} target="_blank" rel="noreferrer">別タブ ↗</a> : null}
     </div>
-    {steps.length ? tourStep === undefined ? <button type="button" className="tour-start" onClick={() => activateStep(0)}>Design Tourを開始 <span>{steps.length}項目</span></button> : <div className="design-tour" aria-label="Design Tour"><div><span className="eyebrow">Design Tour {tourStep + 1} / {steps.length}</span><strong>{targetLabel(steps[tourStep].mapping.target)}</strong><code>{steps[tourStep].mapping.target}</code></div><div className="design-tour-actions"><button type="button" aria-label="前の項目" onClick={() => activateStep(tourStep - 1)}>←</button><button type="button" aria-label="次の項目" onClick={() => activateStep(tourStep + 1)}>→</button><button type="button" className="link" onClick={() => setTourStep(undefined)}>終了</button></div></div> : null}
-    {image ? <div className="design-viewport" ref={viewport} onPointerDown={startPan} onPointerMove={movePan} onPointerUp={() => { drag.current = undefined }} onPointerCancel={() => { drag.current = undefined }}><div className="design-canvas" style={{ width: naturalWidth ? `${naturalWidth * zoom / 100}px` : "auto" }}><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} onLoad={(event) => setNaturalWidth(event.currentTarget.naturalWidth)} />{image.mappings.flatMap((mapping, mappingIndex) => { const stepIndex = steps.findIndex((step) => step.imageIndex === index && step.mappingIndex === mappingIndex); return mapping.regions.map((region, regionIndex) => <button key={`${mapping.target}:${regionIndex}`} type="button" className={`design-region${activeTarget === mapping.target ? " active" : ""}${tourStep === stepIndex ? " tour-current" : ""}`} data-tour-step={stepIndex} aria-label={`${targetLabel(mapping.target)}（${mapping.target}）を開く`} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} onPointerDown={(event) => event.stopPropagation()} onMouseEnter={() => onHoverTarget(mapping.target)} onMouseLeave={() => onHoverTarget(undefined)} onFocus={() => onHoverTarget(mapping.target)} onBlur={() => onHoverTarget(undefined)} onClick={() => { setTourStep(stepIndex); onSelectTarget(mapping.target) }}><span>{stepIndex + 1}</span></button>) })}</div></div> : <p className="empty">デザイン画像はありません。</p>}
+    {steps.length ? tourStep === undefined ? <button type="button" className="tour-start" onClick={() => activateStep(0)}>Design Tourを開始 <span>{steps.length}項目</span></button> : <div className="design-tour" aria-label="Design Tour"><div><span className="eyebrow">Design Tour {tourStep + 1} / {steps.length}</span><strong>{targetLabel(steps[tourStep].mapping.target)}</strong><code>{steps[tourStep].mapping.target}</code></div><div className="design-tour-actions"><button type="button" aria-label="前の項目" onClick={() => activateStep(tourStep - 1)}>←</button><button type="button" aria-label="次の項目" onClick={() => activateStep(tourStep + 1)}>→</button><button type="button" className="link" onClick={() => { setTourStep(undefined); onTourEnd() }}>終了</button></div></div> : null}
+    {image ? <div className="design-viewport" ref={viewport} onPointerDown={startPan} onPointerMove={movePan} onPointerUp={() => { drag.current = undefined }} onPointerCancel={() => { drag.current = undefined }}><div className="design-canvas" style={{ width: naturalWidth ? `${naturalWidth * zoom / 100}px` : "auto" }}><img src={image.url} alt={image.caption ?? `デザイン ${index + 1}`} draggable={false} onLoad={(event) => setNaturalWidth(event.currentTarget.naturalWidth)} />{tourStep !== undefined ? image.mappings.flatMap((mapping, mappingIndex) => { const stepIndex = steps.findIndex((step) => step.imageIndex === index && step.mappingIndex === mappingIndex); return mapping.regions.map((region, regionIndex) => <button key={`${mapping.target}:${regionIndex}`} type="button" className={`design-region${activeTarget === mapping.target ? " active" : ""}${tourStep === stepIndex ? " tour-current" : ""}`} data-tour-step={stepIndex} aria-label={`${targetLabel(mapping.target)}（${mapping.target}）を開く`} style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%`, width: `${region.width * 100}%`, height: `${region.height * 100}%` }} onPointerDown={(event) => event.stopPropagation()} onMouseEnter={() => onHoverTarget(mapping.target)} onMouseLeave={() => onHoverTarget(undefined)} onFocus={() => onHoverTarget(mapping.target)} onBlur={() => onHoverTarget(undefined)} onClick={() => { setTourStep(stepIndex); onTourTarget(mapping.target) }}><span>{stepIndex + 1}</span></button>) }) : null}</div></div> : <p className="empty">デザイン画像はありません。</p>}
     {image?.caption ? <p className="muted design-caption">{image.caption}</p> : null}
     {design.images.length > 1 ? <div className="design-thumbnails" aria-label="デザイン画像を選択">{design.images.map((item, itemIndex) => <button key={`${item.url}:${itemIndex}`} type="button" className={index === itemIndex ? "active" : ""} aria-pressed={index === itemIndex} onClick={() => { setImage(itemIndex); setTourStep(undefined) }}><img src={item.url} alt={item.caption ?? `デザイン ${itemIndex + 1}`} /></button>)}</div> : null}
     <div className="design-links">{design.figma ? <a href={design.figma} target="_blank" rel="noreferrer">Figmaを開く ↗</a> : null}{design.links.map((link, linkIndex) => <a key={`${link.url}:${linkIndex}`} href={link.url} target="_blank" rel="noreferrer">{link.label ?? link.url} ↗</a>)}</div>
   </aside>
 }
 
-function UIInstanceDetail({ instance, fieldKey, screen, headingRef, onClose, onOpenComponent, drawerWidth, onResizeStart, onResizeKeyDown }: {
-  instance: UIInstanceView; fieldKey?: string; screen: ScreenView; headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenComponent: (id: string) => void; drawerWidth: number; onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
+function UIInstanceDetail({ instance, fieldKey, screen, headingRef, onClose, drawerWidth, onResizeStart, onResizeKeyDown }: {
+  instance: UIInstanceView; fieldKey?: string; screen: ScreenView; headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; drawerWidth: number; onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
   const component = screen.componentGraph.components.find((item) => item.id === instance.componentId)
+  const componentContract = asRecord(component?.contract)
   const fieldRecord = fieldKey ? asRecord(asRecord(asRecord(component?.contract)?.fields)?.[fieldKey]) : undefined
   const fieldBindings = fieldKey ? instance.bindings.filter((binding) => binding.target === fieldKey || binding.target.startsWith(fieldKey + ".")) : instance.bindings
   const fieldEventId = typeof fieldRecord?.eventId === "string" ? fieldRecord.eventId : undefined
@@ -431,9 +437,9 @@ function UIInstanceDetail({ instance, fieldKey, screen, headingRef, onClose, onO
   const placement = screen.layout?.sections.find((section) => section.items.some((item) => item.kind === "component" && item.key === instance.key))
   return <section className="field-detail" role="complementary" aria-labelledby="instance-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component Instance詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
-    <header><div><p className="eyebrow">{fieldKey ? "component field" : "component instance"}</p><h2 id="instance-detail-title" ref={headingRef} tabIndex={-1}><code>{fieldKey ? instance.key + "." + fieldKey : instance.key}</code>{fieldKey ? " — " + String(fieldRecord?.label ?? fieldKey) : null}</h2><p className="component-identity">{component?.name ?? componentName(instance.componentId ?? instance.componentRef ?? "Unknown")}</p></div><button type="button" onClick={onClose}>閉じる</button></header>
+    <header><div><p className="eyebrow">{fieldKey ? "component field" : "component instance"}</p><h2 id="instance-detail-title" ref={headingRef} tabIndex={-1}><code>{fieldKey ? instance.key + "." + fieldKey : instance.key}</code>{fieldKey ? " — " + String(fieldRecord?.label ?? fieldKey) : null}</h2><p className="component-identity">{component?.name ?? componentName(instance.componentId ?? instance.componentRef ?? "Unknown")}</p></div><DrawerIconButton name="close" label="詳細を閉じる" onClick={onClose} /></header>
     <dl className="field-detail-grid">{fieldKey ? <><Detail label="型" value={typeof fieldRecord?.type === "string" ? fieldRecord.type : undefined} code />{fieldRecord?.text !== undefined ? <Detail label="文言" value={String(fieldRecord.text)} copy /> : null}{typeof fieldRecord?.required === "boolean" ? <Detail label="必須" value={fieldRecord.required ? "必須" : "任意"} /> : null}{fieldRecord && "default" in fieldRecord ? <Detail label="既定値" value={displayValue(fieldRecord.default)} code /> : null}</> : null}<Detail label="Section" value={placement?.title ?? placement?.id} /><Detail label="Region" value={placement?.region ?? "body"} /><Detail label="Field Binding" value={String(fieldBindings.length)} /><Detail label="Event Mapping" value={String(fieldEvents.length)} /></dl>
-    {instance.componentId ? <section><h3>UI Component</h3><button type="button" className="component-link" onClick={() => onOpenComponent(instance.componentId!)}><span>定義を開く</span><code>{component?.name ?? componentName(instance.componentId)}</code></button></section> : null}
+    {component ? <section><h3>Component定義</h3>{typeof componentContract?.description === "string" ? <p>{componentContract.description}</p> : null}<p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <DrawerIconButton name="copy" label="Component参照をコピー" onClick={() => void navigator.clipboard?.writeText(component.id)} /></p></section> : null}
     {fieldRecord && asRecord(fieldRecord.eventContext) ? <section><h3>Event Context</h3><dl className="event-context-list">{Object.entries(asRecord(fieldRecord.eventContext) ?? {}).map(([name, raw]) => { const value = asRecord(raw); return <div key={name}><dt><code>event.{name}</code></dt><dd><code>{String(value?.type ?? "unknown")}</code>{typeof value?.description === "string" ? " — " + value.description : null}</dd></div> })}</dl></section> : null}
     {fieldBindings.length ? <section><h3>Field Bindings</h3><ul className="instance-mappings">{fieldBindings.map((binding) => <li key={binding.target}><code>{binding.target}</code><span aria-hidden="true"> ← </span>{binding.source ? <code>{binding.source}</code> : <code>{displayValue(binding.value)}</code>}</li>)}</ul></section> : null}
     {fieldEvents.length ? <section><h3>Event Mappings</h3><ul className="instance-mappings">{fieldEvents.map((event) => <li key={event.fieldEvent}><code>{event.fieldEvent}</code><span aria-hidden="true"> → </span><code>{event.screenEvent}</code></li>)}</ul></section> : null}
@@ -450,7 +456,7 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenComp
   const { field, events, diagnostics } = item
   return <section className="field-detail" role="complementary" aria-labelledby="field-detail-title" style={{ '--field-drawer-width': drawerWidth + 'px' } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Field詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
-    <header><div><p className="eyebrow">selected field</p><h2 id="field-detail-title" ref={headingRef} tabIndex={-1}><code>{field.key}</code> — {field.label}</h2></div><button type="button" onClick={onClose} aria-label="Field詳細を閉じる">閉じる</button></header>
+    <header><div><p className="eyebrow">selected field</p><h2 id="field-detail-title" ref={headingRef} tabIndex={-1}><code>{field.key}</code> — {field.label}</h2></div><DrawerIconButton name="close" label="Field詳細を閉じる" onClick={onClose} /></header>
     <dl className="field-detail-grid">
       <Detail label="型" value={field.type} code />
       {field.text !== undefined || field.type === "button" || field.type === "label" ? <Detail label="文言" value={field.text} copy /> : null}
@@ -475,14 +481,14 @@ function componentName(id: string): string { return decodeURIComponent(id.split(
 
 function asRecord(value: unknown): Record<string, unknown> | undefined { return value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined }
 
-function ComponentDetail({ componentId, componentTrail, screen, fieldId, headingRef, onBack, onBackTo, onClose, onOpenComponent, onNavigateField, drawerWidth, onResizeStart, onResizeKeyDown }: {
-  componentId: string; componentTrail: string[]; screen: ScreenView; fieldId: string; headingRef: React.RefObject<HTMLHeadingElement | null>; onBack: () => void; onBackTo: (index: number) => void; onClose: () => void
+function ComponentDetail({ componentId, screen, fieldId, headingRef, onBack, onClose, onOpenComponent, onNavigateField, drawerWidth, onResizeStart, onResizeKeyDown }: {
+  componentId: string; screen: ScreenView; fieldId: string; headingRef: React.RefObject<HTMLHeadingElement | null>; onBack: () => void; onClose: () => void
   onOpenComponent: (id: string) => void; onNavigateField: (screenId: string, fieldId: string) => void; drawerWidth: number
   onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
   const [optionQuery, setOptionQuery] = useState("")
   const component = screen.componentGraph.components.find((item) => item.id === componentId)
-  if (!component) return <section className="field-detail" role="complementary" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}><header><div><p className="eyebrow">component</p><h2 ref={headingRef} tabIndex={-1}>Componentが見つかりません</h2></div><button type="button" onClick={onClose}>閉じる</button></header><p><code>{componentId}</code></p></section>
+  if (!component) return <section className="field-detail" role="complementary" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}><header><div><p className="eyebrow">component</p><h2 ref={headingRef} tabIndex={-1}>Componentが見つかりません</h2></div><DrawerIconButton name="close" label="詳細を閉じる" onClick={onClose} /></header><p><code>{componentId}</code></p></section>
   const usages = screen.componentGraph.usages.filter((usage) => usage.componentId === componentId)
   const dependencies = screen.componentGraph.usages.filter((usage) => usage.referrerComponentId === componentId)
   const dependencyIds = [...new Set(dependencies.map((usage) => usage.componentId))]
@@ -502,7 +508,7 @@ function ComponentDetail({ componentId, componentTrail, screen, fieldId, heading
   const usageList = (items: typeof impacts) => <ul className="component-usage-list">{items.map((impact) => { const direct = directFields.has(impact.screenId + ":" + impact.fieldId); return <li key={impact.screenId + impact.fieldId}><button className="link" type="button" onClick={() => impact.screenId === screen.id && impact.fieldId === fieldId ? onBack() : onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.fieldId}</code></button><span className={"badge " + (direct ? "badge-ok" : "badge-region")}>{direct ? "直接利用" : "依存経由"}</span></li> })}</ul>
   return <section className="field-detail" role="complementary" aria-labelledby="component-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
-    <header><div><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <button type="button" className="link" onClick={() => void navigator.clipboard?.writeText(component.id)}>参照をコピー</button></p></div><div className="detail-actions"><button type="button" onClick={onClose}>閉じる</button></div></header>
+    <header><div className="detail-heading-with-back"><DrawerIconButton name="back" label="元の詳細へ戻る" onClick={onBack} /><div><p className="eyebrow">{component.kind} component</p><h2 id="component-detail-title" ref={headingRef} tabIndex={-1}>{component.name}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <DrawerIconButton name="copy" label="Component参照をコピー" onClick={() => void navigator.clipboard?.writeText(component.id)} /></p></div></div><div className="detail-actions"><DrawerIconButton name="close" label="詳細を閉じる" onClick={onClose} /></div></header>
     <dl className="component-metrics"><Detail label="直接参照" value={String(usages.length)} /><Detail label={component.kind === "ui" ? "影響Instance" : "影響Field"} value={String(component.kind === "ui" ? instanceImpacts.length : impacts.length)} /><Detail label="依存Component" value={String(dependencyIds.length)} /></dl>
     <section><h3>定義</h3>
       {component.kind === "field" && contract ? <><dl className="field-detail-grid">{typeof contract.label === "string" ? <Detail label="ラベル" value={contract.label} /> : null}{typeof contract.type === "string" ? <Detail label="型" value={contract.type} code /> : null}{typeof contract.text === "string" ? <Detail label="文言" value={contract.text} copy /> : null}{typeof contract.required === "boolean" ? <Detail label="必須" value={contract.required ? "必須" : "任意"} /> : null}{contract.default !== undefined ? <Detail label="既定値" value={displayValue(contract.default)} code /> : null}{typeof contract.placeholder === "string" ? <Detail label="プレースホルダー" value={contract.placeholder} /> : null}</dl>{validations.length ? <section><h4>Validation</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "validation").map((usage) => dependencyButton(usage.componentId, "validation"))}</div>{validations.filter((item) => !asRecord(item)?.$ref).map((item, index) => <pre key={index} className="contract-inline"><code>{stringifyYaml(item)}</code></pre>)}</section> : null}{contract.options !== undefined ? <section><h4>Options</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "options").map((usage) => dependencyButton(usage.componentId, "options"))}</div></section> : null}</> : null}

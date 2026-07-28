@@ -704,9 +704,9 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 /* M6 Field Review Workspace */
 .field-review { min-width: 0; }
 .design-toggle { margin-bottom: .75rem; padding: .45rem .7rem; border: 1px solid #c7d2fe; border-radius: 6px; background: #eef2ff; color: #3730a3; font: inherit; cursor: pointer; }
-.field-review-workspace { display: grid; grid-template-columns: minmax(20rem, var(--design-pane)) .55rem minmax(30rem, 1fr); align-items: stretch; min-width: 0; min-height: 38rem; }
+.field-review-workspace { display: grid; grid-template-columns: minmax(20rem, var(--design-pane)) .55rem minmax(30rem, 1fr); align-items: stretch; min-width: 0; height: calc(100dvh - 13rem); min-height: 30rem; }
 .field-review-workspace.design-collapsed { grid-template-columns: minmax(0, 1fr); }
-.design-reference { min-width: 0; padding-right: 1rem; }
+.design-reference { min-width: 0; min-height: 0; padding-right: 1rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .design-reference > header, .field-detail > header, .related-event > header, .detail-section-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .design-reference h2, .field-detail h2, .field-detail h3, .related-event h4 { margin: 0; }
 .design-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: .75rem 0; }
@@ -736,7 +736,7 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .pane-resizer { position: relative; width: .55rem; cursor: col-resize; touch-action: none; }
 .pane-resizer::before { content: ''; position: absolute; inset: 0 .2rem; background: #dbe3ee; border-radius: 999px; }
 .pane-resizer:hover::before { background: #6366f1; }
-.field-review-main { min-width: 0; padding-left: 1rem; }
+.field-review-main { min-width: 0; min-height: 0; padding: 0 .5rem 1rem 1rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .field-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; margin-bottom: .75rem; }
 .field-filters .filter { flex: 1 1 16rem; margin: 0; }
 .field-filters select { min-height: 2.55rem; padding: .45rem; border: 1px solid #c7d2fe; border-radius: 6px; background: #fff; font: inherit; }
@@ -746,6 +746,7 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .review-fields tbody tr:not(.section-group-row):hover { background: #eef2ff; }
 .review-fields tbody tr.selected { background: #e0e7ff; box-shadow: inset 4px 0 #4f46e5; }
 .review-fields tbody tr.design-linked-hover { background: #eef2ff; box-shadow: inset 4px 0 #818cf8; }
+.review-fields tbody tr.tour-focused { background: #e0e7ff; box-shadow: inset 4px 0 #4f46e5, inset 0 0 0 1px #a5b4fc; }
 .review-fields td:last-child .badge + .badge { margin-left: .3rem; }
 .review-fields .event-id + .event-id { margin-left: .35rem; }
 .section-group-row { cursor: default; background: var(--surface, #f8fafc); }
@@ -891,6 +892,7 @@ html[data-theme="dark"] :where(.sidebar-collapse, .sidebar-current) {
 @media (max-width: 1100px) {
   .field-review-workspace {
     display: block;
+    height: auto;
     min-height: 0;
   }
   .pane-resizer {
@@ -898,9 +900,11 @@ html[data-theme="dark"] :where(.sidebar-collapse, .sidebar-current) {
   }
   .design-reference {
     padding: 0 0 1rem;
+    overflow: visible;
   }
   .field-review-main {
-    padding-left: 0;
+    padding: 0;
+    overflow: visible;
   }
 }
 
@@ -1007,6 +1011,13 @@ html[data-theme="dark"] .field-detail > header {
 .component-metrics dd { margin: .25rem 0 0; font-size: 1.15rem; font-weight: 700; }
 .component-identity { margin: .35rem 0 0; color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
 .detail-actions { display: flex; gap: .5rem; align-items: flex-start; }
+.detail-heading-with-back { display: flex; align-items: flex-start; gap: .55rem; min-width: 0; }
+.drawer-icon-button { display: inline-grid; flex: 0 0 auto; place-items: center; width: 2.25rem; height: 2.25rem; padding: .45rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; vertical-align: middle; }
+.drawer-icon-button:hover { background: #f1f5f9; color: #1e293b; }
+.drawer-icon-button svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.component-identity .drawer-icon-button { width: 1.65rem; height: 1.65rem; margin-left: .25rem; padding: .25rem; border: 0; background: transparent; }
+html[data-theme="dark"] .drawer-icon-button { border-color: #3a4656; background: #141a23; color: #cbd5e1; }
+html[data-theme="dark"] .drawer-icon-button:hover { background: #202a36; color: #fff; }
 .component-usage-list { display: grid; gap: .45rem; padding: 0; list-style: none; }
 .component-usage-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid var(--border); }
 .contract-inline { padding: .65rem; border: 1px solid var(--border); border-radius: .5rem; white-space: pre-wrap; }
