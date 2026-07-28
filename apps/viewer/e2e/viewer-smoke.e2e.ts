@@ -52,7 +52,12 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(page.getByRole("tab", { name: "状態遷移" })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".event-card.selected-event")).toHaveAttribute("data-event-id", eventId);
   await expect(page.locator(".event-card.selected-event")).toBeFocused();
-  await expect(page).toHaveURL(new RegExp(`event=`));
+  await expect(page).toHaveURL(new RegExp("event=" + eventId));
+  await page.goBack();
+  await expect(page.getByRole("tab", { name: "項目" })).toHaveAttribute("aria-selected", "true");
+  await page.goForward();
+  await expect(page.getByRole("tab", { name: "状態遷移" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".event-card.selected-event")).toHaveAttribute("data-event-id", eventId);
   await page.getByRole("tab", { name: "項目" }).click();
 
   await page.getByText("userTable.rows", { exact: true }).click();
@@ -64,6 +69,8 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(page.locator(".section-group-row").filter({ hasText: "検索条件" })).toHaveCount(0);
 
   await page.goto("/?screen=user-list&tab=states");
+  const onLoaded = page.locator(".event-card").filter({ hasText: "onLoaded" });
+  await expect(onLoaded.getByText("2. 実行する処理", { exact: true })).toBeVisible();
   const changePage = page.locator(".event-card").filter({ hasText: "changePage" });
   await expect(changePage.getByText("Event Context", { exact: true })).toBeVisible();
   await expect(changePage.getByText("event.page", { exact: true })).toBeVisible();

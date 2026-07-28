@@ -25,22 +25,33 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }:
   ].filter((t) => t.show)
 
   const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("tab") ?? "fields")
+  const [selectedEvent, setSelectedEvent] = useState(() => new URLSearchParams(window.location.search).get("event") ?? undefined)
   const selectTab = (next: string) => {
     setTab(next)
+    setSelectedEvent(undefined)
     const url = new URL(window.location.href)
     url.searchParams.set("tab", next)
-    window.history.replaceState(null, "", url)
+    url.searchParams.delete("event")
+    if (url.href !== window.location.href) window.history.pushState(null, "", url)
   }
   const active = tabs.some((t) => t.id === tab) ? tab : 'fields'
-  const [selectedEvent, setSelectedEvent] = useState(() => new URLSearchParams(window.location.search).get("event") ?? undefined)
   const openEvent = (eventId: string) => {
     setSelectedEvent(eventId)
     setTab("states")
     const url = new URL(window.location.href)
     url.searchParams.set("tab", "states")
     url.searchParams.set("event", eventId)
-    window.history.replaceState(null, "", url)
+    if (url.href !== window.location.href) window.history.pushState(null, "", url)
   }
+  useEffect(() => {
+    const restoreFromHistory = () => {
+      const query = new URLSearchParams(window.location.search)
+      setTab(query.get("tab") ?? "fields")
+      setSelectedEvent(query.get("event") ?? undefined)
+    }
+    window.addEventListener("popstate", restoreFromHistory)
+    return () => window.removeEventListener("popstate", restoreFromHistory)
+  }, [])
   useEffect(() => {
     if (active !== "states" || !selectedEvent) return
     requestAnimationFrame(() => {
@@ -189,6 +200,24 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
   )
 }
 
+function stateDisplay(screen: ScreenView, stateId?: string) {
+  if (!stateId) return "未定義"
+  const state = screen.stateMachine?.states.find((item) => item.key === stateId)
+  return state?.name ? state.name + "（" + stateId + "）" : stateId
+}
+
+function EventTriggerDescription({ screen, event }: { screen: ScreenView; event: ScreenView["events"][number] }) {
+  if (event.target) {
+    const field = screen.fields.find((item) => item.key === event.target)
+    return <>{field ? "「" + field.label + "」" : "画面要素"}を操作したとき <code>{event.target}</code></>
+  }
+  if (event.trigger?.includes(".")) {
+    const [instanceId, componentEvent] = event.trigger.split(".", 2)
+    return <>Component <code>{instanceId}</code> から <code>{componentEvent}</code> が発生したとき</>
+  }
+  return event.trigger ? <><code>{event.trigger}</code> が発生したとき</> : <span className="muted">きっかけは未定義です</span>
+}
+
 function StatesTab({ screen, selectedEvent }: { screen: ScreenView; selectedEvent?: string }) {
   return (
     <section>
@@ -196,36 +225,36 @@ function StatesTab({ screen, selectedEvent }: { screen: ScreenView; selectedEven
       <StateDiagram sm={screen.stateMachine!} />
       {screen.events.length > 0 ? (
         <div className="events">
-          <h2>イベント詳細</h2>
+          <h2>イベントの動作</h2>
           {screen.events.map((event) => (
             <article key={event.key} className={selectedEvent === event.key ? "event-card selected-event" : "event-card"} data-event-id={event.key} tabIndex={-1}>
               <header>
                 <h3><code>{event.key}</code></h3>
               </header>
-              <div className="event-flow-step"><strong>1. Trigger</strong><p>{event.target ? <>Field <code>{event.target}</code></> : event.trigger ? <code>{event.trigger}</code> : <span className="muted">未定義</span>}</p></div>
-              {event.context.length ? <div className="event-flow-step"><strong>2. Event Context</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}
-              <p className="event-route"><strong>{event.branches.length ? "3. Branches" : "3. Action"}</strong> · <code>{event.from ?? '?'}</code> → {event.branches.length > 0 ? <span>{event.branches.length} branches</span> : <code>{event.to ?? '?'}</code>}{event.apiCall ? <> · API <code>{event.apiCall}</code></> : null}</p>
+              <div className="event-flow-step"><strong>1. きっかけ</strong><p><EventTriggerDescription screen={screen} event={event} /></p></div>
+              {event.context.length ? <div className="event-flow-step"><strong>2. 引き渡す値</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}
+              <p className="event-route"><strong>{(event.context.length ? 3 : 2) + ". " + (event.branches.length ? "条件分岐" : "実行する処理")}</strong> · <span>{stateDisplay(screen, event.from)}</span> から {event.branches.length > 0 ? <span>{event.branches.length}つの条件に応じて処理</span> : <span>{stateDisplay(screen, event.to)}へ変更</span>}{event.apiCall ? <> · <code>{event.apiCall}</code> APIを実行</> : null}</p>
               {event.branches.length > 0 ? (
                 <div className="event-branches">
                   {event.branches.map((branch) => (
                     <section key={branch.id} className="event-branch">
-                      <h4><code>{branch.id}</code> · {branch.otherwise ? "otherwise" : <code>{branch.when}</code>}</h4>
-                      <OutcomeBlock label="分岐結果" outcome={branch} />
+                      <h4><code>{branch.id}</code> · {branch.otherwise ? "その他の場合" : <code>{branch.when}</code>}</h4>
+                      <OutcomeBlock screen={screen} label="この条件で起きること" outcome={branch} />
                       {branch.apiCall ? <p className="muted">API <code>{branch.apiCall}</code></p> : null}
-                      {branch.onSuccess ? <OutcomeBlock label="成功" outcome={branch.onSuccess} /> : null}
-                      {branch.onError ? <OutcomeBlock label="既定エラー" outcome={branch.onError} /> : null}
+                      {branch.onSuccess ? <OutcomeBlock screen={screen} label="成功したとき" outcome={branch.onSuccess} /> : null}
+                      {branch.onError ? <OutcomeBlock screen={screen} label="エラーになったとき" outcome={branch.onError} /> : null}
                       {branch.onError?.cases.map((errorCase, index) => (
-                        <OutcomeBlock key={`${branch.id}:error:${index}`} label={`エラー条件 ${errorCase.status ?? "*"} / ${errorCase.code ?? "*"}`} outcome={errorCase} />
+                        <OutcomeBlock screen={screen} key={`${branch.id}:error:${index}`} label={`エラー条件 ${errorCase.status ?? "*"} / ${errorCase.code ?? "*"}`} outcome={errorCase} />
                       ))}
                     </section>
                   ))}
                 </div>
               ) : null}
-              <OutcomeBlock label="即時" outcome={{ to: event.to, expects: event.expects }} />
-              {event.onSuccess ? <OutcomeBlock label="成功" outcome={event.onSuccess} /> : null}
+              <OutcomeBlock screen={screen} label="実行後" outcome={{ to: event.to, expects: event.expects }} />
+              {event.onSuccess ? <OutcomeBlock screen={screen} label="成功したとき" outcome={event.onSuccess} /> : null}
               {event.onError ? (
                 <>
-                  <OutcomeBlock label="既定エラー" outcome={event.onError} />
+                  <OutcomeBlock screen={screen} label="エラーになったとき" outcome={event.onError} />
                   {event.onError.cases.map((errorCase, index) => (
                     <OutcomeBlock
                       key={`${errorCase.status ?? '*'}:${errorCase.code ?? '*'}:${index}`}
@@ -246,14 +275,14 @@ function StatesTab({ screen, selectedEvent }: { screen: ScreenView; selectedEven
   )
 }
 
-function OutcomeBlock({ label, outcome }: { label: string; outcome: EventOutcomeView }) {
+function OutcomeBlock({ label, outcome, screen }: { label: string; outcome: EventOutcomeView; screen: ScreenView }) {
   if (!outcome.to && !outcome.navigate && !outcome.expects) return null
   return (
     <div className="event-outcome">
       <h4>{label}</h4>
       <p>
-        {outcome.to ? <>state → <code>{outcome.to}</code></> : null}
-        {outcome.navigate ? <> · navigate → <code>{outcome.navigate}</code></> : null}
+        {outcome.to ? <>状態を「{stateDisplay(screen, outcome.to)}」へ変更</> : null}
+        {outcome.navigate ? <> · 画面 <code>{outcome.navigate}</code> へ移動</> : null}
       </p>
       {outcome.expects ? <ExpectationDetails expects={outcome.expects} /> : null}
     </div>
@@ -263,10 +292,10 @@ function OutcomeBlock({ label, outcome }: { label: string; outcome: EventOutcome
 function ExpectationDetails({ expects }: { expects: ExpectationView }) {
   return (
     <div className="expectation">
-      <span className="expectation-label">expects</span>
+      <span className="expectation-label">期待する結果</span>
       <ul className="rules">
-        {expects.state ? <li>state: <code>{expects.state}</code></li> : null}
-        {expects.navigate ? <li>navigate: <code>{expects.navigate}</code></li> : null}
+        {expects.state ? <li>状態: <code>{expects.state}</code></li> : null}
+        {expects.navigate ? <li>移動先: <code>{expects.navigate}</code></li> : null}
         {expects.message ? (
           <li>
             message: <span className={`message-kind message-${expects.message.kind}`}>{expects.message.kind}</span>{' '}
