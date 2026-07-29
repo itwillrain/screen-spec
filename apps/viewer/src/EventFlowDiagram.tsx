@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { renderMermaid } from './mermaid-loader'
 import type { EventOutcomeView, EventView } from './screen-view'
 
@@ -15,7 +15,7 @@ function outcomeText(outcome?: EventOutcomeView, fallback = '完了'): string {
 }
 
 function toMermaid(event: EventView, direction: "LR" | "TB" = "LR"): string {
-  const lines = [`flowchart `]
+  const lines = [`flowchart ${direction}`]
   let serial = 0
   const id = (kind: string) => `${kind}_${serial++}`
   const trigger = id('trigger')
@@ -77,7 +77,7 @@ export function EventFlowDiagram({ event, onOpenApi, compact = false }: { event:
   const [svg, setSvg] = useState('')
   const [error, setError] = useState('')
   const container = useRef<HTMLDivElement>(null)
-  const apiKeys = [...new Set([event.apiCall, ...event.branches.map((branch) => branch.apiCall)].filter((key): key is string => !!key))]
+  const apiKeys = useMemo(() => [...new Set([event.apiCall, ...event.branches.map((branch) => branch.apiCall)].filter((key): key is string => !!key))], [event])
   useEffect(() => {
     let cancelled = false
     setSvg(''); setError('')
@@ -107,7 +107,7 @@ export function EventFlowDiagram({ event, onOpenApi, compact = false }: { event:
       cleanups.push(() => { node.removeEventListener('click', activate); node.removeEventListener('keydown', onKeyDown) })
     }
     return () => cleanups.forEach((cleanup) => cleanup())
-  }, [svg, event, onOpenApi])
+  }, [svg, apiKeys, onOpenApi])
   if (error) return <p className="badge badge-ng">イベントフロー図の描画に失敗しました: {error}</p>
   if (!svg) return <p className="muted" role="status">イベントフロー図を読み込み中…</p>
   return <div ref={container} className={compact ? "diagram event-flow-diagram compact" : "diagram event-flow-diagram"} role="group" aria-label={`${event.key}の処理フロー`} dangerouslySetInnerHTML={{ __html: svg }} />

@@ -424,7 +424,7 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
   const [tourStep, setTourStep] = useState<number>()
   const viewport = useRef<HTMLDivElement>(null)
   const image = design.images[index]
-  const steps = design.images.flatMap((item, imageIndex) => item.mappings.map((mapping, mappingIndex) => ({ imageIndex, mappingIndex, mapping })))
+  const steps = useMemo(() => design.images.flatMap((item, imageIndex) => item.mappings.map((mapping, mappingIndex) => ({ imageIndex, mappingIndex, mapping }))), [design.images])
   const setImage = (next: number) => { setIndex(next); setQuery({ design: String(next) }) }
   const targetLabel = (target: string) => {
     const directField = screen.fields.find((field) => field.key === target)
@@ -448,7 +448,7 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
     if (!selectedTarget) return
     const selectedStep = steps.findIndex((step) => step.mapping.target === selectedTarget)
     if (selectedStep >= 0 && steps[selectedStep].imageIndex !== index) setImage(steps[selectedStep].imageIndex)
-  }, [selectedTarget])
+  }, [selectedTarget, index, steps])
   const activeTarget = hoveredTarget ?? selectedTarget
   return <aside className="design-reference" aria-label="デザイン参照">
     <div className="design-pane-sticky">
