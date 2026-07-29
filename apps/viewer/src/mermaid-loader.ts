@@ -7,7 +7,14 @@ let promise: Promise<Mermaid> | undefined
 export function getMermaid(): Promise<Mermaid> {
   if (!promise) {
     promise = import('mermaid').then((mod) => {
-      mod.default.initialize({ startOnLoad: false, theme: 'neutral' })
+      mod.default.initialize({
+        startOnLoad: false,
+        theme: 'neutral',
+        flowchart: {
+          // 画面数や交差する遷移が増えても読みやすい配置にする。
+          defaultRenderer: 'elk',
+        },
+      })
       return mod.default
     })
   }
