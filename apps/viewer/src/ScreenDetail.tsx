@@ -4,6 +4,7 @@ import { EventFlowDiagram } from './EventFlowDiagram'
 import { CodeHighlight } from './CodeHighlight'
 import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
+import { ApiTab } from './ApiTab'
 import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
 
 interface Props {
@@ -512,131 +513,6 @@ function AccessTab({
           </table>
         </>
       ) : null}
-    </section>
-  )
-}
-
-function ApiTab({ screen, selectedApi, onOpenEvent }: { screen: ScreenView; selectedApi?: string; onOpenEvent: (eventId: string) => void }) {
-  const diagnostics = screen.diagnostics.filter((item) => item.stage === "openapi" || item.path.includes("/apiBindings/") || item.message.includes("Screen Data"))
-  return (
-    <section>
-      {screen.screenData.length ? <section className="binding"><h3>Screen Data</h3><ul className="rules">{screen.screenData.map((data) => <li key={data.key}><code>data.{data.key}</code>{data.description ? ` — ${data.description}` : ""}<div>{data.producers.length ? data.producers.map((producer) => <span key={`${producer.apiBinding}:${producer.responsePath}`}><code>api.{producer.apiBinding}</code> → <code>{producer.responsePath}</code>{" "}{producer.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}{producer.pathStatus === "invalid" ? <span className="badge badge-ng">path不正</span> : null}{producer.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}</span>) : <span className="badge badge-ng">供給元なし</span>}</div></li>)}</ul></section> : null}
-      {diagnostics.length ? <section><h3>API／Screen Data診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === "error" ? "badge-ng" : "badge-warning"}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
-      {screen.apiBindings.map((b) => {
-        const relatedEvents = screen.events.filter((event) => event.apiCall === b.key || event.branches.some((branch) => branch.apiCall === b.key))
-        const op = b.operation
-        const reqFields = new Set(op?.requestFields ?? [])
-        const queryParams = new Set(op?.parameters.filter((p) => p.in === 'query').map((p) => p.name))
-        const pathParams = new Set(op?.parameters.filter((p) => p.in === 'path').map((p) => p.name))
-        const requestKnown = (scope: string, key: string): boolean => {
-          if (!op) return true
-          if (scope === 'body') return reqFields.has(key)
-          if (scope === 'query') return queryParams.has(key)
-          if (scope === 'path') return pathParams.has(key)
-          return true
-        }
-        return (
-          <div key={b.key} className={selectedApi === b.key ? "binding selected-api" : "binding"} data-api-binding={b.key} tabIndex={-1}>
-            <h3>
-              <code>{b.key}</code>
-              {op ? (
-                <span className="op">
-                  <span className={`method method-${op.method.toLowerCase()}`}>{op.method}</span>
-                  <code>{op.path}</code>
-                </span>
-              ) : (
-                <span className="badge badge-ng" title={`${b.specRef} に ${b.operationId} が見つかりません`}>
-                  未解決
-                </span>
-              )}
-            </h3>
-            <p className="muted">
-              <code>{b.operationId}</code> @ <code>{b.specRef}</code>
-              {op?.summary ? ` — ${op.summary}` : ''}
-            </p>
-            {relatedEvents.length ? <p className="api-related-events"><span className="muted">利用イベント:</span> {relatedEvents.map((event) => <button key={event.key} type="button" className="link" onClick={() => onOpenEvent(event.key)}><code>{event.key}</code> ↗</button>)}</p> : null}
-
-            {b.specUrl ? (
-              <p className="op-links">
-                <a
-                  href={`https://redocly.github.io/redoc/?url=${encodeURIComponent(b.specUrl)}#operation/${b.operationId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Redoc で開く ↗
-                </a>
-                <a
-                  href={`https://petstore.swagger.io/?url=${encodeURIComponent(b.specUrl)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Swagger UI で開く ↗
-                </a>
-                <a href={b.specUrl} target="_blank" rel="noreferrer">
-                  OpenAPI (raw) ↗
-                </a>
-              </p>
-            ) : null}
-
-            {op && op.parameters.length > 0 ? (
-              <p className="muted">
-                params:{' '}
-                {op.parameters.map((p) => (
-                  <code key={`${p.in}:${p.name}`} className="op-param">
-                    {p.in}:{p.name}
-                    {p.required ? '*' : ''}
-                  </code>
-                ))}
-              </p>
-            ) : null}
-
-            <div className="binding-cols">
-              <div>
-                <h4>request</h4>
-                {b.requestMappings.length === 0 ? (
-                  <span className="muted">—</span>
-                ) : (
-                  <ul className="rules">
-                    {b.requestMappings.map((m, i) => {
-                      const known = requestKnown(m.scope, m.key)
-                      return (
-                        <li key={i}>
-                          <code>{m.scope}.{m.key}</code>
-                          {!known ? <span className="mapping-error">OpenAPIに存在しない項目</span> : null}
-                          {' '}← <code>{m.expr}</code>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-                {op ? (
-                  <p className="muted small">OpenAPI body: {op.requestFields.join(', ') || '—'}</p>
-                ) : null}
-              </div>
-              <div>
-                <h4>response</h4>
-                {b.responseMappings.length === 0 ? (
-                  <span className="muted">—</span>
-                ) : (
-                  <ul className="rules">
-                    {b.responseMappings.map((m, i) => (
-                      <li key={i}>
-                        <code>{m.target}</code> ← <code>{m.expr}</code>{" "}
-                        {m.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}
-                        {m.pathStatus === "invalid" ? <span className="mapping-error">OpenAPIレスポンスに存在しないpath</span> : null}
-                        {m.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {op ? (
-                  <p className="muted small">OpenAPI response: {op.responseFields.join(', ') || '—'}</p>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        )
-      })}
     </section>
   )
 }
