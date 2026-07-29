@@ -1112,6 +1112,12 @@ html[data-theme="dark"] .drawer-icon-button:hover { background: #202a36; color: 
 .screen-outline-item > span:first-child { color: var(--muted); font-size: .78rem; text-transform: uppercase; }
 .instance-mappings { display: grid; gap: .5rem; padding: 0; list-style: none; }
 .instance-mappings li { padding: .55rem .65rem; border: 1px solid var(--border); border-radius: .45rem; overflow-wrap: anywhere; }
+.binding-target { font-weight: 700; }
+.binding-value { display: flex; align-items: baseline; gap: .4rem; margin: .3rem 0 0; overflow-wrap: anywhere; }
+.binding-value > .muted { flex: 0 0 auto; font-size: .72rem; text-transform: uppercase; }
+.binding-value-block { max-height: 12rem; margin: .3rem 0 0; overflow: auto; padding: .5rem; border-radius: 5px; background: #0b1021; color: #e5e7eb; white-space: pre-wrap; overflow-wrap: anywhere; }
+.data-route { margin: .5rem 0 0; }
+.data-route-loading { margin: .5rem 0 0; }
 @media (max-width: 620px) { .screen-outline-item { grid-template-columns: 1fr; gap: .25rem; } }
 
 .ui-contract-grid { display: grid; gap: .5rem; }
