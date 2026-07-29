@@ -200,6 +200,7 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
           </button>
         ))}
       </div>
+      <div className="table-scroll test-items-scroll">
       <table className="fields test-items">
         <thead>
           <tr><th>ID</th><th>カテゴリ</th><th>対象</th><th>テスト条件</th><th>前提・入力</th><th>期待結果</th></tr>
@@ -224,6 +225,7 @@ function TestItemsTab({ screen }: { screen: ScreenView }) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   )
 }
