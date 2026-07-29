@@ -20,13 +20,21 @@ examples/
 │  ├─ users/
 │  │  ├─ list.screen.yaml
 │  │  └─ edit.screen.yaml
+│  ├─ notifications/
+│  │  ├─ list.screen.yaml
+│  │  ├─ detail.screen.yaml
+│  │  └─ edit.screen.yaml
+│  ├─ permissions/
+│  │  ├─ role-list.screen.yaml
+│  │  └─ role-detail.screen.yaml
 │  └─ audit/
 │     └─ log.screen.yaml
 ├─ fixtures/
 └─ openapi/
 ```
 
-`pages`の階層はファイル整理のための配置です。YAML内のScreen Groupやroute階層とは独立します。
+8画面をユーザー管理、お知らせ管理、権限管理、監査・ログの4つのScreen Groupで構成しています。
+`pages`の階層はファイル整理のための配置であり、YAML内のScreen Groupやroute階層とは独立します。
 
 ## components（共通コンポーネント）
 

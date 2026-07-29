@@ -1,0 +1,73 @@
+specVersion: "0.1"
+screen:
+  id: notification-detail
+  name: お知らせ詳細画面
+  group: お知らせ管理
+  description: お知らせの内容、公開状態、配信先を確認して運用操作を行う画面
+  route: /notifications/{notificationId}
+  params:
+    path:
+      notificationId: { type: string, required: true, description: お知らせID }
+  layout:
+    sections:
+      - { id: content, title: お知らせ内容, region: body, fields: [title, body, status, channel, publishAt] }
+      - { id: actions, title: 操作, region: body, fields: [editButton, archiveButton, backButton] }
+  fields:
+    title: { label: タイトル, type: label }
+    body: { label: 本文, type: label }
+    status: { label: 公開状態, type: label }
+    channel: { label: 配信先, type: label }
+    publishAt: { label: 公開日時, type: label }
+    editButton: { label: 編集ボタン, type: button, text: 編集する, eventId: edit }
+    archiveButton: { label: アーカイブボタン, type: button, text: アーカイブ, eventId: archive }
+    backButton: { label: 一覧へ戻るボタン, type: button, text: 一覧へ戻る, eventId: back }
+  states:
+    loading: { name: 読み込み中, initial: true }
+    viewing: { name: 表示中 }
+    archiving: { name: アーカイブ中 }
+    archived: { name: アーカイブ済み }
+    error: { name: エラー }
+  events:
+    loaded: { trigger: dataLoaded, from: loading, to: viewing }
+    edit: { trigger: click, target: editButton, from: viewing, to: viewing }
+    back: { trigger: click, target: backButton, from: viewing, to: viewing }
+    archive:
+      trigger: click
+      target: archiveButton
+      from: viewing
+      to: archiving
+      action: { apiCall: archiveNotification }
+      onSuccess:
+        to: archived
+        expects:
+          state: archived
+          message: { kind: success, text: お知らせをアーカイブしました }
+      onError:
+        to: error
+        expects:
+          state: error
+          message: { kind: error, text: アーカイブに失敗しました }
+  transitions:
+    toNotificationEdit: { to: notification-edit, trigger: edit }
+    toNotificationList: { to: notification-list, trigger: back }
+  apiBindings:
+    getNotification:
+      openapi: { operationId: getNotificationById, specRef: ../../openapi/notifications.yaml }
+      request:
+        path:
+          notificationId: "{screen.route.notificationId}"
+      response:
+        mapping:
+          fields.title: data.title
+          fields.body: data.body
+          fields.status: data.status
+          fields.channel: data.channel
+          fields.publishAt: data.publishAt
+    archiveNotification:
+      openapi: { operationId: archiveNotificationById, specRef: ../../openapi/notifications.yaml }
+      request:
+        path:
+          notificationId: "{screen.route.notificationId}"
+      response:
+        mapping:
+          fields.status: data.status

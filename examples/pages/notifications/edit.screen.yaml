@@ -1,0 +1,88 @@
+specVersion: "0.1"
+screen:
+  id: notification-edit
+  name: お知らせ編集画面
+  group: お知らせ管理
+  description: お知らせの本文と配信条件を編集し、下書き保存または公開予約する画面
+  route: /notifications/{notificationId}/edit
+  params:
+    path:
+      notificationId: { type: string, required: false, description: 新規作成時は未指定 }
+  layout:
+    sections:
+      - { id: content, title: お知らせ内容, region: body, fields: [title, body, channel, publishAt] }
+      - { id: actions, title: 操作, region: body, fields: [previewButton, saveButton, cancelButton] }
+  fields:
+    title:
+      label: タイトル
+      type: text
+      required: true
+      validations:
+        - $ref: "../../components/validations.yaml#/components/validations/Required"
+        - { rule: maxLength, value: 100, message: 100文字以内で入力してください }
+    body:
+      label: 本文
+      type: textarea
+      required: true
+      validations:
+        - $ref: "../../components/validations.yaml#/components/validations/Required"
+    channel:
+      label: 配信先
+      type: select
+      options:
+        - { value: web, label: Web }
+        - { value: email, label: メール }
+        - { value: push, label: プッシュ通知 }
+    publishAt: { label: 公開日時, type: date }
+    previewButton: { label: プレビューボタン, type: button, text: プレビュー, eventId: preview }
+    saveButton: { label: 保存ボタン, type: button, text: 保存する, eventId: save }
+    cancelButton: { label: キャンセルボタン, type: button, text: キャンセル, eventId: cancel }
+  states:
+    editing: { name: 編集中, initial: true }
+    previewing: { name: プレビュー中 }
+    submitting: { name: 保存中 }
+    saved: { name: 保存済み }
+  events:
+    preview: { trigger: click, target: previewButton, from: editing, to: previewing }
+    closePreview: { trigger: close, from: previewing, to: editing }
+    cancel: { trigger: click, target: cancelButton, from: editing, to: editing }
+    save:
+      trigger: click
+      target: saveButton
+      from: editing
+      branches:
+        - id: schedule
+          when: fields.publishAt != null
+          to: submitting
+          action: { apiCall: updateNotification }
+          onSuccess:
+            to: saved
+            navigate: notification-detail
+            expects: { state: saved, navigate: notification-detail, message: { kind: success, text: 公開予約しました } }
+        - id: draft
+          otherwise: true
+          to: submitting
+          action: { apiCall: updateNotification }
+          onSuccess:
+            to: saved
+            navigate: notification-detail
+            expects: { state: saved, navigate: notification-detail, message: { kind: success, text: 下書きを保存しました } }
+  transitions:
+    toNotificationDetail: { to: notification-detail, trigger: save.onSuccess }
+    toNotificationList: { to: notification-list, trigger: cancel }
+  apiBindings:
+    updateNotification:
+      openapi: { operationId: updateNotificationById, specRef: ../../openapi/notifications.yaml }
+      request:
+        path:
+          notificationId: "{screen.route.notificationId}"
+        body:
+          title: "{fields.title}"
+          body: "{fields.body}"
+          channel: "{fields.channel}"
+          publishAt: "{fields.publishAt}"
+      response:
+        mapping:
+          fields.title: data.title
+          fields.channel: data.channel
+          fields.publishAt: data.publishAt

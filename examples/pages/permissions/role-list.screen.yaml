@@ -1,0 +1,70 @@
+specVersion: "0.1"
+screen:
+  id: role-list
+  name: Role一覧画面
+  group: 権限管理
+  description: Roleごとの利用者数とPermission数を確認する画面
+  route: /roles
+  layout:
+    sections:
+      - { id: search, title: 検索条件, region: body, fields: [keyword, searchButton] }
+      - id: results
+        title: Role一覧
+        region: body
+        items: [{ component: roleTable }]
+  fields:
+    keyword: { label: Role名, type: text, placeholder: Role名を検索 }
+    searchButton: { label: 検索ボタン, type: button, text: 検索する, eventId: search }
+  data:
+    roleRows:
+      description: 一覧表示するRole
+      schema: { type: array, items: { type: object } }
+  ui:
+    roleTable:
+      component: { $ref: "../../components/ui.yaml#/components/ui/DataTable" }
+      bindings:
+        rows.value: { source: data.roleRows }
+        rows.rowKey: { value: id }
+        rows.loading: { source: api.listRoles.loading }
+        header.value:
+          value:
+            - { key: name, label: Role名 }
+            - { key: description, label: 説明 }
+            - { key: userCount, label: 利用者数 }
+            - { key: permissionCount, label: Permission数 }
+      events:
+        rowSelect: openRole
+        sortChange: sortRoles
+  states:
+    loading: { name: 読み込み中, initial: true }
+    loaded: { name: 表示中 }
+    empty: { name: 該当なし }
+  events:
+    onLoaded: { trigger: dataLoaded, from: loading, to: loaded }
+    onEmpty: { trigger: dataEmpty, from: loading, to: empty }
+    search:
+      trigger: click
+      target: searchButton
+      from: loaded
+      to: loading
+      action: { apiCall: listRoles }
+    sortRoles:
+      trigger: { component: roleTable, event: sortChange }
+      from: loaded
+      to: loading
+      action: { apiCall: listRoles }
+    openRole:
+      trigger: { component: roleTable, event: rowSelect }
+      from: loaded
+      to: loaded
+  transitions:
+    toRoleDetail: { to: role-detail, trigger: openRole }
+  apiBindings:
+    listRoles:
+      openapi: { operationId: listRoles, specRef: ../../openapi/permissions.yaml }
+      request:
+        query:
+          keyword: "{fields.keyword}"
+      response:
+        mapping:
+          data.roleRows: data

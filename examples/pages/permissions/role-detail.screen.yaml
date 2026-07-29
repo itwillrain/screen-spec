@@ -1,0 +1,70 @@
+specVersion: "0.1"
+screen:
+  id: role-detail
+  name: Role詳細画面
+  group: 権限管理
+  description: Roleの説明、利用者数、許可・拒否されるPermissionを確認する画面
+  route: /roles/{roleId}
+  params:
+    path:
+      roleId: { type: string, required: true, description: Role ID }
+  layout:
+    sections:
+      - { id: summary, title: Role概要, region: body, fields: [name, description, userCount, permissionCount] }
+      - id: permissions
+        title: Permission
+        region: body
+        items: [{ component: permissionTable }]
+      - { id: actions, title: 操作, region: body, fields: [showUsersButton, backButton] }
+  fields:
+    name: { label: Role名, type: label }
+    description: { label: 説明, type: label }
+    userCount: { label: 利用者数, type: label }
+    permissionCount: { label: Permission数, type: label }
+    showUsersButton: { label: 利用者表示ボタン, type: button, text: このRoleのユーザーを見る, eventId: showUsers }
+    backButton: { label: 一覧へ戻るボタン, type: button, text: 一覧へ戻る, eventId: back }
+  data:
+    permissionRows:
+      description: Roleに紐づくPermission
+      schema: { type: array, items: { type: object } }
+  ui:
+    permissionTable:
+      component: { $ref: "../../components/ui.yaml#/components/ui/DataTable" }
+      bindings:
+        rows.value: { source: data.permissionRows }
+        rows.rowKey: { value: id }
+        rows.loading: { source: api.getRole.loading }
+        header.value:
+          value:
+            - { key: resource, label: Resource }
+            - { key: action, label: Action }
+            - { key: effect, label: Effect }
+      events:
+        sortChange: sortPermissions
+  states:
+    loading: { name: 読み込み中, initial: true }
+    viewing: { name: 表示中 }
+  events:
+    loaded: { trigger: dataLoaded, from: loading, to: viewing }
+    sortPermissions:
+      trigger: { component: permissionTable, event: sortChange }
+      from: viewing
+      to: viewing
+    showUsers: { trigger: click, target: showUsersButton, from: viewing, to: viewing }
+    back: { trigger: click, target: backButton, from: viewing, to: viewing }
+  transitions:
+    toFilteredUsers: { to: user-list, trigger: showUsers }
+    toRoleList: { to: role-list, trigger: back }
+  apiBindings:
+    getRole:
+      openapi: { operationId: getRoleById, specRef: ../../openapi/permissions.yaml }
+      request:
+        path:
+          roleId: "{screen.route.roleId}"
+      response:
+        mapping:
+          fields.name: data.name
+          fields.description: data.description
+          fields.userCount: data.userCount
+          fields.permissionCount: data.permissionCount
+          data.permissionRows: permissions

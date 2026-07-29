@@ -1,0 +1,56 @@
+openapi: 3.1.0
+info:
+  title: Permissions API
+  version: 1.0.0
+paths:
+  /roles:
+    get:
+      operationId: listRoles
+      summary: Role一覧を取得
+      parameters:
+        - { name: keyword, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Role" } }
+                  total: { type: integer }
+  /roles/{roleId}:
+    get:
+      operationId: getRoleById
+      summary: Role詳細を取得
+      parameters:
+        - { name: roleId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Role" }
+                  permissions:
+                    type: array
+                    items: { $ref: "#/components/schemas/Permission" }
+components:
+  schemas:
+    Role:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        userCount: { type: integer }
+        permissionCount: { type: integer }
+    Permission:
+      type: object
+      properties:
+        id: { type: string }
+        resource: { type: string }
+        action: { type: string }
+        effect: { type: string, enum: [allow, deny] }

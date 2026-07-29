@@ -1,0 +1,113 @@
+specVersion: "0.1"
+screen:
+  id: notification-list
+  name: お知らせ一覧画面
+  group: お知らせ管理
+  description: 公開状態とキーワードでお知らせを検索し、運用対象を選択する画面
+  route: /notifications
+  layout:
+    sections:
+      - { id: search, title: 検索条件, region: body, fields: [keyword, status, searchButton, createButton] }
+      - id: results
+        title: お知らせ
+        region: body
+        items: [{ component: notificationTable }, { component: notificationPagination }]
+  fields:
+    keyword:
+      label: キーワード
+      type: text
+      placeholder: タイトルまたは本文を検索
+    status:
+      label: 公開状態
+      type: select
+      options:
+        - { value: draft, label: 下書き }
+        - { value: scheduled, label: 公開予約 }
+        - { value: published, label: 公開中 }
+        - { value: archived, label: アーカイブ }
+    searchButton: { label: 検索ボタン, type: button, text: 検索する, eventId: search }
+    createButton: { label: 新規作成ボタン, type: button, text: お知らせを作成, eventId: createNotification }
+  data:
+    notificationRows:
+      description: 一覧表示するお知らせ
+      schema: { type: array, items: { type: object } }
+    notificationTotal:
+      description: 検索結果の総件数
+      schema: { type: integer }
+    currentPage:
+      schema: { type: integer }
+    pageSize:
+      schema: { type: integer }
+  ui:
+    notificationTable:
+      component: { $ref: "../../components/ui.yaml#/components/ui/DataTable" }
+      bindings:
+        rows.value: { source: data.notificationRows }
+        rows.rowKey: { value: id }
+        rows.loading: { source: api.listNotifications.loading }
+        header.value:
+          value:
+            - { key: title, label: タイトル }
+            - { key: status, label: 公開状態 }
+            - { key: channel, label: 配信先 }
+            - { key: publishAt, label: 公開日時 }
+      events:
+        rowSelect: openNotification
+        sortChange: sortNotifications
+    notificationPagination:
+      component: { $ref: "../../components/ui.yaml#/components/ui/Pagination" }
+      bindings:
+        summary.value.totalCount: { source: data.notificationTotal }
+        summary.value.currentPage: { source: data.currentPage }
+        summary.value.pageSize: { source: data.pageSize }
+      events:
+        pageChange: changePage
+  states:
+    loading: { name: 読み込み中, initial: true }
+    loaded: { name: 表示中 }
+    empty: { name: 該当なし }
+  events:
+    onLoaded: { trigger: dataLoaded, from: loading, to: loaded }
+    onEmpty: { trigger: dataEmpty, from: loading, to: empty }
+    search:
+      trigger: click
+      target: searchButton
+      from: loaded
+      to: loading
+      action: { apiCall: listNotifications }
+    sortNotifications:
+      trigger: { component: notificationTable, event: sortChange }
+      from: loaded
+      to: loading
+      action: { apiCall: listNotifications }
+    changePage:
+      trigger: { component: notificationPagination, event: pageChange }
+      from: loaded
+      to: loading
+      action: { apiCall: listNotifications }
+    openNotification:
+      trigger: { component: notificationTable, event: rowSelect }
+      from: loaded
+      to: loaded
+    createNotification:
+      trigger: click
+      target: createButton
+      from: loaded
+      to: loaded
+  transitions:
+    toNotificationDetail: { to: notification-detail, trigger: openNotification }
+    toNotificationEdit: { to: notification-edit, trigger: createNotification }
+  apiBindings:
+    listNotifications:
+      openapi: { operationId: listNotifications, specRef: ../../openapi/notifications.yaml }
+      request:
+        query:
+          keyword: "{fields.keyword}"
+          status: "{fields.status}"
+          page: "{event.page}"
+      response:
+        mapping:
+          data.notificationRows: data
+          data.notificationTotal: total
+          data.currentPage: page
+          data.pageSize: pageSize

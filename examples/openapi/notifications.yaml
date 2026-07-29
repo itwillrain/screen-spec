@@ -1,0 +1,91 @@
+openapi: 3.1.0
+info:
+  title: Notifications API
+  version: 1.0.0
+paths:
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: お知らせ一覧を取得
+      parameters:
+        - { name: keyword, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, scheduled, published, archived] } }
+        - { name: page, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+  /notifications/{notificationId}:
+    parameters:
+      - { name: notificationId, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getNotificationById
+      summary: お知らせ詳細を取得
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Notification" }
+    put:
+      operationId: updateNotificationById
+      summary: お知らせを更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Notification" }
+  /notifications/{notificationId}/archive:
+    post:
+      operationId: archiveNotificationById
+      summary: お知らせをアーカイブ
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Notification" }
+components:
+  schemas:
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        status: { type: string, enum: [draft, scheduled, published, archived] }
+        channel: { type: string, enum: [web, email, push] }
+        publishAt: { type: string, format: date-time }
+    NotificationInput:
+      type: object
+      required: [title, body, channel]
+      properties:
+        title: { type: string }
+        body: { type: string }
+        channel: { type: string, enum: [web, email, push] }
+        publishAt: { type: string, format: date-time }
