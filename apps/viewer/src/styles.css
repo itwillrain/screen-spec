@@ -108,6 +108,12 @@ ul.nav {
   border-radius: 8px;
   margin-bottom: 1rem;
 }
+.binding.selected-api {
+  outline: 3px solid #6366f1;
+  outline-offset: 2px;
+}
+.api-related-events { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.api-related-events .link { padding: 0; }
 .binding h3 {
   margin: 0 0 0.3rem;
   display: flex;
@@ -417,6 +423,15 @@ ul.warnings {
   flex-wrap: wrap;
   gap: 0.6rem;
 }
+.event-api-links { display: flex; flex-wrap: wrap; gap: .6rem; margin-left: auto; }
+.event-api-links .link { padding: 0; }
+.event-flow-diagram .api-node-link { cursor: pointer; }
+.event-flow-diagram .api-node-link:hover > :first-child,
+.event-flow-diagram .api-node-link:focus-visible > :first-child {
+  filter: brightness(.94);
+  stroke-width: 3px !important;
+}
+.event-flow-diagram .api-node-link:focus-visible { outline: 3px solid #6366f1; outline-offset: 3px; }
 .event-card h3,
 .event-card h4,
 .event-card p {

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { renderMermaid } from './mermaid-loader'
 import type { EventOutcomeView, EventView } from './screen-view'
 
@@ -72,10 +72,12 @@ function toMermaid(event: EventView): string {
   return lines.join('\n')
 }
 
-export function EventFlowDiagram({ event }: { event: EventView }) {
+export function EventFlowDiagram({ event, onOpenApi }: { event: EventView; onOpenApi: (apiKey: string) => void }) {
   const id = useId().replace(/:/g, '_')
   const [svg, setSvg] = useState('')
   const [error, setError] = useState('')
+  const container = useRef<HTMLDivElement>(null)
+  const apiKeys = [...new Set([event.apiCall, ...event.branches.map((branch) => branch.apiCall)].filter((key): key is string => !!key))]
   useEffect(() => {
     let cancelled = false
     setSvg(''); setError('')
@@ -84,7 +86,29 @@ export function EventFlowDiagram({ event }: { event: EventView }) {
       .catch((reason: unknown) => { if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason)) })
     return () => { cancelled = true }
   }, [event, id])
+  useEffect(() => {
+    if (!svg || !container.current) return
+    const cleanups: Array<() => void> = []
+    for (const node of container.current.querySelectorAll<SVGGElement>('.node')) {
+      const apiKey = apiKeys.find((key) => node.textContent?.includes(`API: ${key}`))
+      if (!apiKey) continue
+      const activate = () => onOpenApi(apiKey)
+      const onKeyDown = (keyboard: globalThis.KeyboardEvent) => {
+        if (keyboard.key !== 'Enter' && keyboard.key !== ' ') return
+        keyboard.preventDefault()
+        activate()
+      }
+      node.classList.add('api-node-link')
+      node.setAttribute('role', 'button')
+      node.setAttribute('tabindex', '0')
+      node.setAttribute('aria-label', `API ${apiKey} の詳細を開く`)
+      node.addEventListener('click', activate)
+      node.addEventListener('keydown', onKeyDown)
+      cleanups.push(() => { node.removeEventListener('click', activate); node.removeEventListener('keydown', onKeyDown) })
+    }
+    return () => cleanups.forEach((cleanup) => cleanup())
+  }, [svg, event, onOpenApi])
   if (error) return <p className="badge badge-ng">イベントフロー図の描画に失敗しました: {error}</p>
   if (!svg) return <p className="muted" role="status">イベントフロー図を読み込み中…</p>
-  return <div className="diagram event-flow-diagram" role="img" aria-label={`${event.key}の処理フロー`} dangerouslySetInnerHTML={{ __html: svg }} />
+  return <div ref={container} className="diagram event-flow-diagram" role="group" aria-label={`${event.key}の処理フロー`} dangerouslySetInnerHTML={{ __html: svg }} />
 }

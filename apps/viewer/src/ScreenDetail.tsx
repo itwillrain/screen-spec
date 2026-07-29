@@ -28,21 +28,36 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, o
 
   const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("tab") ?? "fields")
   const [selectedEvent, setSelectedEvent] = useState(() => new URLSearchParams(window.location.search).get("event") ?? undefined)
+  const [selectedApi, setSelectedApi] = useState(() => new URLSearchParams(window.location.search).get("api") ?? undefined)
   const selectTab = (next: string) => {
     setTab(next)
     setSelectedEvent(undefined)
+    setSelectedApi(undefined)
     const url = new URL(window.location.href)
     url.searchParams.set("tab", next)
     url.searchParams.delete("event")
+    url.searchParams.delete("api")
     if (url.href !== window.location.href) window.history.pushState(null, "", url)
   }
   const active = tabs.some((t) => t.id === tab) ? tab : 'fields'
   const openEvent = (eventId: string) => {
     setSelectedEvent(eventId)
+    setSelectedApi(undefined)
     setTab("states")
     const url = new URL(window.location.href)
     url.searchParams.set("tab", "states")
     url.searchParams.set("event", eventId)
+    url.searchParams.delete("api")
+    if (url.href !== window.location.href) window.history.pushState(null, "", url)
+  }
+  const openApi = (apiKey: string) => {
+    setSelectedApi(apiKey)
+    setSelectedEvent(undefined)
+    setTab("api")
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", "api")
+    url.searchParams.set("api", apiKey)
+    url.searchParams.delete("event")
     if (url.href !== window.location.href) window.history.pushState(null, "", url)
   }
   useEffect(() => {
@@ -50,6 +65,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, o
       const query = new URLSearchParams(window.location.search)
       setTab(query.get("tab") ?? "fields")
       setSelectedEvent(query.get("event") ?? undefined)
+      setSelectedApi(query.get("api") ?? undefined)
     }
     window.addEventListener("popstate", restoreFromHistory)
     return () => window.removeEventListener("popstate", restoreFromHistory)
@@ -62,6 +78,14 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, o
       card?.focus({ preventScroll: true })
     })
   }, [active, selectedEvent])
+  useEffect(() => {
+    if (active !== "api" || !selectedApi) return
+    requestAnimationFrame(() => {
+      const card = document.querySelector<HTMLElement>(`[data-api-binding="` + CSS.escape(selectedApi) + `"]`)
+      card?.scrollIntoView({ block: "start" })
+      card?.focus({ preventScroll: true })
+    })
+  }, [active, selectedApi])
 
   const moveTab = (index: number) => {
     const next = tabs[(index + tabs.length) % tabs.length]
@@ -123,9 +147,9 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, o
         <AccessTab screen={screen} accessControl={screen.accessControl} />
       ) : null}
       {active === 'states' && screen.stateMachine ? (
-        <StatesTab screen={screen} selectedEvent={selectedEvent} onBackToFields={() => selectTab("fields")} />
+        <StatesTab screen={screen} selectedEvent={selectedEvent} onBackToFields={() => selectTab("fields")} onOpenApi={openApi} />
       ) : null}
-      {active === 'api' ? <ApiTab screen={screen} /> : null}
+      {active === 'api' ? <ApiTab screen={screen} selectedApi={selectedApi} onOpenEvent={openEvent} /> : null}
       {active === 'transitions' ? (
         <TransitionsTab screen={screen} screenIds={screenIds} onNavigate={onNavigate} />
       ) : null}
@@ -221,7 +245,11 @@ function EventTriggerDescription({ screen, event }: { screen: ScreenView; event:
   return event.trigger ? <><code>{event.trigger}</code> が発生したとき</> : <span className="muted">きっかけは未定義です</span>
 }
 
-function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenView; selectedEvent?: string; onBackToFields: () => void }) {
+function eventApiKeys(event: ScreenView["events"][number]): string[] {
+  return [...new Set([event.apiCall, ...event.branches.map((branch) => branch.apiCall)].filter((key): key is string => !!key))]
+}
+
+function StatesTab({ screen, selectedEvent, onBackToFields, onOpenApi }: { screen: ScreenView; selectedEvent?: string; onBackToFields: () => void; onOpenApi: (apiKey: string) => void }) {
   return (
     <section>
       <p className="muted">states / events から生成した状態遷移図と、分岐ごとの期待結果です。</p>
@@ -233,8 +261,9 @@ function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenVi
             <article key={event.key} className={selectedEvent === event.key ? "event-card event-flow selected-event" : "event-card event-flow"} data-event-id={event.key} tabIndex={-1}>
               <header>
                 <h3><code>{event.key}</code></h3>
+                <div className="event-api-links">{eventApiKeys(event).map((apiKey) => <button key={apiKey} type="button" className="link" onClick={() => onOpenApi(apiKey)}>API <code>{apiKey}</code> ↗</button>)}</div>
               </header>
-              <EventFlowDiagram event={event} />
+              <EventFlowDiagram event={event} onOpenApi={onOpenApi} />
               <details className="event-details">
                 <summary>処理の詳細</summary><div className="event-flow event-detail-content">
               <div className="event-flow-step"><strong>きっかけ</strong><p><EventTriggerDescription screen={screen} event={event} /></p></div>
@@ -484,13 +513,14 @@ function AccessTab({
   )
 }
 
-function ApiTab({ screen }: { screen: ScreenView }) {
+function ApiTab({ screen, selectedApi, onOpenEvent }: { screen: ScreenView; selectedApi?: string; onOpenEvent: (eventId: string) => void }) {
   const diagnostics = screen.diagnostics.filter((item) => item.stage === "openapi" || item.path.includes("/apiBindings/") || item.message.includes("Screen Data"))
   return (
     <section>
       {screen.screenData.length ? <section className="binding"><h3>Screen Data</h3><ul className="rules">{screen.screenData.map((data) => <li key={data.key}><code>data.{data.key}</code>{data.description ? ` — ${data.description}` : ""}<div>{data.producers.length ? data.producers.map((producer) => <span key={`${producer.apiBinding}:${producer.responsePath}`}><code>api.{producer.apiBinding}</code> → <code>{producer.responsePath}</code>{" "}{producer.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}{producer.pathStatus === "invalid" ? <span className="badge badge-ng">path不正</span> : null}{producer.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}</span>) : <span className="badge badge-ng">供給元なし</span>}</div></li>)}</ul></section> : null}
       {diagnostics.length ? <section><h3>API／Screen Data診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === "error" ? "badge-ng" : "badge-warning"}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
       {screen.apiBindings.map((b) => {
+        const relatedEvents = screen.events.filter((event) => event.apiCall === b.key || event.branches.some((branch) => branch.apiCall === b.key))
         const op = b.operation
         const reqFields = new Set(op?.requestFields ?? [])
         const queryParams = new Set(op?.parameters.filter((p) => p.in === 'query').map((p) => p.name))
@@ -503,7 +533,7 @@ function ApiTab({ screen }: { screen: ScreenView }) {
           return true
         }
         return (
-          <div key={b.key} className="binding">
+          <div key={b.key} className={selectedApi === b.key ? "binding selected-api" : "binding"} data-api-binding={b.key} tabIndex={-1}>
             <h3>
               <code>{b.key}</code>
               {op ? (
@@ -521,6 +551,7 @@ function ApiTab({ screen }: { screen: ScreenView }) {
               <code>{b.operationId}</code> @ <code>{b.specRef}</code>
               {op?.summary ? ` — ${op.summary}` : ''}
             </p>
+            {relatedEvents.length ? <p className="api-related-events"><span className="muted">利用イベント:</span> {relatedEvents.map((event) => <button key={event.key} type="button" className="link" onClick={() => onOpenEvent(event.key)}><code>{event.key}</code> ↗</button>)}</p> : null}
 
             {b.specUrl ? (
               <p className="op-links">
