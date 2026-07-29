@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { stringifyYaml } from "@screen-spec/core"
 import { CodeHighlight } from "./CodeHighlight"
+import { EventFlowDiagram } from "./EventFlowDiagram"
 import type { DiagnosticView, EventBranchView, EventView, FieldView, ScreenView, UIInstanceView } from './screen-view'
 
 const PANE_KEY = 'screen-spec-field-review-pane'
@@ -101,7 +102,7 @@ function EventIdLink({ eventId, onOpen }: { eventId: string; onOpen: (eventId: s
   return <a className="event-id" href={url.toString()} onClick={(event) => { event.preventDefault(); event.stopPropagation(); onOpen(eventId) }}><code>{eventId}</code></a>
 }
 
-export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigateField }: { screen: ScreenView; onOpenTab: (tab: string) => void; onOpenEvent: (eventId: string) => void; onNavigateField: (screenId: string, fieldId: string) => void }) {
+export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onOpenApi, onNavigateField }: { screen: ScreenView; onOpenTab: (tab: string) => void; onOpenEvent: (eventId: string) => void; onOpenApi: (apiKey: string) => void; onNavigateField: (screenId: string, fieldId: string) => void }) {
   const [filter, setFilter] = useState('')
   const [hoveredDesignTarget, setHoveredDesignTarget] = useState<string>()
   const [tourFocusedTarget, setTourFocusedTarget] = useState<string>()
@@ -216,12 +217,21 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
   const selectedDesignTarget = selectedKey ?? (selectedInstanceKey ? selectedInstanceFieldKey ? `${selectedInstanceKey}.${selectedInstanceFieldKey}` : selectedInstanceKey : undefined)
   const focusTourTarget = (target: string) => {
     closeDetail()
+    setFilter('')
+    setTypeFilter('all')
+    setEventFilter('all')
+    setConditionFilter(false)
+    setDiagnosticFilter(false)
     setTourFocusedTarget(target)
-    requestAnimationFrame(() => {
-      const row = document.querySelector<HTMLElement>(`[data-screen-element="${target}"]`)
-      row?.scrollIntoView({ block: "center", behavior: "smooth" })
-      row?.focus({ preventScroll: true })
-    })
+    const instanceKey = target.includes('.') ? target.split('.', 1)[0] : undefined
+    if (instanceKey) setExpandedInstances((current) => new Set(current).add(instanceKey))
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(`[data-screen-element="${CSS.escape(target)}"]`)
+      if (!row) return
+      row.closest<HTMLElement>('.table-scroll')?.scrollTo({ left: 0, behavior: 'smooth' })
+      row.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' })
+      row.focus({ preventScroll: true })
+    }))
   }
   const closeDetail = () => {
     setSelectedInstanceKey(undefined)
@@ -378,7 +388,7 @@ export function FieldReviewWorkspace({ screen, onOpenTab, onOpenEvent, onNavigat
           </div>
           {rows.length === 0 ? <p className="empty" role="status">条件に一致する画面要素はありません。</p> : null}
           {selected || selectedInstance ? <><button type="button" className="field-detail-backdrop" aria-label="詳細ペインの外側をクリックして閉じる" onClick={closeDetail} /><nav className="field-detail-navigation" aria-label="項目間の移動" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}><button type="button" disabled={currentDetailIndex <= 0} onClick={() => navigateDetail(-1)}>← 前の項目</button><span>{currentDetailIndex + 1} / {detailTargets.length}</span><button type="button" disabled={currentDetailIndex < 0 || currentDetailIndex >= detailTargets.length - 1} onClick={() => navigateDetail(1)}>次の項目 →</button></nav></> : null}
-          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(`field:${selected.field.key}`)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} fieldKey={selectedInstanceFieldKey} screen={screen} headingRef={detailHeading} onClose={closeDetail} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
+          {selected ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selected.field.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={(targetScreen, targetField) => targetScreen === screen.id ? selectField(targetField) : onNavigateField(targetScreen, targetField)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <FieldDetail item={selected} section={sections.get(`field:${selected.field.key}`)} headingRef={detailHeading} onClose={closeDetail} onOpenTab={onOpenTab} onOpenApi={onOpenApi} onOpenComponent={openComponent} componentUsages={screen.componentGraph.usages.filter((usage) => usage.screenId === screen.id && usage.fieldId === selected.field.key)} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : selectedInstance ? componentTrail.length ? <ComponentDetail componentId={componentTrail.at(-1)!} screen={screen} fieldId={selectedInstance.key} headingRef={detailHeading} onBack={backDetail} onClose={closeDetail} onOpenComponent={openComponent} onNavigateField={onNavigateField} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : <UIInstanceDetail instance={selectedInstance} fieldKey={selectedInstanceFieldKey} screen={screen} headingRef={detailHeading} onClose={closeDetail} drawerWidth={drawerWidth} onResizeStart={startDrawerResize} onResizeKeyDown={onDrawerResizeKeyDown} /> : null}
         </div>
       </div>
     </section>
@@ -390,8 +400,16 @@ function FieldFilters(props: {
   eventFilter: string; setEventFilter: (value: string) => void; conditionFilter: boolean; setConditionFilter: (value: boolean) => void
   diagnosticFilter: boolean; setDiagnosticFilter: (value: boolean) => void
 }) {
+  const searchInput = useRef<HTMLInputElement>(null)
+  const clearFilter = () => {
+    props.setFilter('')
+    searchInput.current?.focus()
+  }
   return <div className="field-filters" aria-label="画面要素の絞り込み">
-    <input className="filter" type="search" aria-label="要素ID、名称、文言、セクションで検索" placeholder="要素ID・名称・文言・セクションを検索" value={props.filter} onChange={(event) => props.setFilter(event.target.value)} />
+    <div className="field-search">
+      <input ref={searchInput} className="filter" type="search" aria-label="要素ID、名称、文言、セクションで検索" placeholder="要素ID・名称・文言・セクションを検索" value={props.filter} onChange={(event) => props.setFilter(event.target.value)} />
+      {props.filter ? <button type="button" className="field-search-clear" aria-label="要素検索をクリア" title="検索をクリア" onClick={clearFilter}>×</button> : null}
+    </div>
     <select aria-label="型で絞り込み" value={props.typeFilter} onChange={(event) => props.setTypeFilter(event.target.value)}><option value="all">すべての型</option>{props.types.map((type) => <option key={type}>{type}</option>)}</select>
     <select aria-label="Event連携で絞り込み" value={props.eventFilter} onChange={(event) => props.setEventFilter(event.target.value)}><option value="all">Event連携: すべて</option><option value="linked">連携あり</option><option value="unlinked">連携なし</option></select>
     <label><input type="checkbox" checked={props.conditionFilter} onChange={(event) => props.setConditionFilter(event.target.checked)} /> 条件あり</label>
@@ -431,10 +449,6 @@ function DesignReference({ screen, selectedTarget, hoveredTarget, onTourTarget, 
     const selectedStep = steps.findIndex((step) => step.mapping.target === selectedTarget)
     if (selectedStep >= 0 && steps[selectedStep].imageIndex !== index) setImage(steps[selectedStep].imageIndex)
   }, [selectedTarget])
-  useEffect(() => {
-    if (tourStep === undefined || steps[tourStep]?.imageIndex !== index) return
-    requestAnimationFrame(() => viewport.current?.querySelector(`[data-tour-step="${tourStep}"]`)?.scrollIntoView({ block: "center", inline: "center" }))
-  }, [index, tourStep])
   const activeTarget = hoveredTarget ?? selectedTarget
   return <aside className="design-reference" aria-label="デザイン参照">
     <div className="design-pane-sticky">
@@ -472,10 +486,10 @@ function UIInstanceDetail({ instance, fieldKey, screen, headingRef, onClose, dra
   </section>
 }
 
-function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenComponent, componentUsages, drawerWidth, onResizeStart, onResizeKeyDown }: {
+function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenApi, onOpenComponent, componentUsages, drawerWidth, onResizeStart, onResizeKeyDown }: {
   item: { field: FieldView; events: EventView[]; diagnostics: DiagnosticView[] }; section?: string
   headingRef: React.RefObject<HTMLHeadingElement | null>; onClose: () => void; onOpenTab: (tab: string) => void
-  onOpenComponent: (id: string) => void; componentUsages: ScreenView["componentGraph"]["usages"]
+  onOpenApi: (apiKey: string) => void;   onOpenComponent: (id: string) => void; componentUsages: ScreenView["componentGraph"]["usages"]
   drawerWidth: number; onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void; onResizeKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
 }) {
   const { field, events, diagnostics } = item
@@ -502,7 +516,7 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenComp
       {field.binding.options.responsePath ? <div><dt>Response パス</dt><dd><code>{field.binding.options.responsePath}</code>{" "}{field.binding.options.pathStatus === "valid" ? <span className="badge badge-ok">path確認済み</span> : null}{field.binding.options.pathStatus === "invalid" ? <span className="badge badge-ng">path不正</span> : null}{field.binding.options.pathStatus === "unverifiable" ? <span className="badge badge-warning">path未検証</span> : null}</dd></div> : null}
     </dl> : null}{field.binding.loading ? <p className="muted data-route-loading">loading: <code>{field.binding.loading.source}</code>（読込中は無効化、既存Optionsを保持）</p> : null}</section> : null}
     {diagnostics.length ? <section><h3>診断</h3><ul className="diagnostic-list">{diagnostics.map((diagnostic, index) => <li key={`${diagnostic.path}:${index}`}><span className={`badge ${diagnostic.severity === 'error' ? 'badge-ng' : 'badge-warning'}`}>{diagnostic.severity}</span> {diagnostic.message}<small><code>{diagnostic.path}</code></small></li>)}</ul></section> : null}
-    {events.length ? <section><div className="detail-section-head"><h3>関連Event</h3><button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button></div>{events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={() => onOpenTab('api')} />)}</section> : null}
+    {events.length ? <section><div className="detail-section-head"><h3>関連Event</h3><button type="button" className="link" onClick={() => onOpenTab('states')}>状態遷移で開く</button></div>{events.map((event) => <EventDetail key={event.key} event={event} onOpenApi={onOpenApi} />)}</section> : null}
   </section>
 }
 
@@ -559,10 +573,23 @@ function EventOutcomeSummary({ label, outcome }: { label: string; outcome?: { to
   if (!outcome || (!outcome.to && !outcome.navigate && !outcome.expects)) return null
   return <div className="event-flow-step"><strong>{label}</strong><p>{outcome.to ? <>状態 <code>{outcome.to}</code></> : null}{outcome.navigate ? <> / 画面 <code>{outcome.navigate}</code>へ遷移</> : null}{outcome.expects?.message ? <> / <span className={"message-kind message-" + outcome.expects.message.kind}>{outcome.expects.message.kind}</span> {outcome.expects.message.text ?? outcome.expects.message.key}</> : null}</p></div>
 }
-function EventDetail({ event, onOpenApi }: { event: EventView; onOpenApi: () => void }) {
+function EventDetail({ event, onOpenApi }: { event: EventView; onOpenApi: (apiKey: string) => void }) {
   const actionStep = event.context.length ? 3 : 2
   const resultStep = actionStep + 1
   const completionStep = actionStep + 2
-  return <article className="related-event event-flow"><header><div><p className="eyebrow">event</p><h4><code>{event.key}</code></h4></div><span className="event-route"><code>{event.from ?? "?"}</code> → {event.branches.length ? String(event.branches.length) + "分岐" : <code>{event.to ?? "?"}</code>}</span></header><div className="event-flow-step"><strong>1. きっかけ</strong><p>{event.target ? <>Field <code>{event.target}</code></> : event.trigger ? <code>{event.trigger}</code> : <span className="muted">未定義</span>}</p></div>{event.context.length ? <div className="event-flow-step"><strong>2. 引き渡す値</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}{event.branches.length ? <div className="event-flow-step"><strong>{actionStep}. 条件分岐（記述順）</strong><ol className="branch-list">{event.branches.map((branch) => <BranchDetail key={branch.id} branch={branch} onOpenApi={onOpenApi} />)}</ol></div> : <><div className="event-flow-step"><strong>{actionStep}. 実行する処理</strong><p>{event.apiCall ? <button type="button" className="link" onClick={onOpenApi}>API <code>{event.apiCall}</code></button> : <span className="muted">なし</span>}</p></div><EventOutcomeSummary label={resultStep + ". 実行後"} outcome={{ to: event.to, expects: event.expects }} /><EventOutcomeSummary label={completionStep + ". 成功時"} outcome={event.onSuccess} /><EventOutcomeSummary label={completionStep + ". エラー時"} outcome={event.onError} /></>}</article>
+  return (
+    <article className="related-event">
+      <header><div><p className="eyebrow">event</p><h4><code>{event.key}</code></h4></div><span className="event-route"><code>{event.from ?? "?"}</code> → {event.branches.length ? String(event.branches.length) + "分岐" : <code>{event.to ?? "?"}</code>}</span></header>
+      <EventFlowDiagram event={event} onOpenApi={onOpenApi} compact />
+      <details className="drawer-event-details">
+        <summary>処理の詳細</summary>
+        <div className="event-flow event-detail-content">
+          <div className="event-flow-step"><strong>1. きっかけ</strong><p>{event.target ? <>Field <code>{event.target}</code></> : event.trigger ? <code>{event.trigger}</code> : <span className="muted">未定義</span>}</p></div>
+          {event.context.length ? <div className="event-flow-step"><strong>2. 引き渡す値</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}
+          {event.branches.length ? <div className="event-flow-step"><strong>{actionStep}. 条件分岐（記述順）</strong><ol className="branch-list">{event.branches.map((branch) => <BranchDetail key={branch.id} branch={branch} onOpenApi={onOpenApi} />)}</ol></div> : <><div className="event-flow-step"><strong>{actionStep}. 実行する処理</strong><p>{event.apiCall ? <button type="button" className="link" onClick={() => onOpenApi(event.apiCall!)}>API <code>{event.apiCall}</code></button> : <span className="muted">なし</span>}</p></div><EventOutcomeSummary label={resultStep + ". 実行後"} outcome={{ to: event.to, expects: event.expects }} /><EventOutcomeSummary label={completionStep + ". 成功時"} outcome={event.onSuccess} /><EventOutcomeSummary label={completionStep + ". エラー時"} outcome={event.onError} /></>}
+        </div>
+      </details>
+    </article>
+  )
 }
-function BranchDetail({ branch, onOpenApi }: { branch: EventBranchView; onOpenApi: () => void }) { return <li><header><code>{branch.id}</code><span>{branch.otherwise ? "その他の場合" : <><code>{branch.when}</code> の場合</>}</span></header>{branch.apiCall ? <p><button type="button" className="link" onClick={onOpenApi}>API <code>{branch.apiCall}</code></button></p> : null}<EventOutcomeSummary label="結果" outcome={branch} /><EventOutcomeSummary label="成功" outcome={branch.onSuccess} /><EventOutcomeSummary label="エラー" outcome={branch.onError} /></li> }
+function BranchDetail({ branch, onOpenApi }: { branch: EventBranchView; onOpenApi: (apiKey: string) => void }) { return <li><header><code>{branch.id}</code><span>{branch.otherwise ? "その他の場合" : <><code>{branch.when}</code> の場合</>}</span></header>{branch.apiCall ? <p><button type="button" className="link" onClick={() => onOpenApi(branch.apiCall!)}>API <code>{branch.apiCall}</code></button></p> : null}<EventOutcomeSummary label="結果" outcome={branch} /><EventOutcomeSummary label="成功" outcome={branch.onSuccess} /><EventOutcomeSummary label="エラー" outcome={branch.onError} /></li> }

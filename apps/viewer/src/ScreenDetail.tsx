@@ -141,7 +141,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, o
       </nav>
 
       <div id={`panel-${active}`} role="tabpanel" aria-labelledby={`tab-${active}`} tabIndex={0}>
-      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} onOpenEvent={openEvent} onNavigateField={onNavigateField} /> : null}
+      {active === 'fields' ? <FieldReviewWorkspace screen={screen} onOpenTab={selectTab} onOpenEvent={openEvent} onOpenApi={openApi} onNavigateField={onNavigateField} /> : null}
       {active === 'params' && screen.params ? <ParamsTab screen={screen} /> : null}
       {active === 'access' && screen.accessControl ? (
         <AccessTab screen={screen} accessControl={screen.accessControl} />

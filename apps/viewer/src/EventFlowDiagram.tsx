@@ -14,8 +14,8 @@ function outcomeText(outcome?: EventOutcomeView, fallback = '完了'): string {
   return clean(parts.join(' / ') || fallback)
 }
 
-function toMermaid(event: EventView): string {
-  const lines = ['flowchart LR']
+function toMermaid(event: EventView, direction: "LR" | "TB" = "LR"): string {
+  const lines = [`flowchart `]
   let serial = 0
   const id = (kind: string) => `${kind}_${serial++}`
   const trigger = id('trigger')
@@ -62,7 +62,7 @@ function toMermaid(event: EventView): string {
     completions(trigger, { to: event.to, expects: event.expects }, event.onSuccess, event.onError)
   }
   lines.push(
-    '  classDef trigger fill:#eef2ff,stroke:#6366f1,color:#312e81;',
+    '  classDef trigger fill:#f1f7f6,stroke:#3f8f89,color:#204f4d;',
     '  classDef decision fill:#fff7ed,stroke:#f59e0b,color:#7c2d12;',
     '  classDef action fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;',
     '  classDef result fill:#f8fafc,stroke:#94a3b8,color:#334155;',
@@ -72,7 +72,7 @@ function toMermaid(event: EventView): string {
   return lines.join('\n')
 }
 
-export function EventFlowDiagram({ event, onOpenApi }: { event: EventView; onOpenApi: (apiKey: string) => void }) {
+export function EventFlowDiagram({ event, onOpenApi, compact = false }: { event: EventView; onOpenApi: (apiKey: string) => void; compact?: boolean }) {
   const id = useId().replace(/:/g, '_')
   const [svg, setSvg] = useState('')
   const [error, setError] = useState('')
@@ -81,11 +81,11 @@ export function EventFlowDiagram({ event, onOpenApi }: { event: EventView; onOpe
   useEffect(() => {
     let cancelled = false
     setSvg(''); setError('')
-    renderMermaid("event_" + id, toMermaid(event))
+    renderMermaid("event_" + id, toMermaid(event, compact ? "TB" : "LR"))
       .then((result) => { if (!cancelled) setSvg(result.svg) })
       .catch((reason: unknown) => { if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason)) })
     return () => { cancelled = true }
-  }, [event, id])
+  }, [event, id, compact])
   useEffect(() => {
     if (!svg || !container.current) return
     const cleanups: Array<() => void> = []
@@ -110,5 +110,5 @@ export function EventFlowDiagram({ event, onOpenApi }: { event: EventView; onOpe
   }, [svg, event, onOpenApi])
   if (error) return <p className="badge badge-ng">イベントフロー図の描画に失敗しました: {error}</p>
   if (!svg) return <p className="muted" role="status">イベントフロー図を読み込み中…</p>
-  return <div ref={container} className="diagram event-flow-diagram" role="group" aria-label={`${event.key}の処理フロー`} dangerouslySetInnerHTML={{ __html: svg }} />
+  return <div ref={container} className={compact ? "diagram event-flow-diagram compact" : "diagram event-flow-diagram"} role="group" aria-label={`${event.key}の処理フロー`} dangerouslySetInnerHTML={{ __html: svg }} />
 }

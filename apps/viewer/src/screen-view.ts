@@ -500,6 +500,12 @@ function buildDesign(design: RawDesign | undefined): DesignView | undefined {
   return { figma: design.figma, images, links };
 }
 
+function eventTriggerLabel(trigger: RawEvent["trigger"]): string | undefined {
+  if (typeof trigger === "string") return trigger;
+  if (trigger?.component && trigger.event) return `${trigger.component}.${trigger.event}`;
+  return undefined;
+}
+
 function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefined {
   const states = screen?.states;
   if (!states || Object.keys(states).length === 0) return undefined;
@@ -512,7 +518,8 @@ function buildStateMachine(screen: SpecDoc["screen"]): StateMachineView | undefi
 
   const edges: StateEdge[] = [];
   for (const [key, ev] of Object.entries(screen?.events ?? {})) {
-    if (ev.from && ev.to) edges.push({ from: ev.from, to: ev.to, label: ev.trigger ? `${key} (${ev.trigger})` : key });
+    const trigger = eventTriggerLabel(ev.trigger);
+    if (ev.from && ev.to) edges.push({ from: ev.from, to: ev.to, label: trigger ? `${key} (${trigger})` : key });
     for (const branch of ev.branches ?? []) {
       if (!ev.from || !branch.to) continue;
       const condition = branch.otherwise === true ? "otherwise" : branch.when ?? "?";
@@ -581,7 +588,7 @@ function buildEvents(screen: SpecDoc["screen"]): EventView[] {
   return Object.entries(screen?.events ?? {}).map(([key, event]) => ({
     key,
     context: buildEventContext(screen, event),
-    trigger: typeof event.trigger === "string" ? event.trigger : event.trigger?.component && event.trigger.event ? event.trigger.component + "." + event.trigger.event : undefined,
+    trigger: eventTriggerLabel(event.trigger),
     target: event.target,
     from: event.from,
     to: event.to,

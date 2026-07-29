@@ -135,5 +135,6 @@ components:
     expect(view.design?.images[0].mappings).toEqual([{ target: "keyword", regions: [{ x: 0.1, y: 0.2, width: 0.3, height: 0.1 }] }, { target: "pagination.pageNumbers", regions: [{ x: 0.5, y: 0.7, width: 0.4, height: 0.1 }] }])
     expect(view.events[0].trigger).toBe("pagination.pageChange")
     expect(view.events[0].context).toEqual([{ name: "page", type: "integer" }])
+    expect(view.stateMachine?.edges).toContainEqual({ from: "loaded", to: "loaded", label: "changePage (pagination.pageChange)" })
   })
 })

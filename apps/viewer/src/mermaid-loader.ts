@@ -11,6 +11,9 @@ export function getMermaid(): Promise<Mermaid> {
       mod.default.initialize({
         startOnLoad: false,
         theme: 'neutral',
+        themeVariables: {
+          fontSize: '14px',
+        },
         flowchart: {
           // 画面数や交差する遷移が増えても読みやすい配置にする。
           defaultRenderer: 'elk',
