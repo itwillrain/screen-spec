@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { getMermaid } from './mermaid-loader'
+import { renderMermaid } from './mermaid-loader'
 import type { StateMachineView } from './screen-view'
 
 /** Mermaid のノード/ラベルに使えないよう文字を除去する。 */
@@ -32,8 +32,7 @@ export function StateDiagram({ sm }: { sm: StateMachineView }) {
   useEffect(() => {
     let cancelled = false
     const graph = toMermaid(sm)
-    getMermaid()
-      .then((mermaid) => mermaid.render(`sm_${id}`, graph))
+    renderMermaid("sm_" + id, graph)
       .then(({ svg }) => {
         if (!cancelled) setSvg(svg)
       })

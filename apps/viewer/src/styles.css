@@ -398,10 +398,18 @@ ul.warnings {
 }
 .event-card {
   margin-bottom: 1rem;
+  counter-reset: event-step;
   padding: 1rem;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
+}
+.event-card.event-flow > .event-flow-step {
+  margin-top: 0;
+  counter-increment: event-step;
+}
+.event-card.event-flow > .event-flow-step > :is(strong, h4)::before {
+  content: counter(event-step) ". ";
 }
 .event-card > header {
   display: flex;
@@ -417,6 +425,14 @@ ul.warnings {
 .event-route {
   margin-top: 0.45rem !important;
 }
+.event-flow-diagram { margin-top: 0; overflow-x: auto; }
+.event-flow-diagram svg { min-width: 36rem; }
+.event-details > summary {
+  color: #3730a3;
+  font-weight: 600;
+  cursor: pointer;
+}
+.event-detail-content { margin-top: .75rem; }
 .event-branches {
   display: grid;
   gap: 0.75rem;
@@ -720,7 +736,7 @@ html[data-theme="dark"] :where(.sidebar, .binding, .meta, table.fields, .diagram
 html[data-theme="dark"] .sidebar { background: #0a0e14; }
 html[data-theme="dark"] :where(.nav-item, .tab) { color: #b6bec9; }
 html[data-theme="dark"] :where(.nav-item:hover, .tab:hover) { color: #f2f5f8; background: #202a36; }
-html[data-theme="dark"] :where(.nav-item.active, .tab.active, a, .link, .diagram-alternative summary) { color: #a5abff; }
+html[data-theme="dark"] :where(.nav-item.active, .tab.active, a, .link, .diagram-alternative summary, .event-details > summary) { color: #a5abff; }
 html[data-theme="dark"] .nav-item.active { background: #202a36; box-shadow: inset 3px 0 #a5abff; }
 html[data-theme="dark"] :where(.muted, .eyebrow, .meta dt) { color: #b6bec9; }
 html[data-theme="dark"] :where(.filter, .theme-control select) { color: #f2f5f8; background: #19212c; border-color: #3a4656; }
@@ -736,7 +752,7 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
   html[data-theme="system"] :where(.sidebar, .binding, .meta, table.fields, .diagram, .event-card, .test-filter, .mockup img) { background: #141a23; border-color: #2b3441; }
   html[data-theme="system"] .sidebar { background: #0a0e14; }
   html[data-theme="system"] :where(.nav-item, .tab, .muted, .eyebrow, .meta dt) { color: #b6bec9; }
-  html[data-theme="system"] :where(.nav-item.active, .tab.active, a, .link, .diagram-alternative summary) { color: #a5abff; }
+  html[data-theme="system"] :where(.nav-item.active, .tab.active, a, .link, .diagram-alternative summary, .event-details > summary) { color: #a5abff; }
   html[data-theme="system"] :where(.filter, .theme-control select) { color: #f2f5f8; background: #19212c; border-color: #3a4656; }
   html[data-theme="system"] table.fields thead th { color: #b6bec9; background: #19212c; }
 }
@@ -977,7 +993,12 @@ html[data-theme="dark"] :where(.sidebar-collapse, .sidebar-current) {
 }
 
 /* Selected Field detail drawer */
-.field-detail-backdrop { position: fixed; z-index: 29; inset: 0; padding: 0; border: 0; background: rgb(15 23 42 / .22); cursor: default; }
+html:has(.field-detail),
+body:has(.field-detail) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.field-detail-backdrop { position: fixed; z-index: 29; inset: 0; padding: 0; border: 0; background: rgb(15 23 42 / .22); cursor: default; overscroll-behavior: none; touch-action: none; }
 .field-detail-navigation { position: fixed; z-index: 32; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: min(var(--field-drawer-width, 32rem), calc(100vw - 4rem)); padding: .65rem 1rem; border-top: 1px solid #e5e7eb; background: #fff; box-shadow: 0 -6px 18px rgb(15 23 42 / .08); }
 .field-detail-navigation button { min-height: 2.25rem; padding: .35rem .65rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #3730a3; font: inherit; cursor: pointer; }
 .field-detail-navigation button:disabled { opacity: .4; cursor: not-allowed; }
@@ -993,6 +1014,8 @@ html[data-theme="dark"] .field-detail-navigation button { border-color: #3a4656;
   height: 100dvh;
   margin-top: 0;
   padding-bottom: 5rem;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
   overflow-y: auto;
   border-width: 0 0 0 1px;
   border-radius: 0;
@@ -1025,9 +1048,15 @@ html[data-theme="dark"] .field-detail-navigation button { border-color: #3a4656;
   position: sticky;
   z-index: 1;
   top: 0;
-  margin: -1rem -1rem 1rem;
+  margin: -1rem -1rem 0;
   padding: 1rem;
   background: #fff;
+}
+.field-detail > header + * {
+  margin-top: 1rem;
+}
+.field-detail > section > :is(h3, h4) + * {
+  margin-top: .75rem;
 }
 html[data-theme="dark"] .field-detail > header {
   background: #141a23;

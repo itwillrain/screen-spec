@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState, type KeyboardEvent } from 'react'
 import { FieldReviewWorkspace } from './FieldReviewWorkspace'
+import { EventFlowDiagram } from './EventFlowDiagram'
 import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
 import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
@@ -229,13 +230,16 @@ function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenVi
         <div className="events">
           <div className="detail-section-head events-head"><h2>イベントの動作</h2>{selectedEvent ? <button type="button" className="link" onClick={onBackToFields}>項目へ戻る</button> : null}</div>
           {screen.events.map((event) => (
-            <article key={event.key} className={selectedEvent === event.key ? "event-card selected-event" : "event-card"} data-event-id={event.key} tabIndex={-1}>
+            <article key={event.key} className={selectedEvent === event.key ? "event-card event-flow selected-event" : "event-card event-flow"} data-event-id={event.key} tabIndex={-1}>
               <header>
                 <h3><code>{event.key}</code></h3>
               </header>
-              <div className="event-flow-step"><strong>1. きっかけ</strong><p><EventTriggerDescription screen={screen} event={event} /></p></div>
-              {event.context.length ? <div className="event-flow-step"><strong>2. 引き渡す値</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}
-              <p className="event-route"><strong>{(event.context.length ? 3 : 2) + ". " + (event.branches.length ? "条件分岐" : "実行する処理")}</strong> · <span>{stateDisplay(screen, event.from)}</span> から {event.branches.length > 0 ? <span>{event.branches.length}つの条件に応じて処理</span> : <span>{stateDisplay(screen, event.to)}へ変更</span>}{event.apiCall ? <> · <code>{event.apiCall}</code> APIを実行</> : null}</p>
+              <EventFlowDiagram event={event} />
+              <details className="event-details">
+                <summary>処理の詳細</summary><div className="event-flow event-detail-content">
+              <div className="event-flow-step"><strong>きっかけ</strong><p><EventTriggerDescription screen={screen} event={event} /></p></div>
+              {event.context.length ? <div className="event-flow-step"><strong>引き渡す値</strong><dl className="event-context-list">{event.context.map((item) => <div key={item.name}><dt><code>event.{item.name}</code></dt><dd><code>{item.type}</code>{item.description ? " — " + item.description : null}</dd></div>)}</dl></div> : null}
+              <div className="event-flow-step"><strong>{event.branches.length ? "条件分岐" : "実行する処理"}</strong><p className="event-route"><span>{stateDisplay(screen, event.from)}</span> から {event.branches.length > 0 ? <span>{event.branches.length}つの条件に応じて処理</span> : <span>{stateDisplay(screen, event.to)}へ変更</span>}{event.apiCall ? <> · <code>{event.apiCall}</code> APIを実行</> : null}</p>
               {event.branches.length > 0 ? (
                 <div className="event-branches">
                   {event.branches.map((branch) => (
@@ -252,13 +256,16 @@ function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenVi
                   ))}
                 </div>
               ) : null}
-              <OutcomeBlock screen={screen} label="実行後" outcome={{ to: event.to, expects: event.expects }} />
-              {event.onSuccess ? <OutcomeBlock screen={screen} label="成功したとき" outcome={event.onSuccess} /> : null}
+              </div>
+              <OutcomeBlock screen={screen} numbered label="実行後" outcome={{ to: event.to, expects: event.expects }} />
+              {event.onSuccess ? <OutcomeBlock screen={screen} numbered label="成功したとき" outcome={event.onSuccess} /> : null}
               {event.onError ? (
                 <>
-                  <OutcomeBlock screen={screen} label="エラーになったとき" outcome={event.onError} />
+                  <OutcomeBlock screen={screen} numbered label="エラーになったとき" outcome={event.onError} />
                   {event.onError.cases.map((errorCase, index) => (
                     <OutcomeBlock
+                      screen={screen}
+                      numbered
                       key={`${errorCase.status ?? '*'}:${errorCase.code ?? '*'}:${index}`}
                       label={`エラー条件 ${[
                         errorCase.status !== undefined ? `HTTP ${errorCase.status}` : null,
@@ -269,6 +276,8 @@ function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenVi
                   ))}
                 </>
               ) : null}
+                </div>
+              </details>
             </article>
           ))}
         </div>
@@ -277,10 +286,10 @@ function StatesTab({ screen, selectedEvent, onBackToFields }: { screen: ScreenVi
   )
 }
 
-function OutcomeBlock({ label, outcome, screen }: { label: string; outcome: EventOutcomeView; screen: ScreenView }) {
+function OutcomeBlock({ label, outcome, screen, numbered = false }: { label: string; outcome: EventOutcomeView; screen: ScreenView; numbered?: boolean }) {
   if (!outcome.to && !outcome.navigate && !outcome.expects) return null
   return (
-    <div className="event-outcome">
+    <div className={numbered ? "event-flow-step event-outcome" : "event-outcome"}>
       <h4>{label}</h4>
       <p>
         {outcome.to ? <>状態を「{stateDisplay(screen, outcome.to)}」へ変更</> : null}

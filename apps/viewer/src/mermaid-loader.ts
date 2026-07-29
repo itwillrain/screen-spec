@@ -3,6 +3,7 @@
 type Mermaid = (typeof import('mermaid'))['default']
 
 let promise: Promise<Mermaid> | undefined
+let renderQueue: Promise<void> = Promise.resolve()
 
 export function getMermaid(): Promise<Mermaid> {
   if (!promise) {
@@ -19,4 +20,14 @@ export function getMermaid(): Promise<Mermaid> {
     })
   }
   return promise
+}
+
+/** Mermaid/ELK は同時 render で内部状態が競合するため、アプリ内の描画を直列化する。 */
+export function renderMermaid(id: string, graph: string) {
+  const job = renderQueue.then(async () => {
+    const mermaid = await getMermaid()
+    return mermaid.render(id, graph)
+  })
+  renderQueue = job.then(() => undefined, () => undefined)
+  return job
 }
