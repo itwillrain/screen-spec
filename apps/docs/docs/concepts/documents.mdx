@@ -5,11 +5,11 @@ description: 画面ドキュメントと共通コンポーネントドキュメ�
 
 # ドキュメントの種類
 
-すべての screen-spec ドキュメントは `specVersion: "0.1"` を必須で持ち、次のいずれかを含みます。
+すべてのscreen-specドキュメントは`specVersion: "0.1"`を必須で持ち、次のいずれかを含みます。
 
 ## 画面ドキュメント
 
-`screen` を持つドキュメント。1 画面の詳細設計を記述します。
+`screen`を持つドキュメント。1画面の詳細設計を記述します。
 
 ```yaml
 specVersion: "0.1"
@@ -23,9 +23,11 @@ screen:
       type: text
 ```
 
+規模が大きくなる場合は、`pages/users/edit.screen.yaml`のように`pages/<feature>/`へ配置します。
+
 ## 共通コンポーネントドキュメント
 
-`components` を持つドキュメント（例: `common.yaml`）。複数画面で再利用する部品を定義します。
+`components`を持つドキュメント。複数画面で再利用する部品を定義します。
 
 ```yaml
 specVersion: "0.1"
@@ -36,9 +38,13 @@ components:
       message: 必須項目です
 ```
 
-`screen` と `components` は同一ドキュメントに併存しても構いませんが、v0.1 のサンプルでは
-共通部品を `common.yaml` に分離しています。
+Componentは`components/validations.yaml`や`components/ui.yaml`のように、種別ごとに文書を分けます。
+Component間の依存も、参照元文書からの相対`$ref`で明示します。
+
+`screen`と`components`は同一ドキュメントに併存しても構いません。ただし、サンプルでは
+Screen Specificationを`pages/<feature>/`、共通部品を`components/<kind>.yaml`へ分離しています。
+この配置は整理上の規約であり、Screen Groupやrouteの階層とは独立します。
 
 ## specVersion
 
-`specVersion` は許容バージョンを列挙し、未知バージョンは検証エラーになります。v0.1 では `"0.1"` のみ有効です。
+`specVersion`は許容バージョンを列挙し、未知バージョンは検証エラーになります。v0.1では`"0.1"`のみ有効です。

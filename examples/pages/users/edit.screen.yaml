@@ -2,6 +2,7 @@ specVersion: "0.1"
 screen:
   id: user-edit
   name: ユーザー編集画面
+  group: ユーザー管理
   description: ユーザー情報を編集する画面
   route: /users/{userId}/edit
 
@@ -110,13 +111,13 @@ screen:
       required: true
       width: half
       validations:
-        - $ref: "./common.yaml#/components/validations/Required"
+        - $ref: "../../components/validations.yaml#/components/validations/Required"
         - rule: maxLength
           value: 50
           message: 50文字以内で入力してください
     # 外部コンポーネントを純粋参照（決定 #2, #3）。
     email:
-      $ref: "./common.yaml#/components/fields/EmailField"
+      $ref: "../../components/fields.yaml#/components/fields/EmailField"
     role:
       label: ロール
       type: select
@@ -135,7 +136,7 @@ screen:
       required: false
       width: half
       validations:
-        - $ref: "./common.yaml#/components/validations/EmailFormat"
+        - $ref: "../../components/validations.yaml#/components/validations/EmailFormat"
       # 表示条件（式エンジン）: role が admin のときのみ表示。
       visibleWhen: fields.role == "admin"
 
@@ -166,7 +167,7 @@ screen:
   ui:
     appHeader:
       component:
-        $ref: "./common.yaml#/components/ui/AppHeader"
+        $ref: "../../components/ui.yaml#/components/ui/AppHeader"
       bindings:
         currentUserName.text: { value: 山田 太郎 }
         notifications.value: { value: 3 }
@@ -174,14 +175,14 @@ screen:
         logout: logout
     adminSidebar:
       component:
-        $ref: "./common.yaml#/components/ui/AdminSidebar"
+        $ref: "../../components/ui.yaml#/components/ui/AdminSidebar"
       bindings:
         navigationItems.activeItem: { value: users }
       events:
         navigate: navigateFromSidebar
     appFooter:
       component:
-        $ref: "./common.yaml#/components/ui/AppFooter"
+        $ref: "../../components/ui.yaml#/components/ui/AppFooter"
       bindings:
         copyright.text: { value: "© 2026 Example Inc." }
         legalLinks.value:
@@ -280,7 +281,7 @@ screen:
     getUser:
       openapi:
         operationId: getUserById
-        specRef: ./openapi/users.yaml
+        specRef: ../../openapi/users.yaml
       request:
         path:
           userId: "{screen.route.userId}"
@@ -293,7 +294,7 @@ screen:
     updateUser:
       openapi:
         operationId: updateUserById
-        specRef: ./openapi/users.yaml
+        specRef: ../../openapi/users.yaml
       request:
         body:
           name: "{fields.name}"

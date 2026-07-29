@@ -219,6 +219,7 @@ export interface UIInstanceView {
 export interface ScreenView {
   id: string;
   name: string;
+  group?: string;
   description?: string;
   route?: string;
   params?: ParamsView;
@@ -395,6 +396,7 @@ interface SpecDoc {
   screen?: {
     id?: string;
     name?: string;
+    group?: string;
     description?: string;
     route?: string;
     design?: RawDesign;
@@ -729,6 +731,7 @@ export async function buildScreenView(
   return {
     id: String(resolved.screen?.id ?? ""),
     name: String(resolved.screen?.name ?? ""),
+    group: resolved.screen?.group,
     description: resolved.screen?.description,
     route: resolved.screen?.route,
     params: buildParams(resolved.screen?.params),

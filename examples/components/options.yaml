@@ -1,0 +1,7 @@
+specVersion: "0.1"
+components:
+  options:
+    RoleOptions:
+      - { value: admin, label: 管理者 }
+      - { value: editor, label: 編集者 }
+      - { value: viewer, label: 閲覧者 }

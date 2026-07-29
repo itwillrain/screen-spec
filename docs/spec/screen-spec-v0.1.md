@@ -8,7 +8,7 @@
 すべてのドキュメントは `specVersion: "0.1"` を必須で持ち、次のいずれかを含む。
 
 - **画面ドキュメント**: `screen` を持つ。
-- **共通コンポーネントドキュメント**: `components` を持つ（例: `common.yaml`）。
+- **共通コンポーネントドキュメント**: `components` を持つ（例: `components/fields.yaml`）。
 
 ## 命名規則（決定 #9）
 
@@ -27,17 +27,17 @@
 - コンポーネント再利用は `$ref` で行う（v0.1 から必須機能）。
 - **純粋参照**: `$ref` を持つオブジェクトに兄弟キーを書けない（マージ・上書き不可）。
 - バリエーションは上書きではなく別コンポーネントとして定義する（決定 #4）。
-- 参照形式: 内部 `#/components/...`、外部 `./common.yaml#/components/...`。
+- 参照形式: 内部 `#/components/...`、外部 `../../components/fields.yaml#/components/...`。
 - v0.1 では**ローカル相対パスのみ**。`http(s)://` や絶対パスは不可。
 
 ```yaml
 # 純粋参照（OK）
 email:
-  $ref: "./common.yaml#/components/fields/EmailField"
+  $ref: "../../components/fields.yaml#/components/fields/EmailField"
 
 # 兄弟キー併記（NG: 検証エラー）
 email:
-  $ref: "./common.yaml#/components/fields/EmailField"
+  $ref: "../../components/fields.yaml#/components/fields/EmailField"
   label: 上書き
 ```
 
@@ -69,6 +69,6 @@ email:
 
 ```bash
 npm install
-npm run validate examples/user-edit.screen.yaml
+npm run validate examples/pages/users/edit.screen.yaml
 npm test
 ```

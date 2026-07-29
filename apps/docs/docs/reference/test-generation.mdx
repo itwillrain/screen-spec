@@ -47,12 +47,12 @@ const csv = testItemsToCsv(items);
 CLIでは標準出力またはファイルへ出力できます。
 
 ```bash
-npm run testgen -- examples/user-edit.screen.yaml \
-  --test-data examples/user-edit.fixtures.yaml \
+npm run testgen -- examples/pages/users/edit.screen.yaml \
+  --test-data examples/fixtures/users/edit.fixtures.yaml \
   --format markdown
 
-npm run testgen -- examples/user-edit.screen.yaml \
-  --test-data examples/user-edit.fixtures.yaml \
+npm run testgen -- examples/pages/users/edit.screen.yaml \
+  --test-data examples/fixtures/users/edit.fixtures.yaml \
   --format csv \
   --output user-edit-tests.csv
 ```

@@ -39,6 +39,7 @@
           "description": "kebab-case"
         },
         "name": { "type": "string" },
+        "group": { "type": "string", "minLength": 1, "description": "画面をナビゲーション上でまとめる業務上のグループ名" },
         "description": { "type": "string" },
         "route": { "type": "string" },
         "params": { "$ref": "#/$defs/Params" },

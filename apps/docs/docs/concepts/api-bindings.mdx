@@ -18,7 +18,7 @@ apiBindings:
   getUser:
     openapi:
       operationId: getUserById
-      specRef: ./openapi/users.yaml
+      specRef: ../../openapi/users.yaml
     request:
       path:
         userId: "{screen.route.userId}"
@@ -30,7 +30,7 @@ apiBindings:
   updateUser:
     openapi:
       operationId: updateUserById
-      specRef: ./openapi/users.yaml
+      specRef: ../../openapi/users.yaml
     request:
       body:
         name: "{fields.name}"

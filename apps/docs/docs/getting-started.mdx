@@ -18,26 +18,26 @@ npm install
 `screen-spec validate` は YAML の設計書を検証します。
 
 ```bash
-npm run validate examples/user-edit.screen.yaml
+npm run validate examples/pages/users/edit.screen.yaml
 ```
 
 複数のscreenとtestDataを同時に渡すと、画面遷移先、`testData.screen`、fixtureのparam・field、
 文書間のfixture ID重複も横断検証します。
 
 ```bash
-npm run validate examples/user-edit.screen.yaml examples/user-list.screen.yaml examples/user-edit.fixtures.yaml
+npm run validate examples/pages/users/edit.screen.yaml examples/pages/users/list.screen.yaml examples/fixtures/users/edit.fixtures.yaml
 ```
 
 妥当な場合:
 
 ```
-✓ examples/user-edit.screen.yaml is valid
+✓ examples/pages/users/edit.screen.yaml is valid
 ```
 
 不正な場合は、段（`raw` / `resolve` / `resolved`）ごとの診断が表示され、終了コードは `1` になります。
 
 ```
-✗ examples/invalid.screen.yaml is invalid
+✗ examples/fixtures/invalid/screen.screen.yaml is invalid
     [raw] /screen/id must match pattern "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
     [raw] /screen/fields/Email must match exactly one schema in oneOf
 ```
@@ -52,8 +52,8 @@ npm run typecheck
 ## テスト項目を出力する
 
 ```bash
-npm run testgen -- examples/user-edit.screen.yaml \
-  --test-data examples/user-edit.fixtures.yaml \
+npm run testgen -- examples/pages/users/edit.screen.yaml \
+  --test-data examples/fixtures/users/edit.fixtures.yaml \
   --format markdown
 ```
 

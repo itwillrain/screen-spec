@@ -1,46 +1,55 @@
 ---
 title: Examples
-description: サンプル YAML（common.yaml と user-edit.screen.yaml）の解説。
+description: 役割別Componentと機能別Pageで構成したサンプルYAMLの解説。
 ---
 
 # Examples
 
-リポジトリの `examples/` には、画面、共通Component、OpenAPI、testDataのサンプルがあります。
+リポジトリの`examples/`には、画面、共通Component、OpenAPI、testDataのサンプルがあります。
 
-## common.yaml（共通コンポーネント）
+## ディレクトリ構成
 
-再利用する部品を `components` に定義します。`EmailField` は内部 `$ref` で `Required` /
-`EmailFormat` を参照しています。
+```text
+examples/
+├─ components/
+│  ├─ validations.yaml
+│  ├─ fields.yaml
+│  ├─ options.yaml
+│  └─ ui.yaml
+├─ pages/
+│  ├─ users/
+│  │  ├─ list.screen.yaml
+│  │  └─ edit.screen.yaml
+│  └─ audit/
+│     └─ log.screen.yaml
+├─ fixtures/
+└─ openapi/
+```
+
+`pages`の階層はファイル整理のための配置です。YAML内のScreen Groupやroute階層とは独立します。
+
+## components（共通コンポーネント）
+
+再利用する部品を種別ごとの文書に定義します。`fields.yaml`の`EmailField`は外部`$ref`で
+`validations.yaml`の`Required`と`EmailFormat`を参照します。
 
 ```yaml
+# components/fields.yaml
 specVersion: "0.1"
 components:
-  validations:
-    Required:
-      rule: required
-      message: 必須項目です
-    EmailFormat:
-      rule: pattern
-      value: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
-      message: メールアドレスの形式が正しくありません
   fields:
     EmailField:
       label: メールアドレス
       type: email
       required: true
       validations:
-        - $ref: "#/components/validations/Required"
-        - $ref: "#/components/validations/EmailFormat"
-  options:
-    RoleOptions:
-      - { value: admin, label: 管理者 }
-      - { value: editor, label: 編集者 }
-      - { value: viewer, label: 閲覧者 }
+        - $ref: "./validations.yaml#/components/validations/Required"
+        - $ref: "./validations.yaml#/components/validations/EmailFormat"
 ```
 
-## user-edit.screen.yaml（画面）
+## pages/users/edit.screen.yaml（画面）
 
-`fields` はマップで、キー（`name` / `email` / `role`）が識別子・記述順が表示順です。
+`fields`はマップで、キー（`name` / `email` / `role`）が識別子・記述順が表示順です。
 `email`は外部Componentを純粋参照し、`role`の動的Optionsは`getUser → data.roleOptions → role.options`として接続します。Viewerではこの供給経路とOpenAPI response pathの照合結果を確認できます。
 
 ```yaml
@@ -56,12 +65,12 @@ screen:
       type: text
       required: true
       validations:
-        - $ref: "./common.yaml#/components/validations/Required"
+        - $ref: "../../components/validations.yaml#/components/validations/Required"
         - rule: maxLength
           value: 50
           message: 50文字以内で入力してください
     email:
-      $ref: "./common.yaml#/components/fields/EmailField"
+      $ref: "../../components/fields.yaml#/components/fields/EmailField"
     role:
       label: ロール
       type: select
@@ -89,7 +98,7 @@ screen:
     getUser:
       openapi:
         operationId: getUserById
-        specRef: ./openapi/users.yaml
+        specRef: ../../openapi/users.yaml
       response:
         mapping:
           fields.role: data.role
@@ -99,9 +108,9 @@ screen:
 ## 検証してみる
 
 ```bash
-npm run validate examples/user-edit.screen.yaml
-# ✓ examples/user-edit.screen.yaml is valid
+npm run validate examples/pages/users/edit.screen.yaml
+# ✓ examples/pages/users/edit.screen.yaml is valid
 ```
 
-不正例 `examples/invalid.screen.yaml` は、id 命名・キー命名・`$ref` 純粋性の違反を含み、
+不正例`examples/fixtures/invalid/screen.screen.yaml`は、id命名・キー命名・`$ref`純粋性の違反を含み、
 検証に失敗します（[検証フロー](/concepts/validation)）。

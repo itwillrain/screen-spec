@@ -2,6 +2,7 @@ specVersion: "0.1"
 screen:
   id: user-list
   name: ユーザー一覧画面
+  group: ユーザー管理
   description: ユーザーを検索・一覧する画面
   route: /users
   design:
@@ -60,12 +61,12 @@ screen:
       label: 検索キーワード
       type: text
       validations:
-        - $ref: "./common.yaml#/components/validations/Required"
+        - $ref: "../../components/validations.yaml#/components/validations/Required"
     role:
       label: ロール絞り込み
       type: select
       options:
-        $ref: "./common.yaml#/components/options/RoleOptions"
+        $ref: "../../components/options.yaml#/components/options/RoleOptions"
     searchButton:
       label: 検索ボタン
       type: button
@@ -91,7 +92,7 @@ screen:
   ui:
     appHeader:
       component:
-        $ref: "./common.yaml#/components/ui/AppHeader"
+        $ref: "../../components/ui.yaml#/components/ui/AppHeader"
       bindings:
         currentUserName.text: { value: 山田 太郎 }
         notifications.value: { value: 3 }
@@ -99,14 +100,14 @@ screen:
         logout: logout
     adminSidebar:
       component:
-        $ref: "./common.yaml#/components/ui/AdminSidebar"
+        $ref: "../../components/ui.yaml#/components/ui/AdminSidebar"
       bindings:
         navigationItems.activeItem: { value: users }
       events:
         navigate: navigateFromSidebar
     userTable:
       component:
-        $ref: "./common.yaml#/components/ui/DataTable"
+        $ref: "../../components/ui.yaml#/components/ui/DataTable"
       bindings:
         rows.value: { source: data.userRows }
         header.value:
@@ -123,7 +124,7 @@ screen:
         sortChange: sortUsers
     userPagination:
       component:
-        $ref: "./common.yaml#/components/ui/Pagination"
+        $ref: "../../components/ui.yaml#/components/ui/Pagination"
       bindings:
         summary.value.currentPage: { source: data.userPage }
         summary.value.pageSize: { source: data.userPageSize }
@@ -135,7 +136,7 @@ screen:
         pageSizeChange: changePageSize
     appFooter:
       component:
-        $ref: "./common.yaml#/components/ui/AppFooter"
+        $ref: "../../components/ui.yaml#/components/ui/AppFooter"
       bindings:
         copyright.text: { value: "© 2026 Example Inc." }
         legalLinks.value:
@@ -193,7 +194,7 @@ screen:
     listUsers:
       openapi:
         operationId: listUsers
-        specRef: ./openapi/users.yaml
+        specRef: ../../openapi/users.yaml
       request:
         query:
           keyword: "{fields.keyword}"

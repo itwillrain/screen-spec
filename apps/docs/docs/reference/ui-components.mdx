@@ -50,7 +50,7 @@ screen:
   ui:
     userPagination:
       component:
-        $ref: "./common.yaml#/components/ui/Pagination"
+        $ref: "../../components/ui.yaml#/components/ui/Pagination"
       bindings:
         summary.value.currentPage: { source: data.userPage }
         summary.value.totalCount: { source: data.userTotal }

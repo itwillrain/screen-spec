@@ -1,27 +1,5 @@
 specVersion: "0.1"
 components:
-  validations:
-    Required:
-      rule: required
-      message: 必須項目です
-    EmailFormat:
-      rule: pattern
-      value: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
-      message: メールアドレスの形式が正しくありません
-  fields:
-    EmailField:
-      label: メールアドレス
-      type: email
-      required: true
-      validations:
-        - $ref: "#/components/validations/Required"
-        - $ref: "#/components/validations/EmailFormat"
-  options:
-    RoleOptions:
-      - { value: admin, label: 管理者 }
-      - { value: editor, label: 編集者 }
-      - { value: viewer, label: 閲覧者 }
-
   ui:
     AppHeader:
       name: アプリケーションヘッダー

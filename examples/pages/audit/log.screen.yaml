@@ -2,6 +2,7 @@ specVersion: "0.1"
 screen:
   id: audit-log
   name: 監査ログ画面
+  group: 監査・ログ
   description: 管理操作の監査ログを検索・一覧する画面
   route: /audit-logs
   design:
@@ -35,18 +36,18 @@ screen:
     auditPageSize: { description: 表示件数, schema: { type: integer } }
   ui:
     appHeader:
-      component: { $ref: "./common.yaml#/components/ui/AppHeader" }
+      component: { $ref: "../../components/ui.yaml#/components/ui/AppHeader" }
       bindings:
         currentUserName.text: { value: 山田 太郎 }
         notifications.value: { value: 3 }
       events: { logout: logout }
     adminSidebar:
-      component: { $ref: "./common.yaml#/components/ui/AdminSidebar" }
+      component: { $ref: "../../components/ui.yaml#/components/ui/AdminSidebar" }
       bindings:
         navigationItems.activeItem: { value: audit }
       events: { navigate: navigateFromSidebar }
     auditTable:
-      component: { $ref: "./common.yaml#/components/ui/DataTable" }
+      component: { $ref: "../../components/ui.yaml#/components/ui/DataTable" }
       bindings:
         rows.value: { source: data.auditRows }
         header.value:
@@ -60,7 +61,7 @@ screen:
         emptyState.text: { value: 監査ログはありません }
       events: { sortChange: sortAuditLogs }
     auditPagination:
-      component: { $ref: "./common.yaml#/components/ui/Pagination" }
+      component: { $ref: "../../components/ui.yaml#/components/ui/Pagination" }
       bindings:
         summary.value.currentPage: { source: data.auditPage }
         summary.value.pageSize: { source: data.auditPageSize }
@@ -69,7 +70,7 @@ screen:
         pageSizeSelector.visible: { value: false }
       events: { pageChange: changePage }
     appFooter:
-      component: { $ref: "./common.yaml#/components/ui/AppFooter" }
+      component: { $ref: "../../components/ui.yaml#/components/ui/AppFooter" }
       bindings:
         copyright.text: { value: "© 2026 Example Inc." }
   states:
@@ -86,7 +87,7 @@ screen:
     toUserList: { to: user-list, trigger: navigateFromSidebar }
   apiBindings:
     listAuditLogs:
-      openapi: { operationId: listAuditLogs, specRef: ./openapi/users.yaml }
+      openapi: { operationId: listAuditLogs, specRef: ../../openapi/users.yaml }
       request:
         query:
           actor: "{fields.actor}"

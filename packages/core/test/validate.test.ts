@@ -39,18 +39,20 @@ describe("YAML serialization", () => {
 
 describe("validateDocument", () => {
   it("画面ファイル（$ref 参照つき）が妥当", async () => {
-    const result = await validateDocument(example("user-edit.screen.yaml"));
+    const result = await validateDocument(example("pages/users/edit.screen.yaml"));
     expect(result.issues).toEqual([]);
     expect(result.valid).toBe(true);
   });
 
-  it("共通コンポーネントファイル単体が妥当", async () => {
-    const result = await validateDocument(example("common.yaml"));
-    expect(result.valid).toBe(true);
+  it("役割別の共通コンポーネントファイルが単体で妥当", async () => {
+    for (const path of ["validations.yaml", "fields.yaml", "options.yaml", "ui.yaml"]) {
+      const result = await validateDocument(example(`components/${path}`));
+      expect(result.valid, path).toBe(true);
+    }
   });
 
   it("不正ファイルは invalid（id/キー命名・$ref純粋性の違反を検出）", async () => {
-    const result = await validateDocument(example("invalid.screen.yaml"));
+    const result = await validateDocument(example("fixtures/invalid/screen.screen.yaml"));
     expect(result.valid).toBe(false);
     expect(result.issues.length).toBeGreaterThan(0);
   });
@@ -58,7 +60,7 @@ describe("validateDocument", () => {
 
 describe("resolveRefs", () => {
   it("外部 $ref を展開し、純粋参照が具体値へ置換される", async () => {
-    const path = example("user-edit.screen.yaml");
+    const path = example("pages/users/edit.screen.yaml");
     const raw = parseYaml(readFileSync(path, "utf8"));
     const resolved = (await resolveRefs(raw, fileUri(path), nodeFileLoader)) as any;
     const email = resolved.screen.fields.email;
@@ -69,7 +71,7 @@ describe("resolveRefs", () => {
   });
 
   it("動的OptionsのScreen DataとField Bindingを保持する", async () => {
-    const path = example("user-edit.screen.yaml");
+    const path = example("pages/users/edit.screen.yaml");
     const raw = parseYaml(readFileSync(path, "utf8"));
     const resolved = (await resolveRefs(raw, fileUri(path), nodeFileLoader)) as any;
     expect(resolved.screen.data.roleOptions.schema.type).toBe("array");
@@ -90,7 +92,7 @@ describe("browser-style resolution (HTTP base URL + custom loader)", () => {
   };
 
   it("http ベース URL に対して外部 $ref を相対 URL 解決できる", async () => {
-    const entry = `${BASE}user-edit.screen.yaml`;
+    const entry = `${BASE}pages/users/edit.screen.yaml`;
     const raw = parseYaml(await httpLoader(entry));
     const resolved = (await resolveRefs(raw, entry, httpLoader)) as any;
     expect(resolved.screen.fields.email.type).toBe("email");
@@ -98,7 +100,7 @@ describe("browser-style resolution (HTTP base URL + custom loader)", () => {
   });
 
   it("validateSpec が fs 非依存のローダーで妥当と判定する", async () => {
-    const entry = `${BASE}user-edit.screen.yaml`;
+    const entry = `${BASE}pages/users/edit.screen.yaml`;
     const result = await validateSpec(await httpLoader(entry), entry, httpLoader);
     expect(result.valid).toBe(true);
   });
@@ -143,7 +145,7 @@ describe("状態機械の解析（analyzeScreen・案C）", () => {
   });
 
   it("サンプル画面（状態遷移つき）は error なし・warning なし", async () => {
-    const result = await validateDocument(example("user-edit.screen.yaml"));
+    const result = await validateDocument(example("pages/users/edit.screen.yaml"));
     expect(result.valid).toBe(true);
     expect(result.warnings).toEqual([]);
   });
@@ -531,9 +533,9 @@ describe("横断解析（analyzeProject）", () => {
   });
 
   it("実サンプル 3 画面は横断診断なし", async () => {
-    const a = (await resolveDocument(example("user-edit.screen.yaml"))) as { screen?: { id: string } };
-    const b = (await resolveDocument(example("user-list.screen.yaml"))) as { screen?: { id: string } };
-    const c = (await resolveDocument(example("audit-log.screen.yaml"))) as { screen?: { id: string } };
+    const a = (await resolveDocument(example("pages/users/edit.screen.yaml"))) as { screen?: { id: string } };
+    const b = (await resolveDocument(example("pages/users/list.screen.yaml"))) as { screen?: { id: string } };
+    const c = (await resolveDocument(example("pages/audit/log.screen.yaml"))) as { screen?: { id: string } };
     const diags = analyzeProject([
       { id: a.screen!.id, screen: a.screen },
       { id: b.screen!.id, screen: b.screen },
@@ -842,7 +844,7 @@ describe("バリデーション語彙（ADR 0002）", () => {
 
 describe("testData ドキュメント（ADR 0005）", () => {
   it("フィクスチャ文書が妥当", async () => {
-    const result = await validateDocument(example("user-edit.fixtures.yaml"));
+    const result = await validateDocument(example("fixtures/users/edit.fixtures.yaml"));
     expect(result.issues).toEqual([]);
     expect(result.valid).toBe(true);
   });

@@ -15,13 +15,13 @@ description: 純粋参照・ローカル相対パスのみ・バリエーショ�
 ```yaml
 # OK: 純粋参照
 email:
-  $ref: "./common.yaml#/components/fields/EmailField"
+  $ref: "../../components/fields.yaml#/components/fields/EmailField"
 ```
 
 ```yaml
 # NG: 兄弟キー併記 → 検証エラー
 email:
-  $ref: "./common.yaml#/components/fields/EmailField"
+  $ref: "../../components/fields.yaml#/components/fields/EmailField"
   label: 上書きのつもり
 ```
 
@@ -45,7 +45,7 @@ components:
 ## 参照の形式
 
 - **内部参照**: `#/components/validations/Required`
-- **外部参照**: `./common.yaml#/components/fields/EmailField`
+- **外部参照**: `../../components/fields.yaml#/components/fields/EmailField`
 
 v0.1 では **ローカル相対パスのみ**をサポートします。`http(s)://` などのリモート参照や
 絶対パスは許可されません。循環参照は検出されエラーになります。

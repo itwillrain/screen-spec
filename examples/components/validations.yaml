@@ -1,0 +1,10 @@
+specVersion: "0.1"
+components:
+  validations:
+    Required:
+      rule: required
+      message: 必須項目です
+    EmailFormat:
+      rule: pattern
+      value: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+      message: メールアドレスの形式が正しくありません

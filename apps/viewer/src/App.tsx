@@ -125,8 +125,13 @@ export function App() {
   const current = selected === 'overview' ? undefined : screens.find((s) => s.id === selected)
   const nq = navFilter.trim().toLowerCase()
   const navScreens = nq
-    ? screens.filter((s) => s.id.toLowerCase().includes(nq) || s.name.toLowerCase().includes(nq))
+    ? screens.filter((s) => s.id.toLowerCase().includes(nq) || s.name.toLowerCase().includes(nq) || s.group?.toLowerCase().includes(nq))
     : screens
+  const navGroups = [...navScreens.reduce((groups, screen) => {
+    const group = screen.group?.trim() || 'その他'
+    groups.set(group, [...(groups.get(group) ?? []), screen])
+    return groups
+  }, new Map<string, ScreenView[]>())]
 
   return (
     <>
@@ -173,16 +178,23 @@ export function App() {
                 概要
               </button>
             </li>
-            {navScreens.map((s) => (
-              <li key={s.id}>
-                <button
-                  className={selected === s.id ? 'nav-item active' : 'nav-item'}
-                  aria-current={selected === s.id ? 'page' : undefined}
-                  onClick={() => selectScreen(s.id)}
-                >
-                  {s.name || s.id}
-                  {!s.valid ? <span className="badge badge-ng nav-badge">エラー {s.issueCount}</span> : null}
-                </button>
+            {navGroups.map(([group, groupScreens]) => (
+              <li className="nav-group" key={group}>
+                <p className="nav-group-label">{group}<span>{groupScreens.length}</span></p>
+                <ul>
+                  {groupScreens.map((s) => (
+                    <li key={s.id}>
+                      <button
+                        className={selected === s.id ? 'nav-item active' : 'nav-item'}
+                        aria-current={selected === s.id ? 'page' : undefined}
+                        onClick={() => selectScreen(s.id)}
+                      >
+                        {s.name || s.id}
+                        {!s.valid ? <span className="badge badge-ng nav-badge">エラー {s.issueCount}</span> : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </li>
             ))}
           </ul>
@@ -240,6 +252,7 @@ export function App() {
                   <tr>
                     <th>id</th>
                     <th>名前</th>
+                    <th>グループ</th>
                     <th>route</th>
                     <th>検証</th>
                   </tr>
@@ -253,6 +266,7 @@ export function App() {
                         </button>
                       </td>
                       <td>{s.name}</td>
+                      <td>{s.group ?? <span className="muted">その他</span>}</td>
                       <td>{s.route ? <code>{s.route}</code> : <span className="muted">—</span>}</td>
                       <td>
                         {s.valid ? (

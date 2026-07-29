@@ -44,6 +44,10 @@ _Avoid_: Composite Field, Widget, React Component
 UI Componentを特定Screenへ配置し、内部Fieldの値・属性と`eventId`を画面固有のData・Eventへ接続した利用実体。
 _Avoid_: Component Usage, Widget
 
+**Screen Group**:
+複数のScreen Specificationを業務上のまとまりとして分類する名前。URL階層やファイル配置とは独立する。
+_Avoid_: Folder, Route Group, Module
+
 **Screen Elements**:
 Layoutの定義順にScreen直下のFieldとComponent Instance、その内部Fieldを並べた画面構造の読み取り表現。
 _Avoid_: Field List（Component Instanceを含む場合）, Screen Outline

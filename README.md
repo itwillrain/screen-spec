@@ -33,10 +33,10 @@ npm install
 ## 検証（CLI）
 
 ```bash
-npm run validate examples/user-edit.screen.yaml
-npm run validate examples/user-edit.screen.yaml examples/user-list.screen.yaml examples/user-edit.fixtures.yaml
-npm run testgen -- examples/user-edit.screen.yaml --test-data examples/user-edit.fixtures.yaml --format markdown
-npm run testgen -- examples/user-edit.screen.yaml --test-data examples/user-edit.fixtures.yaml --format csv --output user-edit-tests.csv
+npm run validate examples/pages/users/edit.screen.yaml
+npm run validate examples/pages/users/edit.screen.yaml examples/pages/users/list.screen.yaml examples/fixtures/users/edit.fixtures.yaml
+npm run testgen -- examples/pages/users/edit.screen.yaml --test-data examples/fixtures/users/edit.fixtures.yaml --format markdown
+npm run testgen -- examples/pages/users/edit.screen.yaml --test-data examples/fixtures/users/edit.fixtures.yaml --format csv --output user-edit-tests.csv
 npm test
 npm run typecheck
 ```

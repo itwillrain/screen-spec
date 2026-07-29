@@ -1,42 +1,56 @@
-// ブラウザが fetch できるよう、リポジトリの examples/*.yaml を public/specs/ へコピーする。
+// ブラウザが fetch できるよう、リポジトリの examples/ を public/specs/ へコピーする。
 // examples/ を正本とし、viewer 側はビルド成果物に取り込むだけ（重複管理を避ける）。
-import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const examplesDir = resolve(here, "../../../examples");
-const outDir = resolve(here, "../public/specs");
+const defaultExamplesDir = resolve(here, "../../../examples");
+const defaultOutDir = resolve(here, "../public/specs");
 
-mkdirSync(outDir, { recursive: true });
-
-// examples/ 直下の yaml をコピー（common.yaml や *.screen.yaml など）
-for (const name of readdirSync(examplesDir)) {
-  if (name.endsWith(".yaml") || name.endsWith(".yml")) {
-    cpSync(resolve(examplesDir, name), resolve(outDir, name));
-  }
-}
-// 参照される OpenAPI などのサブディレクトリも丸ごとコピー
-for (const name of readdirSync(examplesDir, { withFileTypes: true })) {
-  if (name.isDirectory()) {
-    cpSync(resolve(examplesDir, name.name), resolve(outDir, name.name), { recursive: true });
-  }
+function relativeUrl(root, path) {
+  return relative(root, path).split(sep).join("/");
 }
 
-// 画面ファイル（*.screen.yaml）のマニフェストを生成（負のテスト用 invalid.* は除外）
-const screens = readdirSync(examplesDir)
-  .filter((n) => n.endsWith(".screen.yaml") && !n.includes("invalid"))
-  .sort();
-writeFileSync(resolve(outDir, "manifest.json"), JSON.stringify(screens, null, 2));
+function yamlFiles(root, directory = root) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = resolve(directory, entry.name);
+    if (entry.isDirectory()) return yamlFiles(root, path);
+    return /\.ya?ml$/.test(entry.name) ? [relativeUrl(root, path)] : [];
+  });
+}
 
-const testData = readdirSync(examplesDir)
-  .filter((n) => n.endsWith(".fixtures.yaml") && !n.includes("invalid"))
-  .sort();
-writeFileSync(resolve(outDir, "test-data-manifest.json"), JSON.stringify(testData, null, 2));
+export function discoverSpecFiles(root) {
+  const yaml = yamlFiles(root).filter((path) => !path.split("/").some((part) => part.includes("invalid")));
+  return {
+    screens: yaml.filter((path) => path.endsWith(".screen.yaml")).sort(),
+    testData: yaml.filter((path) => path.endsWith(".fixtures.yaml")).sort(),
+    components: yaml
+      .filter((path) => {
+        const source = readFileSync(resolve(root, path), "utf8");
+        return /^specVersion:\s*/m.test(source) && /^components:\s*$/m.test(source);
+      })
+      .sort(),
+  };
+}
 
-const components = readdirSync(examplesDir)
-  .filter((n) => /\.ya?ml$/.test(n) && !n.includes("invalid") && /^components:\s*$/m.test(readFileSync(resolve(examplesDir, n), "utf8")))
-  .sort();
-writeFileSync(resolve(outDir, "component-manifest.json"), JSON.stringify(components, null, 2));
+export function copySpecs(examplesDir = defaultExamplesDir, outDir = defaultOutDir) {
+  rmSync(outDir, { recursive: true, force: true });
+  mkdirSync(outDir, { recursive: true });
 
-console.log(`[copy-specs] copied specs and wrote manifests (${screens.length} screens, ${testData.length} testData, ${components.length} component documents)`);
+  for (const entry of readdirSync(examplesDir, { withFileTypes: true })) {
+    cpSync(resolve(examplesDir, entry.name), resolve(outDir, entry.name), { recursive: entry.isDirectory() });
+  }
+
+  const manifests = discoverSpecFiles(examplesDir);
+  writeFileSync(resolve(outDir, "manifest.json"), JSON.stringify(manifests.screens, null, 2));
+  writeFileSync(resolve(outDir, "test-data-manifest.json"), JSON.stringify(manifests.testData, null, 2));
+  writeFileSync(resolve(outDir, "component-manifest.json"), JSON.stringify(manifests.components, null, 2));
+
+  return manifests;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const manifests = copySpecs();
+  console.log(`[copy-specs] copied specs and wrote manifests (${manifests.screens.length} screens, ${manifests.testData.length} testData, ${manifests.components.length} component documents)`);
+}

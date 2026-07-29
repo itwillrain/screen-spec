@@ -8,5 +8,5 @@ screen:
   name: だめな画面
   fields:
     Email:
-      $ref: "./common.yaml#/components/fields/EmailField"
+      $ref: "../../components/fields.yaml#/components/fields/EmailField"
       label: これは上書きのつもり
