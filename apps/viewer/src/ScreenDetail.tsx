@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type KeyboardEvent } from 'react'
 import { FieldReviewWorkspace } from './FieldReviewWorkspace'
 import { EventFlowDiagram } from './EventFlowDiagram'
+import { CodeHighlight } from './CodeHighlight'
 import { testItemsToCsv, testItemsToMarkdown } from '@screen-spec/core'
 import { StateDiagram } from './StateDiagram'
 import type { AccessControlView, EventOutcomeView, ExpectationView, ScreenView } from './screen-view'
@@ -156,7 +157,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, o
       {active === 'tests' ? <TestItemsTab screen={screen} /> : null}
       {active === 'raw' ? (
         <section>
-          <pre className="raw">{screen.rawText}</pre>
+          <pre className="raw"><code><CodeHighlight source={screen.rawText}/></code></pre>
         </section>
       ) : null}
       </div>

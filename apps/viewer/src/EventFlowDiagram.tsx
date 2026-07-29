@@ -62,7 +62,7 @@ function toMermaid(event: EventView, direction: "LR" | "TB" = "LR"): string {
     completions(trigger, { to: event.to, expects: event.expects }, event.onSuccess, event.onError)
   }
   lines.push(
-    '  classDef trigger fill:#f1f7f6,stroke:#3f8f89,color:#204f4d;',
+    '  classDef trigger fill:#f0faf5,stroke:#059669,color:#064e3b;',
     '  classDef decision fill:#fff7ed,stroke:#f59e0b,color:#7c2d12;',
     '  classDef action fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a;',
     '  classDef result fill:#f8fafc,stroke:#94a3b8,color:#334155;',

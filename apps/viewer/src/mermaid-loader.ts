@@ -26,10 +26,25 @@ export function getMermaid(): Promise<Mermaid> {
 }
 
 /** Mermaid/ELK は同時 render で内部状態が競合するため、アプリ内の描画を直列化する。 */
+function preserveDiagramScale(svg: string): string {
+  const viewBox = svg.match(/viewBox="[\d.-]+[ ,]+[\d.-]+[ ,]+([\d.]+)[ ,]+([\d.]+)"/)
+  if (!viewBox) return svg
+  const width = Math.ceil(Number(viewBox[1]))
+  const height = Math.ceil(Number(viewBox[2]))
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return svg
+  return svg.replace(/<svg\b[^>]*>/, (tag) =>
+    tag
+      .replace(/\s(?:width|height)="[^"]*"/g, "")
+      .replace(/\sstyle="[^"]*"/, "")
+      .replace(/>$/, " width=\"" + width + "\" height=\"" + height + "\">")
+  )
+}
+
 export function renderMermaid(id: string, graph: string) {
   const job = renderQueue.then(async () => {
     const mermaid = await getMermaid()
-    return mermaid.render(id, graph)
+    const result = await mermaid.render(id, graph)
+    return { ...result, svg: preserveDiagramScale(result.svg) }
   })
   renderQueue = job.then(() => undefined, () => undefined)
   return job
