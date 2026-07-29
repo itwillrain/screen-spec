@@ -80,12 +80,14 @@ components:
         body: { type: string }
         status: { type: string, enum: [draft, scheduled, published, archived] }
         channel: { type: string, enum: [web, email, push] }
+        deliveryTiming: { type: string, enum: [now, scheduled] }
         publishAt: { type: string, format: date-time }
     NotificationInput:
       type: object
-      required: [title, body, channel]
+      required: [title, body, channel, deliveryTiming]
       properties:
         title: { type: string }
         body: { type: string }
         channel: { type: string, enum: [web, email, push] }
+        deliveryTiming: { type: string, enum: [now, scheduled] }
         publishAt: { type: string, format: date-time }

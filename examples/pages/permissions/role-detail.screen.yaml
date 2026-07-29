@@ -21,7 +21,13 @@ screen:
     description: { label: 説明, type: label }
     userCount: { label: 利用者数, type: label }
     permissionCount: { label: Permission数, type: label }
-    showUsersButton: { label: 利用者表示ボタン, type: button, text: このRoleのユーザーを見る, eventId: showUsers }
+    showUsersButton:
+      label: 利用者表示ボタン
+      type: button
+      text: このRoleのユーザーを見る
+      eventId: showUsers
+      visibleWhen: fields.userCount > 0
+      enabledWhen: fields.userCount > 0
     backButton: { label: 一覧へ戻るボタン, type: button, text: 一覧へ戻る, eventId: back }
   data:
     permissionRows:

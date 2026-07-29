@@ -10,7 +10,7 @@ screen:
       notificationId: { type: string, required: false, description: 新規作成時は未指定 }
   layout:
     sections:
-      - { id: content, title: お知らせ内容, region: body, fields: [title, body, channel, publishAt] }
+      - { id: content, title: お知らせ内容, region: body, fields: [title, body, channel, deliveryTiming, publishAt] }
       - { id: actions, title: 操作, region: body, fields: [previewButton, saveButton, cancelButton] }
   fields:
     title:
@@ -19,13 +19,14 @@ screen:
       required: true
       validations:
         - $ref: "../../components/validations.yaml#/components/validations/Required"
-        - { rule: maxLength, value: 100, message: 100文字以内で入力してください }
+        - { rule: maxLength, value: 100, message: タイトルは100文字以内で入力してください }
     body:
       label: 本文
       type: textarea
       required: true
       validations:
         - $ref: "../../components/validations.yaml#/components/validations/Required"
+        - { rule: maxLength, value: 5000, message: 本文は5000文字以内で入力してください }
     channel:
       label: 配信先
       type: select
@@ -33,9 +34,30 @@ screen:
         - { value: web, label: Web }
         - { value: email, label: メール }
         - { value: push, label: プッシュ通知 }
-    publishAt: { label: 公開日時, type: date }
+      validations:
+        - { rule: required, message: 配信先を選択してください }
+    deliveryTiming:
+      label: 公開タイミング
+      type: radio
+      default: now
+      options:
+        - { value: now, label: 保存後すぐに公開 }
+        - { value: scheduled, label: 日時を指定して公開 }
+      validations:
+        - { rule: required, message: 公開タイミングを選択してください }
+    publishAt:
+      label: 公開日時
+      type: date
+      visibleWhen: fields.deliveryTiming == "scheduled"
+      validations:
+        - { rule: minDate, value: now, message: 公開日時は現在より後の日時を指定してください }
     previewButton: { label: プレビューボタン, type: button, text: プレビュー, eventId: preview }
-    saveButton: { label: 保存ボタン, type: button, text: 保存する, eventId: save }
+    saveButton:
+      label: 保存ボタン
+      type: button
+      text: 保存する
+      eventId: save
+      enabledWhen: fields.title != "" && fields.body != "" && fields.channel != ""
     cancelButton: { label: キャンセルボタン, type: button, text: キャンセル, eventId: cancel }
   states:
     editing: { name: 編集中, initial: true }
@@ -52,7 +74,7 @@ screen:
       from: editing
       branches:
         - id: schedule
-          when: fields.publishAt != null
+          when: fields.deliveryTiming == "scheduled"
           to: submitting
           action: { apiCall: updateNotification }
           onSuccess:
@@ -80,6 +102,7 @@ screen:
           title: "{fields.title}"
           body: "{fields.body}"
           channel: "{fields.channel}"
+          deliveryTiming: "{fields.deliveryTiming}"
           publishAt: "{fields.publishAt}"
       response:
         mapping:

@@ -17,6 +17,8 @@ screen:
       label: キーワード
       type: text
       placeholder: タイトルまたは本文を検索
+      validations:
+        - { rule: maxLength, value: 100, message: 検索キーワードは100文字以内で入力してください }
     status:
       label: 公開状態
       type: select

@@ -13,7 +13,12 @@ screen:
         region: body
         items: [{ component: roleTable }]
   fields:
-    keyword: { label: Role名, type: text, placeholder: Role名を検索 }
+    keyword:
+      label: Role名
+      type: text
+      placeholder: Role名を検索
+      validations:
+        - { rule: maxLength, value: 50, message: Role名は50文字以内で入力してください }
     searchButton: { label: 検索ボタン, type: button, text: 検索する, eventId: search }
   data:
     roleRows:
