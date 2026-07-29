@@ -811,7 +811,7 @@ html[data-theme="dark"] :where(.design-pane-sticky, .field-list-sticky) { backgr
 .field-filters .filter { flex: 1 1 16rem; margin: 0; }
 .field-filters select { min-height: 2.55rem; padding: .45rem; border: 1px solid #c7d2fe; border-radius: 6px; background: #fff; font: inherit; }
 .field-filters label { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
-.review-fields { min-width: 68rem; }
+.review-fields { min-width: 60rem; }
 .review-fields :is(th, td):first-child { min-width: 17rem; white-space: nowrap; }
 .review-fields :is(th, td):nth-child(2) { min-width: 12rem; }
 .review-fields tbody tr:not(.section-group-row) { cursor: pointer; }
@@ -820,7 +820,7 @@ html[data-theme="dark"] :where(.design-pane-sticky, .field-list-sticky) { backgr
 .review-fields tbody tr.design-linked-hover { background: #eef2ff; box-shadow: inset 4px 0 #818cf8; }
 .review-fields tbody tr.tour-focused { background: #e0e7ff; box-shadow: inset 4px 0 #4f46e5, inset 0 0 0 1px #a5b4fc; }
 .tour-row-number { display: inline-grid; place-items: center; min-width: 1.35rem; height: 1.35rem; margin-right: .3rem; border-radius: 999px; background: #4f46e5; color: #fff; font-size: .7rem; font-weight: 700; vertical-align: middle; }
-.review-fields td:last-child .badge + .badge { margin-left: .3rem; }
+.row-label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
 .field-type { margin: 0; border: 1px solid transparent; font-weight: 700; }
 .type-text, .type-textarea { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
 .type-email { border-color: #a5f3fc; background: #ecfeff; color: #0e7490; }
@@ -999,8 +999,24 @@ body:has(.field-detail) {
   overscroll-behavior: none;
 }
 .field-detail-backdrop { position: fixed; z-index: 29; inset: 0; padding: 0; border: 0; background: rgb(15 23 42 / .22); cursor: default; overscroll-behavior: none; touch-action: none; }
-.field-detail-navigation { position: fixed; z-index: 32; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: min(var(--field-drawer-width, 32rem), calc(100vw - 4rem)); padding: .65rem 1rem; border-top: 1px solid #e5e7eb; background: #fff; box-shadow: 0 -6px 18px rgb(15 23 42 / .08); }
+.field-detail-navigation {
+  position: fixed;
+  z-index: 32;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: .75rem;
+  width: min(var(--field-drawer-width, 32rem), calc(100vw - 4rem));
+  padding: .65rem 1rem calc(.65rem + env(safe-area-inset-bottom));
+  border-top: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 -6px 18px rgb(15 23 42 / .08);
+}
 .field-detail-navigation button { min-height: 2.25rem; padding: .35rem .65rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #3730a3; font: inherit; cursor: pointer; }
+.field-detail-navigation button:last-child { justify-self: end; }
 .field-detail-navigation button:disabled { opacity: .4; cursor: not-allowed; }
 .field-detail-navigation span { color: #64748b; font-size: .8rem; font-variant-numeric: tabular-nums; }
 html[data-theme="dark"] .field-detail-navigation { border-color: #3a4656; background: #141a23; }
@@ -1013,7 +1029,8 @@ html[data-theme="dark"] .field-detail-navigation button { border-color: #3a4656;
   width: min(var(--field-drawer-width, 32rem), calc(100vw - 4rem));
   height: 100dvh;
   margin-top: 0;
-  padding-bottom: 5rem;
+  padding-top: 0;
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
   overscroll-behavior-y: contain;
   scrollbar-gutter: stable;
   overflow-y: auto;
@@ -1048,8 +1065,8 @@ html[data-theme="dark"] .field-detail-navigation button { border-color: #3a4656;
   position: sticky;
   z-index: 1;
   top: 0;
-  margin: -1rem -1rem 0;
-  padding: 1rem;
+  margin: 0;
+  padding: 1rem 0;
   background: #fff;
 }
 .field-detail > header + * {
@@ -1068,6 +1085,10 @@ html[data-theme="dark"] .field-detail > header {
 }
 @media (max-width: 760px) {
   .field-detail {
+    width: 100%;
+    border-left: 0;
+  }
+  .field-detail-navigation {
     width: 100%;
     border-left: 0;
   }
