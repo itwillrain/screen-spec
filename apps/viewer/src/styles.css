@@ -1077,7 +1077,7 @@ html[data-theme="dark"] .field-detail > header {
 .component-link { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; padding: .65rem .75rem; text-align: left; border: 1px solid var(--border); border-radius: .5rem; background: transparent; color: inherit; }
 .component-link:hover, .component-link:focus-visible { border-color: #4f46e5; }
 .component-link > span { color: var(--muted); font-size: .8rem; text-transform: capitalize; }
-.component-contract { max-height: 22rem; overflow: auto; padding: .75rem; border: 1px solid var(--border); border-radius: .5rem; background: var(--surface, rgb(127 127 127 / .06)); white-space: pre-wrap; overflow-wrap: anywhere; }
+.component-contract { max-height: 22rem; overflow: auto; padding: .75rem; border: 0; border-radius: .5rem; background: #0b1021; color: #e5e7eb; white-space: pre-wrap; overflow-wrap: anywhere; }
 .field-detail nav[aria-label="詳細のパンくず"] { margin-bottom: .4rem; color: var(--muted); font-size: .85rem; }
 
 
@@ -1096,7 +1096,7 @@ html[data-theme="dark"] .drawer-icon-button { border-color: #3a4656; background:
 html[data-theme="dark"] .drawer-icon-button:hover { background: #202a36; color: #fff; }
 .component-usage-list { display: grid; gap: .45rem; padding: 0; list-style: none; }
 .component-usage-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid var(--border); }
-.contract-inline { padding: .65rem; border: 1px solid var(--border); border-radius: .5rem; white-space: pre-wrap; }
+.contract-inline { padding: .65rem; border: 0; border-radius: .5rem; background: #0b1021; color: #e5e7eb; white-space: pre-wrap; }
 .options-contract-scroll { max-height: 22rem; overflow: auto; margin-top: .75rem; }
 .field-detail details { margin-top: .75rem; }
 .field-detail summary { cursor: pointer; font-weight: 600; }
