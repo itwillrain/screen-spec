@@ -248,9 +248,19 @@ pre.raw {
 .editor-property-name { color: #475569; font-size: .8rem; font-weight: 700; }
 .editor-property :is(textarea, input, select) { width: 100%; padding: .45rem; border: 1px solid #cbd5e1; border-radius: 5px; font: inherit; }
 .editor-row-actions { display: flex; gap: .25rem; }
-.editor-yaml { width: 100%; min-height: 65vh; padding: 1rem; border: 0; border-radius: 7px; background: #0b1021; color: #e5e7eb; font: .85rem/1.5 ui-monospace, monospace; tab-size: 2; }
+.code-editor { position: relative; }
+.code-editor-highlight, .code-editor-input { margin: 0; padding: 1rem; border: 0; font: .85rem/1.5 ui-monospace, monospace; tab-size: 2; white-space: pre-wrap; word-break: break-word; }
+.code-editor-highlight { overflow: auto; border-radius: 7px; background: #0b1021; color: #e5e7eb; }
+.code-editor-input { position: absolute; inset: 0; width: 100%; height: 100%; overflow: auto; resize: none; background: transparent; color: transparent; caret-color: #e5e7eb; }
+.editor-yaml .code-editor-highlight { min-height: 65vh; }
 .editor-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; min-width: 0; }
-.editor-diff pre { max-height: 65vh; overflow: auto; padding: .75rem; background: #0b1021; color: #e5e7eb; white-space: pre; }
+.editor-diff pre { max-height: 65vh; margin: 0; overflow: auto; padding: .75rem; border-radius: 7px; background: #0b1021; color: #e5e7eb; white-space: pre-wrap; word-break: break-word; font: .85rem/1.5 ui-monospace, monospace; tab-size: 2; }
+.tok-comment { color: #64748b; font-style: italic; }
+.tok-key { color: #93c5fd; }
+.tok-string { color: #86efac; }
+.tok-number { color: #fca5a5; }
+.tok-boolean { color: #c4b5fd; }
+.tok-punct, .tok-dash { color: #94a3b8; }
 .screen-editor > footer { position: fixed; z-index: 20; right: 0; bottom: 0; left: 16rem; display: flex; justify-content: flex-end; align-items: center; gap: .75rem; padding: .75rem 2rem; border-top: 1px solid #dbe3ee; background: #fff; }
 .sidebar-collapsed .screen-editor > footer { left: 4.5rem; }
 @media (max-width: 760px) { .editor-toolbar { align-items: stretch; flex-direction: column; } .editor-current-file { order: -1; } .editor-diff { grid-template-columns: 1fr; } .screen-editor > footer { left: 0; padding: .65rem; } .editor-property, .editor-row { grid-template-columns: 1fr; } }

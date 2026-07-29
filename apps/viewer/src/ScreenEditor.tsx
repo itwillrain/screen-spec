@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { parseYaml, stringifyYaml, validateSpec, type DocumentLoader, type ValidateResult } from "@screen-spec/core"
 import { fetchLoader, type ScreenView } from "./screen-view"
+import { CodeEditor, CodeHighlight } from "./CodeHighlight"
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 type EditorMode = "form" | "yaml" | "diff"
@@ -111,8 +112,8 @@ export function ScreenEditor({ screen, onClose }: { screen: ScreenView; onClose:
     <div className="editor-toolbar"><nav className="editor-tabs" aria-label="編集モード">{(["form", "yaml", "diff"] as const).map((item) => <button type="button" className={mode === item ? "active" : ""} onClick={() => setMode(item)} key={item}>{item === "form" ? "構造編集" : item === "yaml" ? "YAML" : "差分"}</button>)}</nav><span className="editor-current-file">{activeDocument.uri}</span></div>
     <div className="editor-validation" role="status"><strong>{validation?.valid ? "検証OK" : `${validation?.issues.length ?? 0}件のエラー`}</strong>{validation?.issues.slice(0, 5).map((issue) => <span key={issue.stage + issue.path + issue.message}><code>{issue.path}</code> {issue.message}</span>)}{validation?.warnings.slice(0, 3).map((issue) => <span className="warning" key={issue.stage + issue.path + issue.message}><code>{issue.path}</code> {issue.message}</span>)}</div>
     {activeDocument.error ? <p className="warnings">{activeDocument.error}</p> : mode === "form" ? parsed !== undefined && isObject(parsed) ? <><nav className="editor-sections" aria-label="編集する仕様セクション">{sections.map((name) => <button type="button" className={activeSection === name ? "active" : ""} onClick={() => setSection(name)} key={name}>{name}</button>)}</nav>{activeSection ? <ValueEditor value={parsed[activeSection]} path={[activeSection]} onChange={(path, value) => setRaw(stringifyYaml(updateAt(parsed, path, value)))}/> : null}</> : <p className="warnings">YAMLを解析できません。YAMLタブで修正してください。</p> : null}
-    {mode === "yaml" ? <textarea className="editor-yaml" aria-label="YAMLを編集" value={raw} onChange={(event) => setRaw(event.target.value)}/> : null}
-    {mode === "diff" ? <div className="editor-diff"><section><h2>変更前</h2><pre>{activeDocument.original}</pre></section><section><h2>変更後</h2><pre>{raw}</pre></section></div> : null}
+    {mode === "yaml" ? <CodeEditor className="editor-yaml" ariaLabel="YAMLを編集" value={raw} onChange={setRaw}/> : null}
+    {mode === "diff" ? <div className="editor-diff"><section><h2>変更前</h2><pre><code><CodeHighlight source={activeDocument.original}/></code></pre></section><section><h2>変更後</h2><pre><code><CodeHighlight source={raw}/></code></pre></section></div> : null}
     <footer><span>{changedDocuments.length ? "Browser Draft保存済み" : "変更なし"}</span><button type="button" disabled={raw === activeDocument.original} onClick={reset}>このファイルの変更を破棄</button><button type="button" disabled={!validation?.valid || activeDocument.loading} onClick={download}>{fileName(activeDocument.uri)}をダウンロード</button></footer>
   </section>
 }
