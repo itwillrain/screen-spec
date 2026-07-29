@@ -12,6 +12,21 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await page.goto("/?screen=user-list");
 
   await expect(page.getByRole("heading", { level: 1, name: "ユーザー一覧画面" })).toBeVisible();
+  await page.getByRole("button", { name: "編集", exact: true }).click();
+  await expect(page.getByText("screen-spec editor")).toBeVisible();
+  await expect(page.getByRole("button", { name: "fields", exact: true })).toBeVisible();
+  const relatedDocument = page.getByRole("button", { name: /関連 · common\.yaml/ });
+  await expect(relatedDocument).toBeVisible();
+  await relatedDocument.click();
+  await expect(page.getByRole("button", { name: "components", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /画面 · user-list\.screen\.yaml/ }).click();
+  await page.getByRole("button", { name: "YAML", exact: true }).click();
+  const yamlEditor = page.getByRole("textbox", { name: "YAMLを編集" });
+  await expect(yamlEditor).toContainText("screenSpec:");
+  await yamlEditor.fill((await yamlEditor.inputValue()).replace("ユーザー一覧画面", "ユーザー一覧画面（編集中）"));
+  await expect(page.getByText("検証OK")).toBeVisible();
+  await page.getByRole("button", { name: "Viewerへ戻る" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "ユーザー一覧画面" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "読み込みエラー" })).toHaveCount(0);
   await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
   await expect.poll(() => page.locator(".design-viewport").evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");

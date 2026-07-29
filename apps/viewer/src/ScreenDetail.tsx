@@ -10,9 +10,10 @@ interface Props {
   screenIds: string[]
   onNavigate: (screenId: string) => void
   onNavigateField: (screenId: string, fieldId: string) => void
+  onEdit: () => void
 }
 
-export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }: Props) {
+export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField, onEdit }: Props) {
   const tabs = [
     { id: 'fields', label: '項目', show: true },
     { id: 'params', label: 'パラメータ', show: !!screen.params },
@@ -80,6 +81,7 @@ export function ScreenDetail({ screen, screenIds, onNavigate, onNavigateField }:
         <div className="screen-title-row">
           <h1>{screen.name}</h1>
           {screen.valid ? <span className="badge badge-ok">valid</span> : <span className="badge badge-ng">{screen.issueCount} issue(s)</span>}
+          <button type="button" className="edit-screen-button" onClick={onEdit}>編集</button>
         </div>
         {screen.description ? <p className="muted screen-description">{screen.description}</p> : null}
         <dl className="screen-meta">

@@ -3,6 +3,7 @@ import { analyzeProject } from '@screen-spec/core'
 import { loadAllScreens, fetchLoader, type ScreenView } from './screen-view'
 import { ScreenDetail } from './ScreenDetail'
 import { ScreenGraph } from './ScreenGraph'
+import { ScreenEditor } from './ScreenEditor'
 
 type State =
   | { status: 'loading' }
@@ -40,7 +41,15 @@ export function App() {
   const [navFilter, setNavFilter] = useState('')
   const [navOpen, setNavOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("screen-spec-sidebar-collapsed") === "true")
+  const [editing, setEditing] = useState(() => new URLSearchParams(window.location.search).get("mode") === "edit")
   const mainRef = useRef<HTMLElement>(null)
+
+  const setEditMode = (next: boolean) => {
+    setEditing(next)
+    const url = new URL(window.location.href)
+    next ? url.searchParams.set("mode", "edit") : url.searchParams.delete("mode")
+    window.history.pushState(null, "", url)
+  }
 
   const toggleSidebar = () => {
     const next = !sidebarCollapsed
@@ -50,7 +59,9 @@ export function App() {
 
   const selectScreen = (selection: Selection) => {
     setSelected(selection)
+    setEditing(false)
     const url = new URL(window.location.href)
+    url.searchParams.delete("mode")
     if (selection === "overview") url.searchParams.delete("screen")
     else url.searchParams.set("screen", selection)
     url.searchParams.delete("field")
@@ -70,6 +81,12 @@ export function App() {
     url.searchParams.delete("component")
     window.history.replaceState(null, "", url)
   }
+
+  useEffect(() => {
+    const restoreMode = () => setEditing(new URLSearchParams(window.location.search).get("mode") === "edit")
+    window.addEventListener("popstate", restoreMode)
+    return () => window.removeEventListener("popstate", restoreMode)
+  }, [])
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL
@@ -174,13 +191,16 @@ export function App() {
       </nav>
 
       <main id="main-content" className="page" ref={mainRef} tabIndex={-1}>
-        {current ? (
+        {current && editing ? (
+          <ScreenEditor screen={current} onClose={() => setEditMode(false)} />
+        ) : current ? (
           <ScreenDetail
             key={current.id}
             screen={current}
             screenIds={screens.map((s) => s.id)}
             onNavigate={(id) => selectScreen(id)}
             onNavigateField={navigateField}
+            onEdit={() => setEditMode(true)}
           />
         ) : (
           <>

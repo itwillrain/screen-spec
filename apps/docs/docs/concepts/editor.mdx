@@ -1,0 +1,19 @@
+---
+title: Editor
+description: screen-specをブラウザで編集し、Git管理へ渡すためのEditor
+---
+
+# Editor
+
+各画面の「編集」からEditorを開けます。Editorは元のYAMLを正本として扱い、`$ref`を失わずに編集します。画面がローカル相対参照するYAMLも「関連ファイル」として読み込み、同じEditor内で切り替えられます。
+
+- 構造編集: YAMLのトップレベル機能ごとに、値・配列・オブジェクトを編集
+- YAML: 全機能を直接編集
+- 差分: 変更前後を並べて確認
+- Draft: ブラウザのlocalStorageへ自動保存
+- 検証: 画面と関連ファイルのDraftをまとめて参照解決し、screen-spec schemaと意味規則で検証
+- 出力: 選択中の検証済みYAMLをファイル単位でダウンロード
+
+Editorはリポジトリへ直接書き込みません。ダウンロードしたYAMLをGit管理へ渡すのが現在の保存境界です。将来のGitHub連携では、この境界をブランチ・commit・Pull Request作成へ置き換えます。
+
+配列は追加・削除・並べ替え、オブジェクトはプロパティの追加・削除に対応します。これにより、Fieldsだけでなくlayout、UI Component Instance、states、events、data、API Binding、transitions、access control、design mappingを含むscreen document全体を編集できます。
