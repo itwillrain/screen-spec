@@ -794,6 +794,8 @@ html[data-theme="dark"] :where(.design-pane-sticky, .field-list-sticky) { backgr
 @media (prefers-color-scheme: dark) { html[data-theme="system"] :where(.design-pane-sticky, .field-list-sticky) { background: #0f141c; border-color: #3a4656; } }
 .design-pane-sticky > header, .field-detail > header, .related-event > header, .detail-section-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .design-reference h2, .field-detail h2, .field-detail h3, .related-event h4 { margin: 0; }
+.drawer-title { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.drawer-title .field-type { flex: 0 0 auto; font-size: .72rem; }
 .design-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: .75rem 0; }
 .design-tools button, .design-tools a, .field-detail > header button { min-height: 2.25rem; padding: .3rem .55rem; border: 1px solid #cbd5e1; border-radius: 5px; background: #fff; color: #1f2937; font: inherit; cursor: pointer; }
 .design-viewport { height: auto; overflow: hidden; border: 1px solid #dbe3ee; border-radius: 7px; background: #eef1f5; cursor: default; }
