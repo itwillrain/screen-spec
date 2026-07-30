@@ -1,5 +1,20 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildScreenView } from './screen-view'
+import { writeClipboardText } from './FieldReviewWorkspace'
+
+describe("copy feedback", () => {
+  it("Clipboardへの書き込みが完了した時だけ成功を返す", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+
+    await expect(writeClipboardText("placeholder", { writeText })).resolves.toBe(true)
+    expect(writeText).toHaveBeenCalledWith("placeholder")
+  })
+
+  it("Clipboardが利用できないか書き込みに失敗した場合は成功扱いにしない", async () => {
+    await expect(writeClipboardText("placeholder", undefined)).resolves.toBe(false)
+    await expect(writeClipboardText("placeholder", { writeText: vi.fn().mockRejectedValue(new Error("denied")) })).resolves.toBe(false)
+  })
+})
 
 const spec = `specVersion: "0.1"
 screen:

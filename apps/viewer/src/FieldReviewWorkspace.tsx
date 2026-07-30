@@ -38,30 +38,57 @@ function TypeLabel({ value }: { value: string }) {
   return <span className={"badge field-type type-" + typeClass}>{value}</span>
 }
 
-function CopyableText({ value, className, codeBlock = false }: { value: string; className?: string; codeBlock?: boolean }) {
-  const [copied, setCopied] = useState(false)
-  const copy = async (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-    await navigator.clipboard?.writeText(value)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1200)
+type ClipboardWriter = { writeText: (value: string) => Promise<void> }
+
+export async function writeClipboardText(value: string, clipboard: ClipboardWriter | undefined = navigator.clipboard): Promise<boolean> {
+  if (!clipboard) return false
+  try {
+    await clipboard.writeText(value)
+    return true
+  } catch {
+    return false
   }
-  return <span className={`copyable-text${className ? ` ${className}` : ""}`}>
+}
+
+function CopyIcon({ copied }: { copied: boolean }) {
+  return copied
+    ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+    : <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" /></svg>
+}
+
+function CopyButton({ value, label, className = "copy-text-button", stopPropagation = false }: { value: string; label: string; className?: string; stopPropagation?: boolean }) {
+  const [copied, setCopied] = useState(false)
+  const resetTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(resetTimer.current), [])
+
+  const copy = async (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (stopPropagation) event.stopPropagation()
+    if (!await writeClipboardText(value)) return
+    window.clearTimeout(resetTimer.current)
+    setCopied(true)
+    resetTimer.current = window.setTimeout(() => setCopied(false), 1200)
+  }
+
+  return <button type="button" className={className} aria-label={label} title={label} data-copied={copied || undefined} onClick={(event) => void copy(event)}>
+    <CopyIcon copied={copied} />
+    <span className="sr-only" aria-live="polite">{copied ? "コピーしました" : ""}</span>
+  </button>
+}
+
+function CopyableText({ value, className, codeBlock = false }: { value: string; className?: string; codeBlock?: boolean }) {
+  return <span className={["copyable-text", className].filter(Boolean).join(" ")}>
     {codeBlock ? <code><CodeHighlight source={value}/></code> : <span>{value}</span>}
-    <button type="button" className="copy-text-button" aria-label={`「${value}」をコピー`} title={copied ? "コピーしました" : "コピー"} data-copied={copied || undefined} onClick={(event) => void copy(event)}>
-      {copied ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" /></svg>}
-      <span className="sr-only" aria-live="polite">{copied ? "コピーしました" : ""}</span>
-    </button>
+    <CopyButton value={value} label={"「" + value + "」をコピー"} stopPropagation />
   </span>
 }
 
-function DrawerIcon({ name }: { name: "back" | "close" | "copy" }) {
+function DrawerIcon({ name }: { name: "back" | "close" }) {
   if (name === "back") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-  if (name === "close") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" /></svg>
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
 }
 
-function DrawerIconButton({ name, label, onClick }: { name: "back" | "close" | "copy"; label: string; onClick: () => void }) {
+function DrawerIconButton({ name, label, onClick }: { name: "back" | "close"; label: string; onClick: () => void }) {
   return <button type="button" className="drawer-icon-button" aria-label={label} title={label} onClick={onClick}><DrawerIcon name={name} /></button>
 }
 
@@ -478,7 +505,7 @@ function UIInstanceDetail({ instance, fieldKey, screen, headingRef, onClose, dra
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component Instance詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
     <header><div><p className="eyebrow">{fieldKey ? "component field" : "component instance"}</p><h2 className="drawer-title" id="instance-detail-title" ref={headingRef} tabIndex={-1}><span><code>{fieldKey ? instance.key + "." + fieldKey : instance.key}</code>{fieldKey ? " — " + String(fieldRecord?.label ?? fieldKey) : null}</span><TypeLabel value={fieldKey && typeof fieldRecord?.type === "string" ? fieldRecord.type : "Component"} /></h2><p className="component-identity">{component?.name ?? componentName(instance.componentId ?? instance.componentRef ?? "Unknown")}</p></div><DrawerIconButton name="close" label="詳細を閉じる" onClick={onClose} /></header>
     <dl className="field-detail-grid">{fieldKey ? <>{fieldRecord?.text !== undefined ? <Detail label="文言" value={String(fieldRecord.text)} copy /> : null}{typeof fieldRecord?.required === "boolean" ? <Detail label="必須" value={fieldRecord.required ? "必須" : "任意"} /> : null}{fieldRecord && "default" in fieldRecord ? <DefaultValueDetail value={fieldRecord.default} /> : null}</> : null}<Detail label="Section" value={placement?.title ?? placement?.id} /><Detail label="Region" value={placement?.region ?? "body"} /><Detail label="Field Binding" value={String(fieldBindings.length)} /><Detail label="Event Mapping" value={String(fieldEvents.length)} /></dl>
-    {component ? <section><h3>Component定義</h3><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <DrawerIconButton name="copy" label="Component参照をコピー" onClick={() => void navigator.clipboard?.writeText(component.id)} /></p></section> : null}
+    {component ? <section><h3>Component定義</h3><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <CopyButton value={component.id} label="Component参照をコピー" className="drawer-icon-button" /></p></section> : null}
     {fieldRecord && asRecord(fieldRecord.eventContext) ? <section><h3>Event Context</h3><dl className="event-context-list">{Object.entries(asRecord(fieldRecord.eventContext) ?? {}).map(([name, raw]) => { const value = asRecord(raw); return <div key={name}><dt><code>event.{name}</code></dt><dd><code>{String(value?.type ?? "unknown")}</code>{typeof value?.description === "string" ? " — " + value.description : null}</dd></div> })}</dl></section> : null}
     {fieldBindings.length ? <section><h3>Field Bindings</h3><ul className="instance-mappings">{fieldBindings.map((binding) => { const isObject = binding.value !== null && typeof binding.value === "object"; return <li key={binding.target}><code className="binding-target">{binding.target}</code>{binding.source ? <p className="binding-value"><span className="muted">参照</span><code>{binding.source}</code></p> : isObject ? <pre className="binding-value-block"><code><CodeHighlight source={JSON.stringify(binding.value, null, 2)}/></code></pre> : <p className="binding-value"><span className="muted">固定値</span><code>{displayValue(binding.value)}</code></p>}</li> })}</ul></section> : null}
     {fieldEvents.length ? <section><h3>Event Mappings</h3><ul className="instance-mappings">{fieldEvents.map((event) => <li key={event.fieldEvent}><code>{event.fieldEvent}</code><span aria-hidden="true"> → </span><code>{event.screenEvent}</code></li>)}</ul></section> : null}
@@ -500,7 +527,7 @@ function FieldDetail({ item, section, headingRef, onClose, onOpenTab, onOpenApi,
       {field.text !== undefined || field.type === "button" || field.type === "label" ? <Detail label="文言" value={field.text} copy /> : null}
       {INPUT_FIELD_TYPES.has(field.type) ? <Detail label="必須" value={field.required ? "必須" : "任意"} /> : null}
       {INPUT_FIELD_TYPES.has(field.type) && field.default !== undefined ? <DefaultValueDetail value={field.default} /> : null}
-      {INPUT_FIELD_TYPES.has(field.type) && field.placeholder ? <Detail label="プレースホルダー" value={field.placeholder} /> : null}
+      {INPUT_FIELD_TYPES.has(field.type) && field.placeholder ? <Detail label="プレースホルダー" value={field.placeholder} copy /> : null}
       {field.visibleWhen ? <Detail label="表示条件" value={field.visibleWhen} code /> : null}
       {field.enabledWhen ? <Detail label="有効条件" value={field.enabledWhen} code /> : null}
       {section ? <Detail label="セクション" value={section} /> : null}
@@ -551,10 +578,10 @@ function ComponentDetail({ componentId, screen, fieldId, headingRef, onBack, onC
   const usageList = (items: typeof impacts) => <ul className="component-usage-list">{items.map((impact) => { const direct = directFields.has(impact.screenId + ":" + impact.fieldId); return <li key={impact.screenId + impact.fieldId}><button className="link" type="button" onClick={() => impact.screenId === screen.id && impact.fieldId === fieldId ? onBack() : onNavigateField(impact.screenId, impact.fieldId)}><code>{impact.fieldId}</code></button><span className={"badge " + (direct ? "badge-ok" : "badge-region")}>{direct ? "直接利用" : "依存経由"}</span></li> })}</ul>
   return <section className="field-detail" role="complementary" aria-labelledby="component-detail-title" style={{ "--field-drawer-width": drawerWidth + "px" } as React.CSSProperties}>
     <div className="field-detail-resizer" role="separator" tabIndex={0} aria-label="Component詳細の幅" aria-orientation="vertical" aria-valuemin={320} aria-valuemax={Math.max(360, window.innerWidth - 64)} aria-valuenow={drawerWidth} onPointerDown={onResizeStart} onKeyDown={onResizeKeyDown} />
-    <header><div className="detail-heading-with-back"><DrawerIconButton name="back" label="元の詳細へ戻る" onClick={onBack} /><div><p className="eyebrow">{component.kind} component</p><h2 className="drawer-title" id="component-detail-title" ref={headingRef} tabIndex={-1}><span>{component.name}</span>{component.kind === "field" && typeof contract?.type === "string" ? <TypeLabel value={contract.type} /> : null}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <DrawerIconButton name="copy" label="Component参照をコピー" onClick={() => void navigator.clipboard?.writeText(component.id)} /></p></div></div><div className="detail-actions"><DrawerIconButton name="close" label="詳細を閉じる" onClick={onClose} /></div></header>
+    <header><div className="detail-heading-with-back"><DrawerIconButton name="back" label="元の詳細へ戻る" onClick={onBack} /><div><p className="eyebrow">{component.kind} component</p><h2 className="drawer-title" id="component-detail-title" ref={headingRef} tabIndex={-1}><span>{component.name}</span>{component.kind === "field" && typeof contract?.type === "string" ? <TypeLabel value={contract.type} /> : null}</h2><p className="component-identity"><code>{component.uri.split("/").pop()}</code><span aria-hidden="true"> › </span><code>{component.kind}</code><span aria-hidden="true"> › </span><code>{component.name}</code> <CopyButton value={component.id} label="Component参照をコピー" className="drawer-icon-button" /></p></div></div><div className="detail-actions"><DrawerIconButton name="close" label="詳細を閉じる" onClick={onClose} /></div></header>
     <dl className="component-metrics"><Detail label="直接参照" value={String(usages.length)} /><Detail label={component.kind === "ui" ? "影響Instance" : "影響Field"} value={String(component.kind === "ui" ? instanceImpacts.length : impacts.length)} /><Detail label="依存Component" value={String(dependencyIds.length)} /></dl>
     <section><h3>定義</h3>
-      {component.kind === "field" && contract ? <><dl className="field-detail-grid">{typeof contract.label === "string" ? <Detail label="ラベル" value={contract.label} /> : null}{typeof contract.text === "string" ? <Detail label="文言" value={contract.text} copy /> : null}{typeof contract.required === "boolean" ? <Detail label="必須" value={contract.required ? "必須" : "任意"} /> : null}{contract.default !== undefined ? <DefaultValueDetail value={contract.default} /> : null}{typeof contract.placeholder === "string" ? <Detail label="プレースホルダー" value={contract.placeholder} /> : null}</dl>{validations.length ? <section><h4>Validation</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "validation").map((usage) => dependencyButton(usage.componentId, "validation"))}</div>{validations.filter((item) => !asRecord(item)?.$ref).map((item, index) => <pre key={index} className="contract-inline"><code><CodeHighlight source={stringifyYaml(item)}/></code></pre>)}</section> : null}{contract.options !== undefined ? <section><h4>Options</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "options").map((usage) => dependencyButton(usage.componentId, "options"))}</div></section> : null}</> : null}
+      {component.kind === "field" && contract ? <><dl className="field-detail-grid">{typeof contract.label === "string" ? <Detail label="ラベル" value={contract.label} /> : null}{typeof contract.text === "string" ? <Detail label="文言" value={contract.text} copy /> : null}{typeof contract.required === "boolean" ? <Detail label="必須" value={contract.required ? "必須" : "任意"} /> : null}{contract.default !== undefined ? <DefaultValueDetail value={contract.default} /> : null}{typeof contract.placeholder === "string" ? <Detail label="プレースホルダー" value={contract.placeholder} copy /> : null}</dl>{validations.length ? <section><h4>Validation</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "validation").map((usage) => dependencyButton(usage.componentId, "validation"))}</div>{validations.filter((item) => !asRecord(item)?.$ref).map((item, index) => <pre key={index} className="contract-inline"><code><CodeHighlight source={stringifyYaml(item)}/></code></pre>)}</section> : null}{contract.options !== undefined ? <section><h4>Options</h4><div className="component-links">{dependencies.filter((usage) => usage.location === "options").map((usage) => dependencyButton(usage.componentId, "options"))}</div></section> : null}</> : null}
       {component.kind === "validation" && contract ? <dl className="field-detail-grid"><Detail label="rule" value={typeof contract.rule === "string" ? contract.rule : undefined} code /><Detail label="value" value={contract.value === undefined ? undefined : displayValue(contract.value)} code /><Detail label="message" value={typeof contract.message === "string" ? contract.message : undefined} /></dl> : null}
       {component.kind === "options" ? <><p className="muted">{options.length} options</p>{options.length > 10 ? <details><summary>Optionsを表示 ({options.length})</summary><input type="search" className="filter" aria-label="Optionsを検索" placeholder="value・labelを検索" value={optionQuery} onChange={(event) => setOptionQuery(event.target.value)} /><div className="options-contract-scroll"><table className="fields"><thead><tr><th>value</th><th>label</th></tr></thead><tbody>{filteredOptions.map((item, index) => { const row = asRecord(item); return <tr key={String(row?.value) + index}><td><code>{displayValue(row?.value)}</code></td><td>{String(row?.label ?? "")}</td></tr> })}</tbody></table></div></details> : <table className="fields"><thead><tr><th>value</th><th>label</th></tr></thead><tbody>{filteredOptions.map((item, index) => { const row = asRecord(item); return <tr key={String(row?.value) + index}><td><code>{displayValue(row?.value)}</code></td><td>{String(row?.label ?? "")}</td></tr> })}</tbody></table>}</> : null}
       {component.kind === "ui" && contract ? <><section><h4>Fields</h4><table className="fields"><thead><tr><th>Field</th><th>ラベル／文言</th><th>型</th><th>Event ID</th><th>Event Context</th></tr></thead><tbody>{Object.entries(uiFields).map(([name, raw]) => { const field = asRecord(raw); return <tr key={name}><td><code>{name}</code></td><td>{String(field?.label ?? name)}{typeof field?.text === "string" ? <CopyableText className="field-copy" value={field.text} /> : null}</td><td><TypeLabel value={String(field?.type ?? "unknown")} /></td><td>{typeof field?.eventId === "string" ? <code>{field.eventId}</code> : <span className="muted">—</span>}</td><td>{asRecord(field?.eventContext) ? Object.keys(asRecord(field?.eventContext) ?? {}).map((name) => <code key={name}>event.{name}</code>) : <span className="muted">—</span>}</td></tr> })}</tbody></table></section></> : null}

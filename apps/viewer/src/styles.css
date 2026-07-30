@@ -900,7 +900,6 @@ html[data-theme="dark"] .component-field-row { background: #171e2a; }
 .copyable-text.code-block-copy .copy-text-button { color: #9be6cc; }
 .copy-text-button { display: inline-grid; flex: 0 0 auto; place-items: center; width: 1.5rem; height: 1.5rem; padding: .2rem; border: 0; border-radius: 4px; background: transparent; color: #00866a; cursor: pointer; }
 .copy-text-button:hover { background: #effbf7; }
-.copy-text-button[data-copied] { color: #15803d; }
 .copy-text-button svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .badge-warning { background: #fef3c7; color: #854d0e; }
 .field-detail { margin-top: 1rem; padding: 1rem; border: 1px solid #b8e7d7; border-radius: 8px; background: #fff; box-shadow: 0 -4px 16px rgb(15 23 42 / .06); }
