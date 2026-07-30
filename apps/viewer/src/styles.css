@@ -432,6 +432,9 @@ ul.warnings {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
+@media (min-width: 761px) {
+  .event-card { width: fit-content; max-width: 100%; }
+}
 .event-card.event-flow > .event-flow-step {
   margin-top: 0;
   counter-increment: event-step;
