@@ -378,6 +378,8 @@ ul.warnings {
   color: #92400e;
 }
 .diagram {
+  width: fit-content;
+  max-width: 100%;
   padding: 1rem;
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -463,8 +465,8 @@ ul.warnings {
 .diagram svg { font-size: 14px !important; }
 .diagram svg :is(text, tspan, foreignObject, foreignObject *) { font-size: 14px !important; }
 .event-flow-diagram { margin-top: 0; overflow-x: auto; }
-.event-flow-diagram.compact { padding: .65rem; }
-.event-flow-diagram.compact svg { min-width: 0; max-height: 30rem; }
+.event-flow-diagram.compact { width: 100%; padding: .65rem; }
+.event-flow-diagram.compact svg { width: 100%; min-width: 0; }
 .drawer-event-details > summary { color: #006b52; font-weight: 600; cursor: pointer; }
 .event-details > summary {
   color: #006b52;
