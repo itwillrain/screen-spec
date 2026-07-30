@@ -13,7 +13,7 @@ description: フィールドの検証ルール。
 |---|---|---|---|
 | `rule` | string | ✔ | ルール名。例 `required`, `maxLength`, `pattern` |
 | `value` | any | | ルールのパラメータ（`maxLength` の桁数、`pattern` の正規表現など） |
-| `message` | string | | 検証失敗時のメッセージ |
+| `message` | string | | 検証失敗時に利用者へ提示するメッセージ。省略するとCompleteness Diagnosticのwarning |
 
 ## 例
 
@@ -28,6 +28,8 @@ components:
       value: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
       message: メールアドレスの形式が正しくありません
 ```
+
+`message`はスキーマ上省略可能ですが、画面仕様として検証失敗時の表示を判断できなくなるため、Analyzerは`validation-message-missing` warningを報告します。
 
 インラインでも記述できます。
 
@@ -58,8 +60,11 @@ validations:
 ```yaml
 validations:
   - rule: required
+    message: 入力してください
   - rule: maxLength
     value: 50
+    message: 50文字以内で入力してください
   - rule: min
     value: 0
+    message: 0以上で入力してください
 ```

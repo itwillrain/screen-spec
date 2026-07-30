@@ -824,7 +824,7 @@ describe("バリデーション語彙（ADR 0002）", () => {
 
   it("既知ルールが正しい型なら妥当・警告なし", async () => {
     const r = await validateInline(
-      "      validations:\n        - { rule: required }\n        - { rule: maxLength, value: 50 }",
+      "      validations:\n        - { rule: required, message: 入力してください }\n        - { rule: maxLength, value: 50, message: 50文字以内で入力してください }",
     );
     expect(r.valid).toBe(true);
     expect(r.warnings).toEqual([]);
@@ -839,6 +839,43 @@ describe("バリデーション語彙（ADR 0002）", () => {
     const r = await validateInline("      validations:\n        - { rule: customBiz }");
     expect(r.valid).toBe(true);
     expect(r.warnings.some((w) => w.message.includes("customBiz"))).toBe(true);
+  });
+
+  it("利用者へ提示するmessageがないバリデーションは完全性warning", () => {
+    const diagnostics = analyzeScreen({
+      fields: {
+        title: {
+          label: "タイトル",
+          type: "text",
+          validations: [{ rule: "required" }, { rule: "maxLength", value: 100, message: "100文字以内で入力してください" }],
+        },
+      },
+    });
+
+    expect(diagnostics).toContainEqual({
+      severity: "warning",
+      code: "validation-message-missing",
+      message: 'field "title" のバリデーション "required" に利用者向けmessageがありません。',
+      where: "title",
+    });
+    expect(diagnostics.filter((item) => item.code === "validation-message-missing")).toHaveLength(1);
+  });
+
+  it("すべてのバリデーションにmessageがあれば完全性warningは出ない", () => {
+    const diagnostics = analyzeScreen({
+      fields: {
+        title: {
+          label: "タイトル",
+          type: "text",
+          validations: [
+            { rule: "required", message: "タイトルを入力してください" },
+            { rule: "maxLength", value: 100, message: "タイトルは100文字以内で入力してください" },
+          ],
+        },
+      },
+    });
+
+    expect(diagnostics.map((item) => item.code)).not.toContain("validation-message-missing");
   });
 });
 

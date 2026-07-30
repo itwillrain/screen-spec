@@ -298,7 +298,17 @@ function analyzeValidations(s: ScreenLike, diagnostics: Diagnostic[]): void {
     const vals = (f as { validations?: unknown }).validations;
     if (!Array.isArray(vals)) continue;
     for (const v of vals) {
-      const rule = asString((v as { rule?: unknown })?.rule);
+      const validation = v as { rule?: unknown; message?: unknown };
+      const rule = asString(validation?.rule);
+      const message = asString(validation?.message);
+      if (rule && (!message || message.trim().length === 0)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "validation-message-missing",
+          message: `field "${key}" のバリデーション "${rule}" に利用者向けmessageがありません。`,
+          where: key,
+        });
+      }
       if (rule && !isKnownRule(rule)) {
         diagnostics.push({
           severity: "warning",

@@ -116,6 +116,10 @@ _Avoid_: Pixel Coordinates, Bounding Box
 画像順とDesign Mappingの定義順にScreen Elementsを巡回し、デザインと仕様詳細を一緒に読むViewer体験。仕様へ別のstep定義は持たない。
 _Avoid_: Tutorial Definition, Slideshow
 
+**Completeness Diagnostic**:
+Screen Specificationは構造的に有効でも、利用者や実装者が振る舞いを判断する説明が不足している場合に示すwarning。仕様を無効にはしない。
+_Avoid_: Validation Error, Schema Error
+
 **Field Review Workspace**:
 デザインを参照しながらScreen Elementsと直接関連するEvent、Branch、API、診断を確認する、エンジニア向けの読み取り専用Viewer領域。
 _Avoid_: Editor, Design preview
