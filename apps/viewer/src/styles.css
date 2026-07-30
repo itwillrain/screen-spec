@@ -1062,6 +1062,7 @@ body:has(.field-detail) {
   box-shadow: 0 -6px 18px rgb(15 23 42 / .08);
 }
 .field-detail-navigation button { min-height: 2.25rem; padding: .35rem .65rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #006b52; font: inherit; cursor: pointer; }
+.field-detail-navigation button:first-child { justify-self: start; }
 .field-detail-navigation button:last-child { justify-self: end; }
 .field-detail-navigation button:disabled { opacity: .4; cursor: not-allowed; }
 .field-detail-navigation span { color: #64748b; font-size: .8rem; font-variant-numeric: tabular-nums; }
