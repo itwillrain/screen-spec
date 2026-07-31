@@ -37,7 +37,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
   await expect.poll(() => page.locator(".review-fields thead th").first().evaluate((element) => getComputedStyle(element).position)).toBe("static");
   await page.getByRole("button", { name: /Design Tourを開始/ }).click();
-  await expect(page.getByLabel("Design Tour")).toContainText("Design Tour 1 / 8");
+  await expect(page.getByLabel("Design Tour", { exact: true })).toContainText("Design Tour 1 / 8");
   const appHeaderRow = page.locator('[data-screen-element="appHeader"]');
   await expect(appHeaderRow).toBeFocused();
   await expect(appHeaderRow).toHaveClass(/tour-focused/);
@@ -45,7 +45,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(page.locator('[data-screen-element="userPagination"]').getByLabel("Design Tour 7")).toHaveText("7");
   await expect(page.locator(".field-detail")).toHaveCount(0);
   await page.getByRole("button", { name: "次の項目" }).click();
-  await expect(page.getByLabel("Design Tour")).toContainText("adminSidebar");
+  await expect(page.getByLabel("Design Tour", { exact: true })).toContainText("adminSidebar");
   await expect(page.locator('[data-screen-element="adminSidebar"]')).toBeFocused();
   await page.getByRole("button", { name: "終了" }).click();
   await expect(page.locator(".design-region")).toHaveCount(0);
