@@ -8,7 +8,9 @@
     "copy-specs": "node scripts/copy-specs.mjs",
     "dev": "npm run copy-specs && vite",
     "build": "npm run copy-specs && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predev": "npm run build --workspace @screen-spec/core",
+    "prebuild": "npm run build --workspace @screen-spec/core"
   },
   "dependencies": {
     "@screen-spec/core": "0.1.0",

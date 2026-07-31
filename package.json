@@ -15,7 +15,16 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:e2e": "playwright test",
     "lint": "eslint . --max-warnings=0",
-    "lint:files": "eslint --max-warnings=0"
+    "lint:files": "eslint --max-warnings=0",
+    "build:core": "npm run build --workspace @screen-spec/core",
+    "build:cli": "npm run build --workspace @screen-spec/cli",
+    "build:packages": "npm run build:core && npm run build:cli",
+    "pack:core": "npm pack --workspace @screen-spec/core --dry-run",
+    "pack:cli": "npm pack --workspace @screen-spec/cli --dry-run",
+    "prevalidate": "npm run build:packages",
+    "pretestgen": "npm run build:packages",
+    "pretest": "npm run build:packages",
+    "pretypecheck": "npm run build:packages"
   },
   "engines": {
     "node": ">=20"

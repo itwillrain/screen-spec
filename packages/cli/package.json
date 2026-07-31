@@ -3,8 +3,24 @@
   "version": "0.1.0",
   "description": "screen-spec CLI",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "bin": {
-    "screen-spec": "./src/index.ts"
+    "screen-spec": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prebuild": "npm run build --workspace @screen-spec/core",
+    "prepack": "npm run build"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@screen-spec/core": "0.1.0"

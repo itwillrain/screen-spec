@@ -24,6 +24,33 @@ docs/spec/                   言語仕様メモ
 Node 専用エントリ `@screen-spec/core/node`（`validateDocument` など fs 依存）に分かれる。
 `$ref` 解決はローダー注入式（Node=fs / ブラウザ=fetch）で環境非依存。
 
+## npmパッケージとして使う
+
+公開するランタイムは @screen-spec/core、開発用コマンドは @screen-spec/cli として分離しています。root workspace 自体は npm package として公開しません。
+
+~~~sh
+npm install @screen-spec/core
+npm install --save-dev @screen-spec/cli
+~~~
+
+~~~ts
+import { validateDocument, resolveDocument } from "@screen-spec/core/node"
+
+const result = await validateDocument("./specs/pages/users/edit.screen.yaml")
+const resolved = await resolveDocument("./specs/pages/users/edit.screen.yaml")
+~~~
+
+ブラウザやbundlerでは @screen-spec/core のメインエントリを使い、外部 $ref の取得方法を DocumentLoader として注入します。JSON Schema は @screen-spec/core/schema から取得できます。
+
+公開物を確認するには次を実行します。
+
+~~~sh
+npm run pack:core
+npm run pack:cli
+~~~
+
+公開時は、core と CLI を同じバージョンで個別に publish します。
+
 ## セットアップ
 
 ```bash

@@ -3,7 +3,7 @@ import type { ErrorObject, ValidateFunction } from "ajv/dist/2020.js";
 import * as ajvFormats from "ajv-formats";
 // スキーマは JSON import でインライン化する。fs 相対パスに依存しないため、
 // core を別アプリ（Viewer 等）へバンドルしても壊れない。
-import schema from "../../../schema/screen.schema.json" with { type: "json" };
+import schema from "./schema/screen.schema.json" with { type: "json" };
 import { parseYaml } from "./parse.js";
 import { findResidualRefs, resolveRefs, RefError, type DocumentLoader } from "./resolve.js";
 import { analyzeScreen, analyzeTestData } from "./analyze.js";

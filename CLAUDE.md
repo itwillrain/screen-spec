@@ -21,7 +21,7 @@
 
 - `packages/core` … パース・`$ref` 解決（async/loader 注入）・2 段検証。
   主エントリはブラウザ安全（fs 非依存）。fs 依存は `@screen-spec/core/node` に隔離。
-  スキーマは `schema/screen.schema.json` を JSON import でインライン化（バンドル可能）。
+  canonical schemaは `schema/screen.schema.json`。core build前に `packages/core/src/schema/screen.schema.json` へ同期し、公開時は `@screen-spec/core/schema` から配布する。
 - `packages/cli` … `screen-spec validate`（`@screen-spec/core/node` を使用）
 - `apps/docs` … 言語仕様ドキュメントサイト（Blume）。`npm run dev --workspace @screen-spec/docs`
 - `apps/viewer` … 画面詳細設計書ビューア（React+Vite の client SPA・Swagger UI 型）。

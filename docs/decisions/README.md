@@ -30,6 +30,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（実装済み・`compose`廃止／動的Options Binding）
 - [0010 — Component Usage GraphとViewer追跡](./0010-component-usage-graph.md)
   — ステータス: **Accepted**（実装待ち・プロジェクト横断Component追跡）
+- [0014 — npmパッケージの公開境界](./0014-npm-package-boundary.md)
+  — ステータス: **Accepted**（core / node / schema / CLI の公開境界）
 
 ## v0.1 決定の一覧
 

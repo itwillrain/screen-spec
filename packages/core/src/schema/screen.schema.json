@@ -1,0 +1,926 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://screen-spec.dev/schema/screen.schema.json",
+  "title": "screen-spec document (v0.1)",
+  "description": "画面詳細設計書 or 共通コンポーネント定義。単一の $ref は純粋参照（兄弟キー禁止）。",
+  "type": "object",
+  "required": ["specVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "specVersion": { "const": "0.1" },
+    "screen": { "$ref": "#/$defs/Screen" },
+    "components": { "$ref": "#/$defs/Components" },
+    "testData": { "$ref": "#/$defs/TestData" }
+  },
+  "anyOf": [
+    { "required": ["screen"] },
+    { "required": ["components"] },
+    { "required": ["testData"] }
+  ],
+  "$defs": {
+    "refObject": {
+      "title": "純粋な $ref 参照",
+      "type": "object",
+      "required": ["$ref"],
+      "additionalProperties": false,
+      "properties": {
+        "$ref": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Screen": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "description": "kebab-case"
+        },
+        "name": { "type": "string" },
+        "group": { "type": "string", "minLength": 1, "description": "画面をナビゲーション上でまとめる業務上のグループ名" },
+        "description": { "type": "string" },
+        "route": { "type": "string" },
+        "params": { "$ref": "#/$defs/Params" },
+        "permissions": {
+          "deprecated": true,
+          "description": "旧形式。新規仕様は accessControl を使用する。",
+          "type": "array",
+          "items": { "$ref": "#/$defs/Permission" }
+        },
+        "accessControl": { "$ref": "#/$defs/AccessControl" },
+        "design": { "$ref": "#/$defs/Design" },
+        "layout": { "$ref": "#/$defs/Layout" },
+        "fields": { "$ref": "#/$defs/FieldMap" },
+        "ui": { "$ref": "#/$defs/UIInstanceMap" },
+        "data": { "$ref": "#/$defs/ScreenDataMap" },
+        "fieldBindings": { "$ref": "#/$defs/FieldBindingMap" },
+        "states": { "$ref": "#/$defs/StateMap" },
+        "events": { "$ref": "#/$defs/EventMap" },
+        "transitions": { "$ref": "#/$defs/TransitionMap" },
+        "apiBindings": { "$ref": "#/$defs/ApiBindingMap" }
+      }
+    },
+
+    "ScreenDataMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
+      "additionalProperties": { "$ref": "#/$defs/ScreenData" }
+    },
+
+    "ScreenData": {
+      "type": "object",
+      "required": ["schema"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "schema": { "$ref": "#/$defs/DataSchema" }
+      }
+    },
+
+    "DataSchema": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["null", "boolean", "object", "array", "number", "integer", "string"] },
+        "description": { "type": "string" },
+        "format": { "type": "string" },
+        "enum": { "type": "array" },
+        "required": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "properties": { "type": "object", "additionalProperties": { "$ref": "#/$defs/DataSchema" } },
+        "items": { "$ref": "#/$defs/DataSchema" }
+      }
+    },
+
+    "FieldBindingMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$", "description": "field ID" },
+      "additionalProperties": { "$ref": "#/$defs/FieldBinding" }
+    },
+
+    "FieldBinding": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "options": { "$ref": "#/$defs/OptionsBinding" },
+        "loading": { "$ref": "#/$defs/LoadingBinding" }
+      }
+    },
+
+    "OptionsBinding": {
+      "type": "object",
+      "required": ["source", "item"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "pattern": "^data\\.[a-z][A-Za-z0-9]*$" },
+        "item": {
+          "type": "object",
+          "required": ["value", "label"],
+          "additionalProperties": false,
+          "properties": {
+            "value": { "$ref": "#/$defs/PropertyPath" },
+            "label": { "$ref": "#/$defs/PropertyPath" }
+          }
+        }
+      }
+    },
+
+    "LoadingBinding": {
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "pattern": "^api\\.[a-z][A-Za-z0-9]*\\.loading$" }
+      }
+    },
+
+    "PropertyPath": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+    },
+
+    "ApiBindingMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/ApiBinding" }
+    },
+
+    "ApiBinding": {
+      "type": "object",
+      "required": ["openapi"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "openapi": {
+          "type": "object",
+          "required": ["operationId", "specRef"],
+          "additionalProperties": false,
+          "properties": {
+            "operationId": { "type": "string", "description": "OpenAPI の operationId" },
+            "specRef": { "type": "string", "description": "OpenAPI 定義への参照（ローカル相対パス）" }
+          }
+        },
+        "request": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": { "$ref": "#/$defs/ExpressionMap" },
+            "query": { "$ref": "#/$defs/ExpressionMap" },
+            "body": { "$ref": "#/$defs/ExpressionMap" }
+          }
+        },
+        "response": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mapping": { "$ref": "#/$defs/ResponseMapping" }
+          }
+        }
+      }
+    },
+
+    "ExpressionMap": {
+      "type": "object",
+      "description": "画面項目 ⇔ API フィールドの対応。値は式文字列（例 {fields.name} / data.name）。v0.1 では未パース。",
+      "additionalProperties": { "type": "string" }
+    },
+    "ResponseMapping": {
+      "type": "object",
+      "description": "APIレスポンスからfields.<fieldId>またはdata.<dataId>への対応。裸のfieldIdは互換形式。",
+      "propertyNames": {
+        "pattern": "^((fields|data)\\.[a-z][A-Za-z0-9]*|[a-z][A-Za-z0-9]*)$"
+      },
+      "additionalProperties": { "type": "string" }
+    },
+
+    "StateMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/State" }
+    },
+
+    "State": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "initial": { "type": "boolean" }
+      }
+    },
+
+    "EventMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/Event" }
+    },
+
+    "Event": {
+      "type": "object",
+      "required": ["from"],
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["to"], "not": { "required": ["branches"] } },
+        {
+          "required": ["branches"],
+          "not": {
+            "anyOf": [
+              { "required": ["to"] },
+              { "required": ["action"] },
+              { "required": ["expects"] },
+              { "required": ["onSuccess"] },
+              { "required": ["onError"] }
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "trigger": { "oneOf": [{ "type": "string" }, { "$ref": "#/$defs/ComponentEventTrigger" }] },
+        "target": { "type": "string" },
+        "from": { "type": "string", "description": "遷移元の状態キー" },
+        "to": { "type": "string", "description": "Linear Eventの遷移先状態キー" },
+        "branches": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/EventBranch" }
+        },
+        "expects": { "$ref": "#/$defs/Expectation" },
+        "action": { "$ref": "#/$defs/EventAction" },
+        "onSuccess": { "$ref": "#/$defs/EventOutcome" },
+        "onError": { "$ref": "#/$defs/ErrorOutcome" }
+      }
+    },
+
+    "ComponentEventTrigger": {
+      "type": "object",
+      "required": ["component", "event"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "event": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" }
+      }
+    },
+
+    "EventAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apiCall": { "type": "string", "description": "apiBindingのキー" }
+      }
+    },
+
+    "EventBranch": {
+      "type": "object",
+      "required": ["id", "to"],
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["when"], "not": { "required": ["otherwise"] } },
+        { "required": ["otherwise"], "not": { "required": ["when"] } }
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "when": { "type": "string", "minLength": 1 },
+        "otherwise": { "const": true },
+        "to": { "type": "string", "description": "Branchの遷移先状態キー" },
+        "action": { "$ref": "#/$defs/EventAction" },
+        "expects": { "$ref": "#/$defs/Expectation" },
+        "onSuccess": { "$ref": "#/$defs/EventOutcome" },
+        "onError": { "$ref": "#/$defs/ErrorOutcome" }
+      }
+    },
+
+    "EventOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "to": { "type": "string", "description": "結果時の遷移先状態キー" },
+        "navigate": { "type": "string", "description": "遷移先の画面 id" },
+        "expects": { "$ref": "#/$defs/Expectation" }
+      }
+    },
+
+    "ErrorOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "to": { "type": "string", "description": "既定の失敗時遷移先状態キー" },
+        "expects": { "$ref": "#/$defs/Expectation" },
+        "cases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ErrorCase" }
+        }
+      }
+    },
+
+    "ErrorCase": {
+      "type": "object",
+      "required": ["when", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "when": { "$ref": "#/$defs/ErrorCondition" },
+        "to": { "type": "string", "description": "条件一致時の遷移先状態キー" },
+        "expects": { "$ref": "#/$defs/Expectation" }
+      }
+    },
+
+    "ErrorCondition": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+        "code": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "Expectation": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "state": { "type": "string" },
+        "navigate": { "type": "string" },
+        "message": { "$ref": "#/$defs/ExpectedMessage" },
+        "fields": { "$ref": "#/$defs/FieldExpectationMap" }
+      }
+    },
+
+    "ExpectedMessage": {
+      "type": "object",
+      "required": ["kind"],
+      "anyOf": [
+        { "required": ["text"] },
+        { "required": ["key"] }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["info", "success", "warning", "error"] },
+        "text": { "type": "string", "minLength": 1 },
+        "key": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "FieldExpectationMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/FieldExpectation" }
+    },
+
+    "FieldExpectation": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "value": true,
+        "expression": { "type": "string", "minLength": 1 },
+        "visible": { "type": "boolean" },
+        "enabled": { "type": "boolean" }
+      },
+      "not": { "required": ["value", "expression"] }
+    },
+
+    "TransitionMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/Transition" }
+    },
+
+    "Transition": {
+      "type": "object",
+      "required": ["to"],
+      "additionalProperties": false,
+      "properties": {
+        "to": { "type": "string", "description": "遷移先の画面 id" },
+        "trigger": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "FieldMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/FieldOrRef" }
+    },
+
+    "FieldOrRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/refObject" },
+        { "$ref": "#/$defs/Field" }
+      ]
+    },
+
+    "Field": {
+      "type": "object",
+      "required": ["label", "type"],
+      "dependentRequired": { "eventContext": ["eventId"] },
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "text": { "type": "string", "minLength": 1, "description": "ボタンやラベルなどに表示する文言" },
+        "eventId": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "このUI要素が発火するscreen.eventsのキー" },
+        "eventContext": { "$ref": "#/$defs/EventContextMap" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "textarea",
+            "email",
+            "number",
+            "list",
+            "table",
+            "date",
+            "select",
+            "checkbox",
+            "radio",
+            "button",
+            "label"
+          ]
+        },
+        "required": { "type": "boolean" },
+        "placeholder": { "type": "string", "minLength": 1 },
+        "width": {
+          "type": "string",
+          "enum": ["full", "half", "third"],
+          "description": "表示幅ヒント（UI 非依存）"
+        },
+        "visibleWhen": {
+          "type": "string",
+          "description": "表示条件式（例: fields.role == \"admin\"）。UI 非依存の宣言。"
+        },
+        "enabledWhen": {
+          "type": "string",
+          "description": "編集可否の条件式（true で編集可）。UI 非依存の宣言。"
+        },
+        "default": {
+          "description": "既定値（type/options に整合させる）。"
+        },
+        "design": { "$ref": "#/$defs/Design" },
+        "validations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ValidationOrRef" }
+        },
+        "options": { "$ref": "#/$defs/OptionsOrRef" },
+        "permission": {
+          "deprecated": true,
+          "description": "旧形式。新規仕様は screen.accessControl を使用する。",
+          "$ref": "#/$defs/Permission"
+        }
+      }
+    },
+
+    "EventContextMap": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$" },
+      "additionalProperties": { "$ref": "#/$defs/EventContextValue" }
+    },
+    "EventContextValue": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "enum": ["string", "number", "integer", "boolean", "object", "array"] },
+        "description": { "type": "string" }
+      }
+    },
+
+    "ValidationOrRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/refObject" },
+        { "$ref": "#/$defs/Validation" }
+      ]
+    },
+
+    "Validation": {
+      "type": "object",
+      "required": ["rule"],
+      "additionalProperties": false,
+      "properties": {
+        "rule": { "type": "string" },
+        "value": true,
+        "message": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "rule": { "enum": ["required", "email", "url"] } } },
+          "then": { "not": { "required": ["value"] } }
+        },
+        {
+          "if": { "properties": { "rule": { "enum": ["minLength", "maxLength"] } } },
+          "then": {
+            "required": ["value"],
+            "properties": { "value": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        {
+          "if": { "properties": { "rule": { "enum": ["min", "max", "step"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "number" } } }
+        },
+        {
+          "if": { "properties": { "rule": { "enum": ["pattern", "minDate", "maxDate"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "string" } } }
+        },
+        {
+          "if": { "properties": { "rule": { "const": "enum" } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "array" } } }
+        }
+      ]
+    },
+
+    "OptionsOrRef": {
+      "oneOf": [
+        { "$ref": "#/$defs/refObject" },
+        { "$ref": "#/$defs/OptionArray" }
+      ]
+    },
+
+    "OptionArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Option" }
+    },
+
+    "Option": {
+      "type": "object",
+      "required": ["value", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "value": true,
+        "label": { "type": "string" }
+      }
+    },
+
+    "UIInstanceMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*$" },
+      "additionalProperties": { "$ref": "#/$defs/UIInstance" }
+    },
+    "UIInstance": {
+      "type": "object",
+      "required": ["component"],
+      "additionalProperties": false,
+      "properties": {
+        "component": { "oneOf": [{ "$ref": "#/$defs/refObject" }, { "$ref": "#/$defs/UIComponent" }] },
+        "bindings": { "$ref": "#/$defs/UIBindingMap" },
+        "events": { "type": "object", "additionalProperties": { "type": "string" } },
+        "visibleWhen": { "type": "string" }
+      }
+    },
+    "UIBindingMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*)*$" },
+      "additionalProperties": { "$ref": "#/$defs/UIBinding" }
+    },
+    "UIBinding": {
+      "type": "object", "additionalProperties": false,
+      "oneOf": [{ "required": ["source"] }, { "required": ["value"] }],
+      "properties": { "source": { "type": "string" }, "value": true }
+    },
+    "UIComponent": {
+      "type": "object", "required": ["name", "fields"], "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "fields": { "$ref": "#/$defs/FieldMap" }
+      }
+    },
+
+    "Params": {
+      "title": "画面パラメータ（path / query）",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/ParamMap" },
+        "query": { "$ref": "#/$defs/ParamMap" }
+      }
+    },
+
+    "ParamMap": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/Param" }
+    },
+
+    "Param": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "integer", "boolean"]
+        },
+        "required": { "type": "boolean" },
+        "default": true,
+        "description": { "type": "string" },
+        "enum": { "type": "array" }
+      }
+    },
+
+    "Layout": {
+      "title": "画面レイアウト（言語レベルの構造）",
+      "description": "UI フレームワークに依存しない構造。項目はセクションにグループ化し、列数で並べる。",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LayoutSection" }
+        }
+      }
+    },
+
+    "LayoutSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [{ "required": ["fields"] }, { "required": ["items"] }],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
+        "title": { "type": "string" },
+        "region": {
+          "type": "string",
+          "enum": ["header", "body", "footer", "sidebar"],
+          "description": "配置領域（既定 body）"
+        },
+        "columns": { "type": "integer", "minimum": 1, "maximum": 4, "description": "列数（既定 1）" },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string", "description": "配置するフィールドのキー" }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "object", "required": ["field"], "additionalProperties": false, "properties": { "field": { "type": "string" } } },
+              { "type": "object", "required": ["component"], "additionalProperties": false, "properties": { "component": { "type": "string" } } }
+            ]
+          }
+        }
+      }
+    },
+
+    "DesignMapping": {
+      "type": "object",
+      "required": ["target", "regions"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "type": "string", "minLength": 1, "description": "Field、Component Instance、またはinstance.field形式のComponent内部Field ID" },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/DesignRegion" }
+        }
+      }
+    },
+
+    "DesignRegion": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+      }
+    },
+
+    "Design": {
+      "title": "デザイン参照",
+      "description": "画面のデザイン資産への参照（Figma・モックアップ画像・関連リンク）。UI 実装は伴わない。",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "figma": { "type": "string", "format": "uri", "description": "Figma などデザインファイルの URL" },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url"],
+            "additionalProperties": false,
+            "properties": {
+              "url": { "type": "string", "format": "uri-reference", "description": "モックアップ画像の絶対または相対 URL" },
+              "caption": { "type": "string" },
+              "mappings": {
+                "type": "array",
+                "description": "画像領域とScreen Elementの対応。定義順がDesign Tourの順序になる。",
+                "items": { "$ref": "#/$defs/DesignMapping" }
+              }
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "url": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      }
+    },
+
+    "Permission": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": { "type": "string" },
+        "access": {
+          "type": "string",
+          "enum": ["full", "readwrite", "readonly"]
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "editRoles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "AccessControl": {
+      "type": "object",
+      "required": ["roles"],
+      "additionalProperties": false,
+      "properties": {
+        "roles": { "$ref": "#/$defs/RoleAccessMap" }
+      }
+    },
+
+    "RoleAccessMap": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$",
+        "description": "camelCase"
+      },
+      "additionalProperties": { "$ref": "#/$defs/RoleAccess" }
+    },
+
+    "RoleAccess": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "screen": { "$ref": "#/$defs/ScreenAccess" },
+        "fields": { "$ref": "#/$defs/FieldAccessMap" },
+        "events": { "$ref": "#/$defs/EventAccessMap" }
+      }
+    },
+
+    "ScreenAccess": {
+      "type": "object",
+      "required": ["view"],
+      "additionalProperties": false,
+      "properties": {
+        "view": { "type": "boolean" }
+      }
+    },
+
+    "FieldAccessMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(\\*|[a-z][A-Za-z0-9]*)$" },
+      "additionalProperties": { "$ref": "#/$defs/FieldAccess" }
+    },
+
+    "FieldAccess": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "view": { "type": "boolean" },
+        "edit": { "type": "boolean" }
+      }
+    },
+
+    "EventAccessMap": {
+      "type": "object",
+      "propertyNames": { "pattern": "^(\\*|[a-z][A-Za-z0-9]*)$" },
+      "additionalProperties": { "$ref": "#/$defs/EventAccess" }
+    },
+
+    "EventAccess": {
+      "type": "object",
+      "required": ["execute"],
+      "additionalProperties": false,
+      "properties": {
+        "execute": { "type": "boolean" }
+      }
+    },
+
+    "TestData": {
+      "title": "テストデータ（画面の前提データ／フィクスチャ）",
+      "description": "画面を参照する別ドキュメント種別（ADR 0005）。テスト項目書の前提・期待の元。",
+      "type": "object",
+      "required": ["screen", "fixtures"],
+      "additionalProperties": false,
+      "properties": {
+        "screen": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "description": "対象画面の id（kebab-case）"
+        },
+        "fixtures": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/Fixture" }
+        }
+      }
+    },
+
+    "Fixture": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase" },
+        "description": { "type": "string" },
+        "params": {
+          "type": "object",
+          "description": "画面パラメータ（path/query）の前提値",
+          "additionalProperties": true
+        },
+        "given": {
+          "type": "object",
+          "description": "前提データ（API/DB 等の状態）。自由構造。",
+          "additionalProperties": true
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fields": {
+              "type": "object",
+              "description": "初期表示で期待するフィールド値（field キー → 値）",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    },
+
+    "Components": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "validations": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9]*$",
+            "description": "PascalCase"
+          },
+          "additionalProperties": { "$ref": "#/$defs/ValidationOrRef" }
+        },
+        "fields": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9]*$",
+            "description": "PascalCase"
+          },
+          "additionalProperties": { "$ref": "#/$defs/FieldOrRef" }
+        },
+        "ui": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Z][A-Za-z0-9]*$", "description": "PascalCase" },
+          "additionalProperties": { "$ref": "#/$defs/UIComponent" }
+        },
+        "options": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9]*$",
+            "description": "PascalCase"
+          },
+          "additionalProperties": { "$ref": "#/$defs/OptionsOrRef" }
+        }
+      }
+    }
+  }
+}
