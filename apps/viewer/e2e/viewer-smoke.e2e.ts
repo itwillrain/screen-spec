@@ -60,7 +60,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("検索する");
   await expect(page.locator(".section-group-row").filter({ hasText: "検索結果" })).toBeVisible();
   await expect(page.getByText("userTable.rows", { exact: true })).toBeVisible();
-  const longElementId = page.locator(".element-id", { hasText: "userTable.columnHeaders" });
+  const longElementId = page.locator(".element-id", { hasText: "userTable.header" });
   await expect.poll(() => longElementId.evaluate((element) => getComputedStyle(element).whiteSpace)).toBe("nowrap");
   await expect.poll(() => longElementId.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThan(30);
 
