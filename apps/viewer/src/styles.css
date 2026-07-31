@@ -599,7 +599,7 @@ ul.warnings {
 
 @media (max-width: 760px) {
   body {
-    overflow-x: hidden;
+    overflow-x: auto;
   }
   .layout {
     display: block;
@@ -1246,3 +1246,11 @@ html[data-theme="dark"] .drawer-icon-button:hover { background: #202a36; color: 
 .ui-contract-grid { display: grid; gap: .5rem; }
 .ui-contract-grid article { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .65rem; border: 1px solid var(--border); border-radius: .45rem; }
 .ui-contract-grid article pre { flex-basis: 100%; }
+
+
+@media (min-width: 761px) {
+  .diagram:not(.event-flow-diagram.compact) svg {
+    max-inline-size: min(90dvw, 72rem);
+    max-block-size: min(70dvh, 48rem);
+  }
+}

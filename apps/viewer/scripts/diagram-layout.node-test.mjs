@@ -36,3 +36,25 @@ test("PCの状態タブイベント一覧はカードを内容幅に詰める", 
   assert.match(eventsRule, /display:\s*grid/)
   assert.match(eventsRule, /justify-items:\s*start/)
 })
+
+test("スマホでは横幅超過をページの横スクロールで確認できる", async () => {
+  const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+
+  assert.match(css, /body\s*\{\s*overflow-x:\s*auto/)
+})
+
+
+test("PCの通常Mermaid図はviewport基準で高さを制約する", async () => {
+  const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  const fullSvgRule = css.match(/\.diagram:not\(.event-flow-diagram\.compact\) svg\s*\{([^}]*)\}/)?.[1] ?? ""
+
+  assert.match(fullSvgRule, /max-block-size:\s*min\(70dvh,\s*48rem\)/)
+})
+
+
+test("PCの通常Mermaid図はviewport基準で横幅も制約する", async () => {
+  const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  const fullSvgRule = css.match(/\.diagram:not\(.event-flow-diagram\.compact\) svg\s*\{([^}]*)\}/)?.[1] ?? ""
+
+  assert.match(fullSvgRule, /max-inline-size:\s*min\(90dvw,\s*72rem\)/)
+})
