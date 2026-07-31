@@ -1,9 +1,9 @@
 ---
-title: Components
-description: 再利用可能な部品の定義セクション。
+title: Component Definitions
+description: 再利用可能な部品の種別と定義セクション。
 ---
 
-# Components
+# Component Definitions
 
 Componentは、`components`配下に名前付きで登録された、取得元に依存しない再利用可能な完全な仕様契約です。実際の参照回数ではなく、登録された再利用意図によってComponentとなります。
 OpenAPI の `components` に相当します。定義名は **PascalCase**（[命名規則](/concepts/naming)）。
@@ -49,4 +49,4 @@ components:
       - { value: viewer, label: 閲覧者 }
 ```
 
-Componentの契約内から別種のComponentを`$ref`できます（上の`EmailField`から`Required`へのComponent Dependency）。Component定義全体を別Componentへの`$ref`だけにするAliasはできません。参照は純粋参照で、兄弟キーは書けません（[`$ref`ガイド](/concepts/refs)）。利用関係と変更影響の規則は[Component Usage](/concepts/component-usage)を参照してください。
+Componentの契約内から別種のComponentを`$ref`できます（上の`EmailField`から`Required`へのComponent Dependency）。Component定義全体を別Componentへの`$ref`だけにするAliasはできません。参照は純粋参照で、兄弟キーは書けません（[`$ref`ガイド](/concepts/refs)）。利用関係と変更影響の規則は[Component Usage Graph](/concepts/component-usage)を参照してください。
