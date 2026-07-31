@@ -419,6 +419,8 @@ ul.warnings {
   font-weight: 600;
 }
 .events {
+  display: grid;
+  justify-items: start;
   margin-top: 1.5rem;
 }
 .events h2 {
@@ -470,6 +472,13 @@ ul.warnings {
 .event-flow-diagram { margin-top: 0; overflow-x: auto; }
 .event-flow-diagram.compact { width: 100%; padding: .65rem; }
 .event-flow-diagram.compact svg { width: 100%; min-width: 0; }
+@media (min-width: 1101px) {
+  .field-detail .event-flow-diagram.compact svg {
+    width: auto;
+    min-width: 28rem;
+    max-width: none;
+  }
+}
 .drawer-event-details > summary { color: #006b52; font-weight: 600; cursor: pointer; }
 .event-details > summary {
   color: #006b52;
@@ -815,6 +824,17 @@ html[data-theme="dark"] ul.warnings { color: #facc15; background: #20200f; borde
 .field-review-workspace { display: grid; grid-template-columns: minmax(20rem, var(--design-pane)) .55rem minmax(30rem, 1fr); align-items: start; min-width: 0; }
 .field-review-workspace.design-collapsed { grid-template-columns: minmax(0, 1fr); }
 .design-reference { min-width: 0; padding-right: 1rem; }
+@media (min-width: 1101px) {
+  .design-reference {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
 .design-pane-sticky, .field-list-sticky { background: #fafafa; }
 .design-pane-sticky { padding-bottom: .1rem; border-bottom: 1px solid #e5e7eb; }
 .field-list-sticky { padding-bottom: .05rem; border-bottom: 1px solid #e5e7eb; }
@@ -945,6 +965,7 @@ html[data-theme="dark"] .section-group-row th { color: #cbd5e1; }
 }
 @media (max-width: 760px) {
   .field-review-workspace { display: block; min-height: 0; }
+  .events { display: block; }
   .pane-resizer { display: none; }
   .design-reference { padding: 0 0 1rem; }
   .field-review-main { padding-left: 0; }
@@ -1186,6 +1207,8 @@ html[data-theme="dark"] .field-detail > header {
 .component-metrics dt { color: var(--muted); font-size: .78rem; }
 .component-metrics dd { margin: .25rem 0 0; font-size: 1.15rem; font-weight: 700; }
 .component-identity { margin: .35rem 0 0; color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+.component-identity-copy { display: inline-flex; align-items: center; gap: .2rem; margin-inline-start: .5rem; color: var(--muted); font-size: .75rem; }
+.component-identity-copy > span { white-space: nowrap; }
 .detail-actions { display: flex; gap: .5rem; align-items: flex-start; }
 .detail-heading-with-back { display: flex; align-items: flex-start; gap: .55rem; min-width: 0; }
 .drawer-icon-button { display: inline-grid; flex: 0 0 auto; place-items: center; width: 2.25rem; height: 2.25rem; padding: .45rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; vertical-align: middle; }

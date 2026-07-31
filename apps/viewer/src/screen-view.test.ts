@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildScreenView } from './screen-view'
-import { writeClipboardText } from './FieldReviewWorkspace'
+import { buildScreenView, type EventView, type FieldView, type ScreenView, type UIInstanceView } from './screen-view'
+import { COMPONENT_IDENTITY_COPY_DESCRIPTION, relatedEventsForField, relatedEventsForInstance, writeClipboardText } from './FieldReviewWorkspace'
 
 describe("copy feedback", () => {
   it("Clipboardへの書き込みが完了した時だけ成功を返す", async () => {
@@ -13,6 +13,47 @@ describe("copy feedback", () => {
   it("Clipboardが利用できないか書き込みに失敗した場合は成功扱いにしない", async () => {
     await expect(writeClipboardText("placeholder", undefined)).resolves.toBe(false)
     await expect(writeClipboardText("placeholder", { writeText: vi.fn().mockRejectedValue(new Error("denied")) })).resolves.toBe(false)
+  })
+})
+
+describe("Drawerの関連Event", () => {
+  const saveEvent = { key: "save" } as EventView
+  const cancelEvent = { key: "cancel", target: "cancelButton" } as EventView
+  const screen = {
+    events: [saveEvent, cancelEvent],
+    componentGraph: {
+      components: [{
+        id: "Pagination",
+        contract: { fields: { saveButton: { eventId: "submit" }, label: { type: "label" } } },
+      }],
+    },
+  } as unknown as ScreenView
+  const instance = {
+    componentId: "Pagination",
+    events: [
+      { fieldEvent: "submit", screenEvent: "save" },
+      { fieldEvent: "cancel", screenEvent: "cancel" },
+      { fieldEvent: "missing", screenEvent: "unknown" },
+    ],
+  } as UIInstanceView
+
+  it("通常FieldはeventIdまたはtargetで紐づくScreen Eventを解決する", () => {
+    expect(relatedEventsForField(screen, { key: "cancelButton", eventId: "save" } as FieldView).map((event) => event.key)).toEqual(["save", "cancel"])
+  })
+
+  it("Component Instanceはマッピング済みのScreen Eventを定義順で解決する", () => {
+    expect(relatedEventsForInstance(screen, instance).map((event) => event.key)).toEqual(["save", "cancel"])
+  })
+
+  it("Component Fieldは自身のEvent IDにマッピングされたScreen Eventだけを解決する", () => {
+    expect(relatedEventsForInstance(screen, instance, "saveButton").map((event) => event.key)).toEqual(["save"])
+    expect(relatedEventsForInstance(screen, instance, "label")).toEqual([])
+  })
+})
+
+describe("Component Identityのコピー", () => {
+  it("コピー対象が表示名ではなくURIとJSON Pointerだと説明する", () => {
+    expect(COMPONENT_IDENTITY_COPY_DESCRIPTION).toBe("Component Identity（URI + JSON Pointer）")
   })
 })
 

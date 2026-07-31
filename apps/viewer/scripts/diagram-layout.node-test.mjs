@@ -20,3 +20,19 @@ test("Drawerのイベント図は高さで縮小せず利用可能な横幅を�
   assert.match(compactSvgRule, /width:\s*100%/)
   assert.doesNotMatch(compactSvgRule, /max-height/)
 })
+
+test("PCのDrawerイベント図は小さすぎない自然幅を保つ", async () => {
+  const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  const compactSvgRule = css.match(/\.field-detail \.event-flow-diagram\.compact svg\s*\{([^}]*)\}/)?.[1] ?? ""
+
+  assert.match(compactSvgRule, /min-width:\s*28rem/)
+  assert.match(compactSvgRule, /width:\s*auto/)
+})
+
+test("PCの状態タブイベント一覧はカードを内容幅に詰める", async () => {
+  const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8")
+  const eventsRule = css.match(/\.events\s*\{([^}]*)\}/)?.[1] ?? ""
+
+  assert.match(eventsRule, /display:\s*grid/)
+  assert.match(eventsRule, /justify-items:\s*start/)
+})
