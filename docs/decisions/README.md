@@ -32,6 +32,8 @@ screen-spec の確定した設計判断を記録する正式なディレクト�
   — ステータス: **Accepted**（実装待ち・プロジェクト横断Component追跡）
 - [0014 — npmパッケージの公開境界](./0014-npm-package-boundary.md)
   — ステータス: **Accepted**（core / node / schema / CLI の公開境界）
+- [0015 — Storybook連携の検討方針](./0015-storybook-integration.md)
+  — ステータス: **Proposed**（規模拡大後に再検討）
 
 ## v0.1 決定の一覧
 
