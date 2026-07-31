@@ -98,7 +98,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(onLoaded.getByText("実行する処理", { exact: true })).toBeVisible();
   const changePage = page.locator('.event-card[data-event-id="changePage"]');
   await changePage.getByText("処理の詳細", { exact: true }).click();
-  await expect(changePage.getByText("Event Context", { exact: true })).toBeVisible();
+  await expect(changePage.getByText("引き渡す値", { exact: true })).toBeVisible();
   await expect(changePage.getByText("event.page", { exact: true })).toBeVisible();
 
   expect(pageErrors).toEqual([]);
