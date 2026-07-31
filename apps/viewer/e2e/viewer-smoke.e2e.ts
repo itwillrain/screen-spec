@@ -28,7 +28,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await page.getByRole("button", { name: "Viewerへ戻る" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "ユーザー一覧画面" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "読み込みエラー" })).toHaveCount(0);
-  await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
+  await expect.poll(() => page.locator(".design-reference").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
   await expect.poll(() => page.locator(".design-viewport").evaluate((element) => getComputedStyle(element).overflowY)).toBe("hidden");
   await expect(page.getByRole("button", { name: "拡大" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /別タブで開く/ })).toBeVisible();
