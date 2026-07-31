@@ -94,8 +94,10 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
 
   await page.goto("/?screen=user-list&tab=states");
   const onLoaded = page.locator(".event-card").filter({ hasText: "onLoaded" });
-  await expect(onLoaded.getByText("2. 実行する処理", { exact: true })).toBeVisible();
+  await onLoaded.getByText("処理の詳細", { exact: true }).click();
+  await expect(onLoaded.getByText("実行する処理", { exact: true })).toBeVisible();
   const changePage = page.locator(".event-card").filter({ hasText: "changePage" });
+  await changePage.getByText("処理の詳細", { exact: true }).click();
   await expect(changePage.getByText("Event Context", { exact: true })).toBeVisible();
   await expect(changePage.getByText("event.page", { exact: true })).toBeVisible();
 
