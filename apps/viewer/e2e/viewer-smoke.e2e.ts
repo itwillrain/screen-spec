@@ -34,7 +34,7 @@ test("Viewerで画面要素とComponent内部Fieldを確認できる", async ({ 
   await expect(page.getByRole("link", { name: /別タブで開く/ })).toBeVisible();
   await expect.poll(() => page.locator(".design-canvas").evaluate((canvas) => Math.abs(canvas.getBoundingClientRect().width - canvas.querySelector("img")!.getBoundingClientRect().width))).toBeLessThan(1);
   await expect.poll(() => page.locator(".field-review-main").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
-  await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).overflowY)).toBe("visible");
+  await expect.poll(() => page.locator(".field-review-main > .table-scroll").evaluate((element) => getComputedStyle(element).overflowY)).toBe("auto");
   await expect.poll(() => page.locator(".review-fields thead th").first().evaluate((element) => getComputedStyle(element).position)).toBe("static");
   await page.getByRole("button", { name: /Design Tourを開始/ }).click();
   await expect(page.getByLabel("Design Tour")).toContainText("Design Tour 1 / 8");
