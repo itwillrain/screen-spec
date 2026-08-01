@@ -11,21 +11,21 @@ screen:
         caption: 監査ログ一覧
         mappings:
           - target: appHeader
-            regions: [{ x: 0.08, y: 0.16, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0, y: 0, width: 1, height: 0.0853 }]
           - target: adminSidebar
-            regions: [{ x: 0.08, y: 0.237, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0, y: 0.0853, width: 0.1917, height: 0.8529 }]
           - target: actor
-            regions: [{ x: 0.08, y: 0.315, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.2458, y: 0.2618, width: 0.2792, height: 0.0735 }]
           - target: dateFrom
-            regions: [{ x: 0.08, y: 0.392, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.5458, y: 0.2618, width: 0.1917, height: 0.0735 }]
           - target: searchButton
-            regions: [{ x: 0.08, y: 0.47, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.8583, y: 0.2824, width: 0.0875, height: 0.0529 }]
           - target: auditTable.rows
-            regions: [{ x: 0.08, y: 0.547, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.2458, y: 0.4588, width: 0.7, height: 0.2353 }]
           - target: auditPagination
-            regions: [{ x: 0.08, y: 0.625, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.2458, y: 0.7676, width: 0.6854, height: 0.05 }]
           - target: appFooter
-            regions: [{ x: 0.08, y: 0.703, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0, y: 0.9382, width: 1, height: 0.0618 }]
   layout:
     sections:
       - { id: globalHeader, region: header, items: [{ component: appHeader }] }

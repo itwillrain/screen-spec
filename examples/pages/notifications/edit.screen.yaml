@@ -9,7 +9,23 @@ screen:
     images:
       - url: wireframes/notification-edit.svg
         caption: お知らせ編集
-        mappings: [{target: title, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.063}]}, {target: body, regions: [{x: 0.08, 'y': 0.237, width: 0.84, height: 0.063}]}, {target: channel, regions: [{x: 0.08, 'y': 0.315, width: 0.84, height: 0.063}]}, {target: deliveryTiming, regions: [{x: 0.08, 'y': 0.392, width: 0.84, height: 0.063}]}, {target: publishAt, regions: [{x: 0.08, 'y': 0.47, width: 0.84, height: 0.063}]}, {target: previewButton, regions: [{x: 0.08, 'y': 0.547, width: 0.84, height: 0.063}]}, {target: saveButton, regions: [{x: 0.08, 'y': 0.625, width: 0.84, height: 0.063}]}, {target: cancelButton, regions: [{x: 0.08, 'y': 0.703, width: 0.84, height: 0.063}]}]
+        mappings:
+          - target: title
+            regions: [{ x: 0.0792, y: 0.1706, width: 0.8417, height: 0.0941 }]
+          - target: body
+            regions: [{ x: 0.0792, y: 0.2941, width: 0.8417, height: 0.2206 }]
+          - target: channel
+            regions: [{ x: 0.0792, y: 0.5559, width: 0.2396, height: 0.0941 }]
+          - target: deliveryTiming
+            regions: [{ x: 0.3396, y: 0.5559, width: 0.3125, height: 0.0941 }]
+          - target: publishAt
+            regions: [{ x: 0.6729, y: 0.5559, width: 0.2479, height: 0.0941 }]
+          - target: previewButton
+            regions: [{ x: 0.5479, y: 0.7794, width: 0.1042, height: 0.0588 }]
+          - target: saveButton
+            regions: [{ x: 0.6729, y: 0.7794, width: 0.1042, height: 0.0588 }]
+          - target: cancelButton
+            regions: [{ x: 0.7979, y: 0.7794, width: 0.1229, height: 0.0588 }]
   params:
     path:
       notificationId: { type: string, required: false, description: 新規作成時は未指定 }

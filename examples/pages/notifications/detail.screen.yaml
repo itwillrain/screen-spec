@@ -9,7 +9,23 @@ screen:
     images:
       - url: wireframes/notification-detail.svg
         caption: お知らせ詳細
-        mappings: [{target: title, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.063}]}, {target: body, regions: [{x: 0.08, 'y': 0.237, width: 0.84, height: 0.063}]}, {target: status, regions: [{x: 0.08, 'y': 0.315, width: 0.84, height: 0.063}]}, {target: channel, regions: [{x: 0.08, 'y': 0.392, width: 0.84, height: 0.063}]}, {target: publishAt, regions: [{x: 0.08, 'y': 0.47, width: 0.84, height: 0.063}]}, {target: editButton, regions: [{x: 0.08, 'y': 0.547, width: 0.84, height: 0.063}]}, {target: archiveButton, regions: [{x: 0.08, 'y': 0.625, width: 0.84, height: 0.063}]}, {target: backButton, regions: [{x: 0.08, 'y': 0.703, width: 0.84, height: 0.063}]}]
+        mappings:
+          - target: title
+            regions: [{ x: 0.0792, y: 0.1765, width: 0.8417, height: 0.0941 }]
+          - target: body
+            regions: [{ x: 0.0792, y: 0.3088, width: 0.8417, height: 0.2206 }]
+          - target: status
+            regions: [{ x: 0.0792, y: 0.5735, width: 0.1875, height: 0.0941 }]
+          - target: channel
+            regions: [{ x: 0.2875, y: 0.5735, width: 0.1875, height: 0.0941 }]
+          - target: publishAt
+            regions: [{ x: 0.4958, y: 0.5735, width: 0.425, height: 0.0941 }]
+          - target: editButton
+            regions: [{ x: 0.5479, y: 0.7794, width: 0.1042, height: 0.0588 }]
+          - target: archiveButton
+            regions: [{ x: 0.6729, y: 0.7794, width: 0.1167, height: 0.0588 }]
+          - target: backButton
+            regions: [{ x: 0.8104, y: 0.7794, width: 0.1104, height: 0.0588 }]
   params:
     path:
       notificationId: { type: string, required: true, description: お知らせID }

@@ -32,6 +32,12 @@ describe("example design references", () => {
     for (const image of images) {
       expect(image.url).toMatch(/^wireframes\/.+\.svg$/);
       expect(existsSync(resolve("apps/viewer/public", image.url)), image.url).toBe(true);
+      if (/\/(?:notification|role)-(?:detail|edit|list)\.svg$/.test(image.url)) {
+        const svg = readFileSync(resolve("apps/viewer/public", image.url), "utf8");
+        for (const mapping of image.mappings ?? []) {
+          expect(svg, "missing drawn Screen Element for " + mapping.target).toContain('data-screen-element="' + mapping.target + '"');
+        }
+      }
     }
 
     const targets = images.flatMap((image) => image.mappings ?? []).map((mapping) => mapping.target);

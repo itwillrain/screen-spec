@@ -9,7 +9,19 @@ screen:
     images:
       - url: wireframes/notification-list.svg
         caption: お知らせ一覧
-        mappings: [{target: keyword, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.083}]}, {target: status, regions: [{x: 0.08, 'y': 0.263, width: 0.84, height: 0.083}]}, {target: searchButton, regions: [{x: 0.08, 'y': 0.367, width: 0.84, height: 0.083}]}, {target: createButton, regions: [{x: 0.08, 'y': 0.47, width: 0.84, height: 0.083}]}, {target: notificationTable.rows, regions: [{x: 0.08, 'y': 0.573, width: 0.84, height: 0.083}]}, {target: notificationPagination, regions: [{x: 0.08, 'y': 0.677, width: 0.84, height: 0.083}]}]
+        mappings:
+          - target: keyword
+            regions: [{ x: 0.0792, y: 0.1765, width: 0.3125, height: 0.0941 }]
+          - target: status
+            regions: [{ x: 0.4125, y: 0.1765, width: 0.1979, height: 0.0941 }]
+          - target: searchButton
+            regions: [{ x: 0.6312, y: 0.2088, width: 0.1042, height: 0.0588 }]
+          - target: createButton
+            regions: [{ x: 0.7562, y: 0.2088, width: 0.1646, height: 0.0588 }]
+          - target: notificationTable.rows
+            regions: [{ x: 0.0792, y: 0.3529, width: 0.8417, height: 0.3824 }]
+          - target: notificationPagination
+            regions: [{ x: 0.6813, y: 0.7676, width: 0.2062, height: 0.0559 }]
   layout:
     sections:
       - { id: search, title: 検索条件, region: body, fields: [keyword, status, searchButton, createButton] }

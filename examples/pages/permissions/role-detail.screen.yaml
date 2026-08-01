@@ -9,7 +9,21 @@ screen:
     images:
       - url: wireframes/role-detail.svg
         caption: Role詳細
-        mappings: [{target: name, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.071}]}, {target: description, regions: [{x: 0.08, 'y': 0.249, width: 0.84, height: 0.071}]}, {target: userCount, regions: [{x: 0.08, 'y': 0.337, width: 0.84, height: 0.071}]}, {target: permissionCount, regions: [{x: 0.08, 'y': 0.426, width: 0.84, height: 0.071}]}, {target: permissionTable.rows, regions: [{x: 0.08, 'y': 0.514, width: 0.84, height: 0.071}]}, {target: showUsersButton, regions: [{x: 0.08, 'y': 0.603, width: 0.84, height: 0.071}]}, {target: backButton, regions: [{x: 0.08, 'y': 0.691, width: 0.84, height: 0.071}]}]
+        mappings:
+          - target: name
+            regions: [{ x: 0.0792, y: 0.1706, width: 0.3958, height: 0.0941 }]
+          - target: description
+            regions: [{ x: 0.4958, y: 0.1706, width: 0.425, height: 0.0941 }]
+          - target: userCount
+            regions: [{ x: 0.0792, y: 0.3, width: 0.1875, height: 0.0941 }]
+          - target: permissionCount
+            regions: [{ x: 0.2875, y: 0.3, width: 0.1875, height: 0.0941 }]
+          - target: permissionTable.rows
+            regions: [{ x: 0.0792, y: 0.4471, width: 0.8417, height: 0.3029 }]
+          - target: showUsersButton
+            regions: [{ x: 0.6188, y: 0.7941, width: 0.1771, height: 0.0588 }]
+          - target: backButton
+            regions: [{ x: 0.8167, y: 0.7941, width: 0.1042, height: 0.0588 }]
   params:
     path:
       roleId: { type: string, required: true, description: Role ID }

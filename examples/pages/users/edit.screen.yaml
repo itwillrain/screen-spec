@@ -51,28 +51,28 @@ screen:
         caption: 初期表示（閲覧中）
         mappings:
           - target: appHeader
-            regions: [{ x: 0.08, y: 0.16, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0, y: 0, width: 1, height: 0.1 }]
           - target: adminSidebar
-            regions: [{ x: 0.08, y: 0.237, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0, y: 0.1, width: 0.21, height: 0.8286 }]
           - target: introText
-            regions: [{ x: 0.08, y: 0.315, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.25, y: 0.2464, width: 0.71, height: 0.0393 }]
           - target: name
-            regions: [{ x: 0.08, y: 0.392, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.28, y: 0.4464, width: 0.305, height: 0.1107 }]
           - target: email
-            regions: [{ x: 0.08, y: 0.47, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.625, y: 0.4464, width: 0.305, height: 0.1107 }]
           - target: altEmail
-            regions: [{ x: 0.08, y: 0.547, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.28, y: 0.5929, width: 0.305, height: 0.1107 }]
           - target: role
-            regions: [{ x: 0.08, y: 0.625, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.625, y: 0.5929, width: 0.305, height: 0.1107 }]
           - target: editButton
-            regions: [{ x: 0.08, y: 0.703, width: 0.84, height: 0.063 }]
+            regions: [{ x: 0.8325, y: 0.1929, width: 0.1275, height: 0.0679 }]
+          - target: appFooter
+            regions: [{ x: 0.21, y: 0.9286, width: 0.79, height: 0.0714 }]
       - url: wireframes/user-edit-editing.svg
         caption: 編集中
         mappings:
           - target: submitButton
-            regions: [{ x: 0.08, y: 0.16, width: 0.84, height: 0.25 }]
-          - target: appFooter
-            regions: [{ x: 0.08, y: 0.47, width: 0.84, height: 0.25 }]
+            regions: [{ x: 0.8275, y: 0.7929, width: 0.1025, height: 0.0679 }]
     links:
       - label: デザインガイドライン
         url: https://example.com/design-guide
