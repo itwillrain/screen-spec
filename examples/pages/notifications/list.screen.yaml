@@ -5,6 +5,11 @@ screen:
   group: お知らせ管理
   description: 公開状態とキーワードでお知らせを検索し、運用対象を選択する画面
   route: /notifications
+  design:
+    images:
+      - url: wireframes/notification-list.svg
+        caption: お知らせ一覧
+        mappings: [{target: keyword, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.083}]}, {target: status, regions: [{x: 0.08, 'y': 0.263, width: 0.84, height: 0.083}]}, {target: searchButton, regions: [{x: 0.08, 'y': 0.367, width: 0.84, height: 0.083}]}, {target: createButton, regions: [{x: 0.08, 'y': 0.47, width: 0.84, height: 0.083}]}, {target: notificationTable.rows, regions: [{x: 0.08, 'y': 0.573, width: 0.84, height: 0.083}]}, {target: notificationPagination, regions: [{x: 0.08, 'y': 0.677, width: 0.84, height: 0.083}]}]
   layout:
     sections:
       - { id: search, title: 検索条件, region: body, fields: [keyword, status, searchButton, createButton] }

@@ -5,6 +5,11 @@ screen:
   group: 権限管理
   description: Roleの説明、利用者数、許可・拒否されるPermissionを確認する画面
   route: /roles/{roleId}
+  design:
+    images:
+      - url: wireframes/role-detail.svg
+        caption: Role詳細
+        mappings: [{target: name, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.071}]}, {target: description, regions: [{x: 0.08, 'y': 0.249, width: 0.84, height: 0.071}]}, {target: userCount, regions: [{x: 0.08, 'y': 0.337, width: 0.84, height: 0.071}]}, {target: permissionCount, regions: [{x: 0.08, 'y': 0.426, width: 0.84, height: 0.071}]}, {target: permissionTable.rows, regions: [{x: 0.08, 'y': 0.514, width: 0.84, height: 0.071}]}, {target: showUsersButton, regions: [{x: 0.08, 'y': 0.603, width: 0.84, height: 0.071}]}, {target: backButton, regions: [{x: 0.08, 'y': 0.691, width: 0.84, height: 0.071}]}]
   params:
     path:
       roleId: { type: string, required: true, description: Role ID }

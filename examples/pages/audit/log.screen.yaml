@@ -9,6 +9,23 @@ screen:
     images:
       - url: wireframes/audit-log.svg
         caption: 監査ログ一覧
+        mappings:
+          - target: appHeader
+            regions: [{ x: 0.08, y: 0.16, width: 0.84, height: 0.063 }]
+          - target: adminSidebar
+            regions: [{ x: 0.08, y: 0.237, width: 0.84, height: 0.063 }]
+          - target: actor
+            regions: [{ x: 0.08, y: 0.315, width: 0.84, height: 0.063 }]
+          - target: dateFrom
+            regions: [{ x: 0.08, y: 0.392, width: 0.84, height: 0.063 }]
+          - target: searchButton
+            regions: [{ x: 0.08, y: 0.47, width: 0.84, height: 0.063 }]
+          - target: auditTable.rows
+            regions: [{ x: 0.08, y: 0.547, width: 0.84, height: 0.063 }]
+          - target: auditPagination
+            regions: [{ x: 0.08, y: 0.625, width: 0.84, height: 0.063 }]
+          - target: appFooter
+            regions: [{ x: 0.08, y: 0.703, width: 0.84, height: 0.063 }]
   layout:
     sections:
       - { id: globalHeader, region: header, items: [{ component: appHeader }] }

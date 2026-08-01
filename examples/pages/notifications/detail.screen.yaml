@@ -5,6 +5,11 @@ screen:
   group: お知らせ管理
   description: お知らせの内容、公開状態、配信先を確認して運用操作を行う画面
   route: /notifications/{notificationId}
+  design:
+    images:
+      - url: wireframes/notification-detail.svg
+        caption: お知らせ詳細
+        mappings: [{target: title, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.063}]}, {target: body, regions: [{x: 0.08, 'y': 0.237, width: 0.84, height: 0.063}]}, {target: status, regions: [{x: 0.08, 'y': 0.315, width: 0.84, height: 0.063}]}, {target: channel, regions: [{x: 0.08, 'y': 0.392, width: 0.84, height: 0.063}]}, {target: publishAt, regions: [{x: 0.08, 'y': 0.47, width: 0.84, height: 0.063}]}, {target: editButton, regions: [{x: 0.08, 'y': 0.547, width: 0.84, height: 0.063}]}, {target: archiveButton, regions: [{x: 0.08, 'y': 0.625, width: 0.84, height: 0.063}]}, {target: backButton, regions: [{x: 0.08, 'y': 0.703, width: 0.84, height: 0.063}]}]
   params:
     path:
       notificationId: { type: string, required: true, description: お知らせID }

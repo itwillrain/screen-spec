@@ -5,6 +5,11 @@ screen:
   group: 権限管理
   description: Roleごとの利用者数とPermission数を確認する画面
   route: /roles
+  design:
+    images:
+      - url: wireframes/role-list.svg
+        caption: Role一覧
+        mappings: [{target: keyword, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.167}]}, {target: searchButton, regions: [{x: 0.08, 'y': 0.367, width: 0.84, height: 0.167}]}, {target: roleTable.rows, regions: [{x: 0.08, 'y': 0.573, width: 0.84, height: 0.167}]}]
   layout:
     sections:
       - { id: search, title: 検索条件, region: body, fields: [keyword, searchButton] }

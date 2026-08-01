@@ -5,6 +5,11 @@ screen:
   group: お知らせ管理
   description: お知らせの本文と配信条件を編集し、下書き保存または公開予約する画面
   route: /notifications/{notificationId}/edit
+  design:
+    images:
+      - url: wireframes/notification-edit.svg
+        caption: お知らせ編集
+        mappings: [{target: title, regions: [{x: 0.08, 'y': 0.16, width: 0.84, height: 0.063}]}, {target: body, regions: [{x: 0.08, 'y': 0.237, width: 0.84, height: 0.063}]}, {target: channel, regions: [{x: 0.08, 'y': 0.315, width: 0.84, height: 0.063}]}, {target: deliveryTiming, regions: [{x: 0.08, 'y': 0.392, width: 0.84, height: 0.063}]}, {target: publishAt, regions: [{x: 0.08, 'y': 0.47, width: 0.84, height: 0.063}]}, {target: previewButton, regions: [{x: 0.08, 'y': 0.547, width: 0.84, height: 0.063}]}, {target: saveButton, regions: [{x: 0.08, 'y': 0.625, width: 0.84, height: 0.063}]}, {target: cancelButton, regions: [{x: 0.08, 'y': 0.703, width: 0.84, height: 0.063}]}]
   params:
     path:
       notificationId: { type: string, required: false, description: 新規作成時は未指定 }
