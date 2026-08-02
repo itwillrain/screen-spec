@@ -32,8 +32,11 @@ jobs:
       - name: Build trusted prompt envelope
         env:
           EVENT_PATH: ${{ github.event_path }}
-          PROMPT_PATH: ${{ runner.temp }}/codex-issue-prompt.md
-        run: .github/scripts/build-issue-prompt.sh "${EVENT_PATH}" "${PROMPT_PATH}"
+          PROMPT_PATH: .github/codex-runtime/issue-prompt.md
+        run: |
+          mkdir -p .github/codex-runtime
+          printf '%s\n' '.github/codex-runtime/' >> .git/info/exclude
+          .github/scripts/build-issue-prompt.sh "${EVENT_PATH}" "${PROMPT_PATH}"
 
       - name: Configure Git author
         run: |
@@ -41,10 +44,15 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Implement issue with Codex
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          PROMPT_PATH: ${{ runner.temp }}/codex-issue-prompt.md
-        run: codex exec --full-auto - <"${PROMPT_PATH}"
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex-runtime/issue-prompt.md
+          permission-profile: ":workspace"
+          safety-strategy: unsafe
+
+      - name: Remove runtime prompt
+        run: rm -rf .github/codex-runtime
 
       - name: Create pull request
         id: create-pr
