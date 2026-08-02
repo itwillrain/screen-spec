@@ -44,12 +44,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Implement issue with Codex
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .github/codex-runtime/issue-prompt.md
-          permission-profile: ":workspace"
-          safety-strategy: unsafe
+        env:
+          PROMPT_PATH: .github/codex-runtime/issue-prompt.md
+        run: codex exec --full-auto - <"${PROMPT_PATH}"
 
       - name: Remove runtime prompt
         run: rm -rf .github/codex-runtime
