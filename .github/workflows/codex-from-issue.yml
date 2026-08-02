@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir -p .github/codex-runtime
           printf '%s\n' '.github/codex-runtime/' >> .git/info/exclude
-          .github/scripts/build-issue-prompt.sh "${EVENT_PATH}" "${PROMPT_PATH}"
+          sh .github/scripts/build-issue-prompt.sh "${EVENT_PATH}" "${PROMPT_PATH}"
 
       - name: Configure Git author
         run: |
